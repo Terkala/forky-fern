@@ -1,6 +1,7 @@
 using Content.Shared.Charges.Components;
 using Content.Shared.Charges.Systems;
 using Content.Shared.Examine;
+using Content.Shared.FixedPoint;
 using Content.Shared.Interaction;
 using Content.Shared.Popups;
 using Content.Shared.RCD.Components;
@@ -50,8 +51,6 @@ public sealed class RCDAmmoSystem : EntitySystem
             _popup.PopupClient(Loc.GetString("rcd-ammo-component-after-interact-full"), target, user);
             return;
         }
-
-        Log.Debug(count.ToString());
 
         _popup.PopupClient(Loc.GetString("rcd-ammo-component-after-interact-refilled"), target, user);
         _sharedCharges.AddCharges(target, count);

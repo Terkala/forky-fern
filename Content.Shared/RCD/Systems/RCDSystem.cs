@@ -22,6 +22,7 @@ using Robust.Shared.Physics.Dynamics;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Serialization;
 using System.Linq;
+using Content.Shared.FixedPoint;
 
 namespace Content.Shared.RCD.Systems;
 
@@ -604,14 +605,14 @@ public sealed partial class RCDDoAfterEvent : DoAfterEvent
     public ProtoId<RCDPrototype> StartingProtoId { get; private set; }
 
     [DataField]
-    public float Cost { get; private set; } = 1;
+    public FixedPoint2 Cost { get; private set; } = 1;
 
     [DataField("fx")]
     public NetEntity? Effect { get; private set; }
 
     private RCDDoAfterEvent() { }
 
-    public RCDDoAfterEvent(NetCoordinates location, Direction direction, ProtoId<RCDPrototype> startingProtoId, float cost, NetEntity? effect = null)
+    public RCDDoAfterEvent(NetCoordinates location, Direction direction, ProtoId<RCDPrototype> startingProtoId, FixedPoint2 cost, NetEntity? effect = null)
     {
         Location = location;
         Direction = direction;
