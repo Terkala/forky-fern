@@ -49,7 +49,6 @@
         offset: 0
       - !type:DoActsBehavior
         acts: ["Breakage"]
-
   - type: Sprite
     sprite: Structures/Piping/Atmospherics/pipe.rsi
     drawdepth: ThinPipe
