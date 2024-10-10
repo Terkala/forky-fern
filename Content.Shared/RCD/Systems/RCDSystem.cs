@@ -64,6 +64,8 @@ public sealed class RCDSystem : EntitySystem
         SubscribeLocalEvent<RCDComponent, DoAfterAttemptEvent<RCDDoAfterEvent>>(OnDoAfterAttempt);
         SubscribeLocalEvent<RCDComponent, RCDSystemMessage>(OnRCDSystemMessage);
         SubscribeNetworkEvent<RCDConstructionGhostRotationEvent>(OnRCDconstructionGhostRotationEvent);
+        SubscribeNetworkEvent<RCDConstructionGhostFlipEvent>(OnRCDConstructionGhostFlipEvent);
+
     }
 
     #region Event handling
@@ -82,6 +84,8 @@ public sealed class RCDSystem : EntitySystem
         // The RCD has no valid recipes somehow? Get rid of it
         QueueDel(uid);
     }
+
+
 
     private void OnRCDSystemMessage(EntityUid uid, RCDComponent component, RCDSystemMessage args)
     {
@@ -314,6 +318,27 @@ public sealed class RCDSystem : EntitySystem
         Dirty(uid, rcd);
     }
 
+
+    private void OnRCDConstructionGhostFlipEvent(RCDConstructionGhostFlipEvent ev, EntitySessionEventArgs session)
+    {
+        var uid = GetEntity(ev.NetEntity);
+
+        // Determine if player that send the message is carrying the specified RCD in their active hand
+        if (session.SenderSession.AttachedEntity == null)
+            return;
+
+        if (!TryComp<HandsComponent>(session.SenderSession.AttachedEntity, out var hands) ||
+            uid != hands.ActiveHand?.HeldEntity)
+            return;
+
+        if (!TryComp<RCDComponent>(uid, out var rcd))
+            return;
+
+        // Update the construction direction
+        rcd.UseMirrorPrototype = ev.UseMirrorPrototype;
+        Dirty(uid, rcd);
+    }
+
     #endregion
 
     #region Entity construction/deconstruction rule checks
@@ -539,7 +564,12 @@ public sealed class RCDSystem : EntitySystem
                 break;
 
             case RcdMode.ConstructObject:
-                var ent = Spawn(prototype.Prototype, _mapSystem.GridTileToLocal(gridUid, mapGrid, position));
+                var proto = (component.UseMirrorPrototype &&
+                    !string.IsNullOrEmpty(component.CachedPrototype.MirrorPrototype))
+                    ? component.CachedPrototype.MirrorPrototype
+                    : component.CachedPrototype.Prototype;
+
+                var ent = Spawn(proto, _mapSystem.GridTileToLocal(mapGridData.GridUid, mapGridData.Component, mapGridData.Position));
 
                 switch (prototype.Rotation)
                 {
@@ -587,6 +617,16 @@ public sealed class RCDSystem : EntitySystem
         var entXform = new Transform(new(), entXformComp.LocalRotation);
 
         return boundingPolygon.ComputeAABB(boundingTransform, 0).Intersects(fixture.Shape.ComputeAABB(entXform, 0));
+    }
+
+    public void UpdateCachedPrototype(EntityUid uid, RCDComponent component)
+    {
+        if (component.ProtoId.Id != component.CachedPrototype?.Prototype ||
+            (component.CachedPrototype?.MirrorPrototype != null &&
+             component.ProtoId.Id!= component.CachedPrototype?.MirrorPrototype))
+        {
+            component.CachedPrototype = _protoManager.Index(component.ProtoId);
+        }
     }
 
     #endregion
