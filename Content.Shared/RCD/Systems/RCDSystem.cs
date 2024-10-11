@@ -555,7 +555,6 @@ public sealed class RCDSystem : EntitySystem
             }
 
         }
-        Logger.Debug("tis fine!");
         return true;
     }
 
