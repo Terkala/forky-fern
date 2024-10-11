@@ -57,7 +57,7 @@ public sealed class RCDConstructionGhostSystem : EntitySystem
                 string.IsNullOrEmpty(rcd.CachedPrototype.MirrorPrototype))
                 return false;
 
-                _useMirrorPrototype = !rcd.UseMirrorPrototype;
+            _useMirrorPrototype = !rcd.UseMirrorPrototype;
 
             var useProto = _useMirrorPrototype ? rcd.CachedPrototype.MirrorPrototype : rcd.CachedPrototype.Prototype;
             CreatePlacer(placerEntity.Value, rcd, useProto);
