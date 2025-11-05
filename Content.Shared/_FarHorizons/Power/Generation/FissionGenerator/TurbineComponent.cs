@@ -1,7 +1,7 @@
-using Content.Shared.Atmos;
-using Content.Shared.Tools;
-using Robust.Shared.GameStates;
 using Robust.Shared.Prototypes;
+using Robust.Shared.GameStates;
+using Content.Shared.Tools;
+using Content.Shared.Atmos;
 
 namespace Content.Shared._FarHorizons.Power.Generation.FissionGenerator;
 
@@ -77,6 +77,18 @@ public sealed partial class TurbineComponent : Component
     public bool Ruined = false;
 
     /// <summary>
+    /// Flag indicating the turbine is sparking
+    /// </summary>
+    [DataField]
+    public bool IsSparking = false;
+
+    /// <summary>
+    /// Flag indicating the turbine is smoking
+    /// </summary>
+    [DataField]
+    public bool IsSmoking = false;
+
+    /// <summary>
     /// Flag for indicating that energy available is less than needed to turn the turbine
     /// </summary>
     [DataField]
@@ -115,11 +127,13 @@ public sealed partial class TurbineComponent : Component
     /// <summary>
     /// Length of repair do-after, in seconds
     /// </summary>
+    [DataField]
     public float RepairDelay = 5;
 
     /// <summary>
     /// Amount of fuel consumed for repair
     /// </summary>
+    [DataField]
     public float RepairFuelCost = 15;
 
     /// <summary>
@@ -133,11 +147,7 @@ public sealed partial class TurbineComponent : Component
     [DataField("outlet")]
     public string OutletName { get; set; } = "outlet";
 
-    public bool IsSparking = false;
-    public bool IsSmoking = false;
-
-    
-    //Debugging
+    #region Debug
     [ViewVariables(VVAccess.ReadOnly)]
     [DataField("HasPipes")]
     public bool HasPipes = false;
@@ -147,5 +157,5 @@ public sealed partial class TurbineComponent : Component
     [ViewVariables(VVAccess.ReadOnly)]
     [DataField("LastVolumeTransfer")]
     public float LastVolumeTransfer = 0;
-
+    #endregion
 }

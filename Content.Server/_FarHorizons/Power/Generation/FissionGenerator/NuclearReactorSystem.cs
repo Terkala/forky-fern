@@ -1,4 +1,5 @@
 using Content.Server._FarHorizons.NodeContainer.Nodes;
+using Content.Server.Administration.Logs;
 using Content.Server.AlertLevel;
 using Content.Server.Atmos.EntitySystems;
 using Content.Server.Atmos.Piping.Components;
@@ -9,8 +10,8 @@ using Content.Server.NodeContainer.EntitySystems;
 using Content.Server.Radio.EntitySystems;
 using Content.Server.Station.Systems;
 using Content.Shared._FarHorizons.Power.Generation.FissionGenerator;
-using Content.Shared.Atmos.Piping.Components;
 using Content.Shared.Atmos;
+using Content.Shared.Database;
 using Content.Shared.IdentityManagement;
 using Content.Shared.Radiation.Components;
 using Content.Shared.Radio;
@@ -21,6 +22,7 @@ using Robust.Shared.Containers;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Random;
 using System.Linq;
+using Content.Shared.Atmos.Piping.Components;
 
 namespace Content.Server._FarHorizons.Power.Generation.FissionGenerator;
 
@@ -32,6 +34,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
     [Dependency] private readonly ChatSystem _chatSystem = default!;
     [Dependency] private readonly EntityManager _entityManager = default!;
     [Dependency] private readonly ExplosionSystem _explosionSystem = default!;
+    [Dependency] private readonly IAdminLogManager _adminLog = default!;
     [Dependency] private readonly IPrototypeManager _prototypes = default!;
     [Dependency] private readonly IRobustRandom _random = default!;
     [Dependency] private readonly MetaDataSystem _metaDataSystem = default!;
@@ -52,50 +55,34 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
     public override void Initialize()
     {
         base.Initialize();
-        SubscribeLocalEvent<NuclearReactorComponent, AtmosDeviceUpdateEvent>(OnUpdate);
-        SubscribeLocalEvent<NuclearReactorComponent, AtmosDeviceEnabledEvent>(OnEnabled);
-        SubscribeLocalEvent<NuclearReactorComponent, AtmosDeviceDisabledEvent>(OnDisabled);
 
+        SubscribeLocalEvent<NuclearReactorComponent, AtmosDeviceUpdateEvent>(OnUpdate);
+        SubscribeLocalEvent<NuclearReactorComponent, AtmosDeviceEnabledEvent>(OnEnable);
+
+        // Item events
         SubscribeLocalEvent<NuclearReactorComponent, EntInsertedIntoContainerMessage>(OnPartChanged);
         SubscribeLocalEvent<NuclearReactorComponent, EntRemovedFromContainerMessage>(OnPartChanged);
+
+        // BUI events
         SubscribeLocalEvent<NuclearReactorComponent, ReactorItemActionMessage>(OnItemActionMessage);
         SubscribeLocalEvent<NuclearReactorComponent, ReactorControlRodModifyMessage>(OnControlRodMessage);
     }
 
-    private void OnPartChanged(EntityUid uid, NuclearReactorComponent component, ContainerModifiedMessage args) => ReactorTryGetSlot(uid, "part_slot", out component.PartSlot!);
-
-    private void OnEnabled(EntityUid uid, NuclearReactorComponent comp, ref AtmosDeviceEnabledEvent args)
+    private void OnEnable(Entity<NuclearReactorComponent> ent, ref AtmosDeviceEnabledEvent args)
     {
-        comp.ComponentGrid = new ReactorPartComponent[_gridWidth, _gridHeight];
-        var prefab = SelectPrefab(comp.Prefab);
+        var comp = ent.Comp;
         for (var x = 0; x < _gridWidth; x++)
         {
             for (var y = 0; y < _gridHeight; y++)
             {
                 comp.FluxGrid[x, y] = [];
-                comp.ComponentGrid[x, y] = prefab[x, y] != null ? new ReactorPartComponent(prefab[x, y]!) : null;
             }
         }
-
-        comp.ApplyPrefab = false;
-        UpdateGridVisual(uid, comp);
     }
 
-    private void OnDisabled(EntityUid uid, NuclearReactorComponent comp, ref AtmosDeviceDisabledEvent args)
-    {
-        comp.ApplyPrefab = default!;
-        comp.Temperature = Atmospherics.T20C;
+    private void OnPartChanged(EntityUid uid, NuclearReactorComponent component, ContainerModifiedMessage args) => ReactorTryGetSlot(uid, "part_slot", out component.PartSlot!);
 
-        foreach(var RC in comp.ComponentGrid)
-            if(RC != null)
-                RC.Temperature = Atmospherics.T20C;
-
-        Array.Clear(comp.ComponentGrid);
-        Array.Clear(comp.VisualGrid);
-        Array.Clear(comp.FluxGrid);
-        comp.AirContents?.Clear();
-    }
-
+    #region Main Loop
     private void OnUpdate(Entity<NuclearReactorComponent> ent, ref AtmosDeviceUpdateEvent args)
     {
         var comp = ent.Comp;
@@ -123,8 +110,6 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
             }
 
             comp.ApplyPrefab = false;
-
-            comp.ApplyPrefab = false;
             UpdateGridVisual(uid, comp);
         }
 
@@ -144,15 +129,16 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         var AirContents = new GasMixture();
 
         var TempRads = 0;
-
-        var NeutronCount = 0;
-        var MeltedComps = 0;
         var ControlRods = 0;
         var AvgControlRodInsertion = 0f;
+        var TempChange = 0f;
+
+        // Debug Vars
+        var NeutronCount = 0;
+        var MeltedComps = 0;
         var TotalNRads = 0f;
         var TotalRads = 0f;
         var TotalSpent = 0f;
-        var TempChange = 0f;
 
         var GasInput = inlet.Air.RemoveVolume(inlet.Air.Volume);
 
@@ -217,7 +203,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         {
             for (var y = 0; y < _gridHeight; y++)
             {
-                foreach (var neutron in flux[x,y])
+                foreach (var neutron in flux[x, y])
                 {
                     NeutronCount++;
 
@@ -261,9 +247,9 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         comp.TotalSpent = TotalSpent;
 
         // Averaging my averages
-        for(var i = 1; i < comp.ThermalPowerL1.Length; i++)
+        for (var i = 1; i < comp.ThermalPowerL1.Length; i++)
         {
-            comp.ThermalPowerL1[i-1]=comp.ThermalPowerL1[i];
+            comp.ThermalPowerL1[i - 1] = comp.ThermalPowerL1[i];
         }
         comp.ThermalPowerL1[^1] = TempChange;
         for (var i = 1; i < comp.ThermalPowerL2.Length; i++)
@@ -284,112 +270,39 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         UpdateAudio(ent);
     }
 
-    private void CatastrophicOverload(Entity<NuclearReactorComponent> ent)
+    private void ProcessCaseRadiation(Entity<NuclearReactorComponent> ent)
     {
-        var comp = ent.Comp;
-        var uid = ent.Owner;
+        var comp = EnsureComp<RadiationSourceComponent>(ent.Owner);
 
-        var stationUid = _station.GetStationInMap(Transform(uid).MapID);
-        if (stationUid != null)
-            _alertLevel.SetLevel(stationUid.Value, comp.MeltdownAlertLevel, true, true, true);
+        comp.Intensity = Math.Max(ent.Comp.RadiationLevel, ent.Comp.Melted ? 10 : 0);
+        ent.Comp.RadiationLevel /= 2;
+    }
 
-        var announcement = Loc.GetString("reactor-meltdown-announcement");
-        var sender = Loc.GetString("reactor-meltdown-announcement-sender");
-        _chatSystem.DispatchStationAnnouncement(stationUid ?? uid, announcement, sender, false, null, Color.Orange);
+    private void InitGrid(Entity<NuclearReactorComponent> ent)
+    {
+        var xspace = 18f / 32f;
+        var yspace = 15f / 32f;
 
-        _soundSystem.PlayGlobalOnStation(uid, _audio.ResolveSound(comp.MeltdownSound));
-
-        comp.Melted = true;
-        var MeltdownBadness = 0f;
-        comp.AirContents ??= new();
+        var yoff = 5f / 32f;
 
         for (var x = 0; x < _gridWidth; x++)
         {
             for (var y = 0; y < _gridHeight; y++)
             {
-                if(comp.ComponentGrid[x, y] != null)
-                {
-                    var RC = comp.ComponentGrid[x, y];
-                    if (RC == null)
-                        return;
-                    MeltdownBadness += ((RC.Radioactive * 2) + (RC.NRadioactive * 5) + (RC.SpentFuel * 10)) * (RC.Melted ? 2 : 1);
-                    if (RC.RodType == (byte)ReactorPartComponent.RodTypes.GasChannel)
-                        _atmosphereSystem.Merge(comp.AirContents, RC.AirContents ?? new());
-                }
+                // ...48 entities stuck on the grid, spawn one more, pass it around, 49 entities stuck on the grid...
+                ent.Comp.VisualGrid[x, y] = _entityManager.GetNetEntity(SpawnAttachedTo("ReactorComponent", new(ent.Owner, xspace * (y - 3), (-yspace * (x - 3)) - yoff)));
             }
         }
-        comp.RadiationLevel = Math.Clamp(comp.RadiationLevel + MeltdownBadness, 0, 200);
-        comp.AirContents.AdjustMoles(Gas.Tritium, MeltdownBadness * 15);
-        comp.AirContents.Temperature = Math.Max(comp.Temperature, comp.AirContents.Temperature);
-
-        var T = _atmosphereSystem.GetTileMixture(ent.Owner, excite: true);
-        if (T != null)
-            _atmosphereSystem.Merge(T, comp.AirContents);
-
-        // You did not see graphite on the roof. You're in shock. Report to medical.
-        for (var i = 0; i < _random.Next(10, 30); i++)
-            SpawnAtPosition("NuclearWasteChunk", new(uid, _random.NextVector2(4)));
-
-        _audio.PlayPvs(new SoundPathSpecifier("/Audio/Effects/metal_break5.ogg"), uid);
-        _explosionSystem.QueueExplosion(ent.Owner, "Default", Math.Max(100, MeltdownBadness * 5), 1, 4, 0, canCreateVacuum: false);
-
-        // Reset grids
-        Array.Clear(comp.ComponentGrid);
-        Array.Clear(comp.NeutronGrid);
-        Array.Clear(comp.TemperatureGrid);
-        Array.Clear(comp.FluxGrid);
-
-        UpdateGridVisual(ent.Owner, comp);
-
-        // Stop Alarms
-        if (_audio.IsPlaying(comp.AlarmAudioHighThermal))
-            comp.AlarmAudioHighThermal = _audio.Stop(comp.AlarmAudioHighThermal);
-        if (_audio.IsPlaying(comp.AlarmAudioHighTemp))
-            comp.AlarmAudioHighTemp = _audio.Stop(comp.AlarmAudioHighTemp);
-        if (_audio.IsPlaying(comp.AlarmAudioHighRads))
-            comp.AlarmAudioHighRads = _audio.Stop(comp.AlarmAudioHighRads);
-
     }
 
-    protected override void SendEngiRadio(Entity<NuclearReactorComponent> ent, string message)
+    private static ReactorPartComponent?[,] SelectPrefab(string select) => select switch
     {
-        _engi ??= _prototypes.Index<RadioChannelPrototype>(ent.Comp.AlertChannel);
-
-        _radioSystem.SendRadioMessage(ent.Owner, message, _engi, ent);
-    }
-
-    private void UpdateAudio(Entity<NuclearReactorComponent> ent)
-    {
-        var comp = ent.Comp;
-        var uid = ent.Owner;
-
-        if (comp.ThermalPower > 10000000)
-        {
-            if (!_audio.IsPlaying(comp.AlarmAudioHighThermal))
-                comp.AlarmAudioHighThermal = _audio.PlayPvs(new SoundPathSpecifier("/Audio/_FarHorizons/Machines/reactor_alarm_1.ogg"), uid, AudioParams.Default.WithLoop(true).WithVolume(-3))?.Entity;
-        }
-        else
-            if (_audio.IsPlaying(comp.AlarmAudioHighThermal))
-                comp.AlarmAudioHighThermal = _audio.Stop(comp.AlarmAudioHighThermal);
-
-        if (comp.Temperature > comp.ReactorOverheatTemp)
-        {
-            if (!_audio.IsPlaying(comp.AlarmAudioHighTemp))
-                comp.AlarmAudioHighTemp = _audio.PlayPvs(new SoundPathSpecifier("/Audio/_FarHorizons/Machines/reactor_alarm_2.ogg"), uid, AudioParams.Default.WithLoop(true).WithVolume(-3))?.Entity;
-        }
-        else
-            if (_audio.IsPlaying(comp.AlarmAudioHighTemp))
-                comp.AlarmAudioHighTemp = _audio.Stop(comp.AlarmAudioHighTemp);
-
-        if (comp.RadiationLevel > 15)
-        {
-            if (!_audio.IsPlaying(comp.AlarmAudioHighRads))
-                comp.AlarmAudioHighRads = _audio.PlayPvs(new SoundPathSpecifier("/Audio/_FarHorizons/Machines/reactor_alarm_3.ogg"), uid, AudioParams.Default.WithLoop(true).WithVolume(-3))?.Entity;
-        }
-        else
-            if (_audio.IsPlaying(comp.AlarmAudioHighRads))
-                comp.AlarmAudioHighRads = _audio.Stop(comp.AlarmAudioHighRads);
-    }
+        "normal" => NuclearReactorPrefabs.Normal,
+        "debug" => NuclearReactorPrefabs.Debug,
+        "meltdown" => NuclearReactorPrefabs.Meltdown,
+        "alignment" => NuclearReactorPrefabs.Alignment,
+        _ => NuclearReactorPrefabs.Empty,
+    };
 
     private static List<ReactorPartComponent?> GetGridNeighbors(NuclearReactorComponent reactor, int x, int y)
     {
@@ -426,8 +339,6 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
 
             var ThermalEnergy = _atmosphereSystem.GetThermalEnergy(reactor.AirContents);
 
-            var COECheck = ThermalEnergy + reactor.Temperature * reactor.ThermalMass;
-
             var Hottest = Math.Max(reactor.AirContents.Temperature, reactor.Temperature);
             var Coldest = Math.Min(reactor.AirContents.Temperature, reactor.Temperature);
 
@@ -440,10 +351,6 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
 
             reactor.Temperature = (float)Math.Clamp(reactor.Temperature -
                 ((_atmosphereSystem.GetThermalEnergy(reactor.AirContents) - ThermalEnergy) / reactor.ThermalMass), Coldest, Hottest);
-
-            var COEVerify = _atmosphereSystem.GetThermalEnergy(reactor.AirContents) + reactor.Temperature * reactor.ThermalMass;
-            if (Math.Abs(COEVerify - COECheck) > 64)
-                //throw new Exception("COE violation, difference of " + Math.Abs(COEVerify - COECheck));
 
             if (reactor.AirContents.Temperature < 0 || reactor.Temperature < 0)
                 throw new Exception("Reactor casing temperature calculation resulted in sub-zero value.");
@@ -472,40 +379,158 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         return ProcessedGas;
     }
 
-    private void ProcessCaseRadiation(Entity<NuclearReactorComponent> ent)
+    private void CatastrophicOverload(Entity<NuclearReactorComponent> ent)
     {
-        var comp = EnsureComp<RadiationSourceComponent>(ent.Owner);
+        var comp = ent.Comp;
+        var uid = ent.Owner;
 
-        comp.Intensity = Math.Max(ent.Comp.RadiationLevel, ent.Comp.Melted ? 10 : 0);
-        ent.Comp.RadiationLevel /= 2;
-    }
+        var stationUid = _station.GetStationInMap(Transform(uid).MapID);
+        if (stationUid != null)
+            _alertLevel.SetLevel(stationUid.Value, comp.MeltdownAlertLevel, true, true, true);
 
-    private static ReactorPartComponent?[,] SelectPrefab(string select) => select switch
-    {
-        "normal" => NuclearReactorPrefabs.Normal,
-        "debug" => NuclearReactorPrefabs.Debug,
-        "meltdown" => NuclearReactorPrefabs.Meltdown,
-        "alignment" => NuclearReactorPrefabs.Alignment,
-        _ => NuclearReactorPrefabs.Empty,
-    };
+        var announcement = Loc.GetString("reactor-meltdown-announcement");
+        var sender = Loc.GetString("reactor-meltdown-announcement-sender");
+        _chatSystem.DispatchStationAnnouncement(stationUid ?? uid, announcement, sender, false, null, Color.Orange);
 
-    private void InitGrid(Entity<NuclearReactorComponent> ent)
-    {
-        var xspace = 18f / 32f;
-        var yspace = 15f / 32f;
+        _soundSystem.PlayGlobalOnStation(uid, _audio.ResolveSound(comp.MeltdownSound));
 
-        var yoff = 5f / 32f;
+        comp.Melted = true;
+        var MeltdownBadness = 0f;
+        comp.AirContents ??= new();
 
         for (var x = 0; x < _gridWidth; x++)
         {
             for (var y = 0; y < _gridHeight; y++)
             {
-                // ...48 entities stuck on the grid, spawn one more, pass it around, 49 entities stuck on the grid...
-                ent.Comp.VisualGrid[x, y] = _entityManager.GetNetEntity(SpawnAttachedTo("ReactorComponent", new(ent.Owner, xspace * (y - 3), (-yspace * (x - 3)) - yoff)));
+                if (comp.ComponentGrid[x, y] != null)
+                {
+                    var RC = comp.ComponentGrid[x, y];
+                    if (RC == null)
+                        return;
+                    MeltdownBadness += ((RC.Radioactive * 2) + (RC.NRadioactive * 5) + (RC.SpentFuel * 10)) * (RC.Melted ? 2 : 1);
+                    if (RC.RodType == (byte)ReactorPartComponent.RodTypes.GasChannel)
+                        _atmosphereSystem.Merge(comp.AirContents, RC.AirContents ?? new());
+                }
             }
+        }
+        comp.RadiationLevel = Math.Clamp(comp.RadiationLevel + MeltdownBadness, 0, 200);
+        comp.AirContents.AdjustMoles(Gas.Tritium, MeltdownBadness * 15);
+        comp.AirContents.Temperature = Math.Max(comp.Temperature, comp.AirContents.Temperature);
+
+        var T = _atmosphereSystem.GetTileMixture(ent.Owner, excite: true);
+        if (T != null)
+            _atmosphereSystem.Merge(T, comp.AirContents);
+
+        _adminLog.Add(LogType.Explosion, LogImpact.High, $"{ToPrettyString(ent):reactor} catastrophically overloads, meltdown badness: {MeltdownBadness}");
+
+        // You did not see graphite on the roof. You're in shock. Report to medical.
+        for (var i = 0; i < _random.Next(10, 30); i++)
+            SpawnAtPosition("NuclearDebrisChunk", new(uid, _random.NextVector2(4)));
+
+        _audio.PlayPvs(new SoundPathSpecifier("/Audio/Effects/metal_break5.ogg"), uid);
+        _explosionSystem.QueueExplosion(ent.Owner, "Default", Math.Max(100, MeltdownBadness * 5), 1, 4, 0, canCreateVacuum: false);
+
+        // Reset grids
+        Array.Clear(comp.ComponentGrid);
+        Array.Clear(comp.NeutronGrid);
+        Array.Clear(comp.TemperatureGrid);
+        Array.Clear(comp.FluxGrid);
+
+        UpdateGridVisual(ent.Owner, comp);
+    }
+
+    private void UpdateVisuals(Entity<NuclearReactorComponent> ent)
+    {
+        var comp = ent.Comp;
+        var uid = ent.Owner;
+
+        if (comp.Melted)
+        {
+            _appearance.SetData(uid, ReactorVisuals.Lights, ReactorWarningLights.LightsOff);
+            _appearance.SetData(uid, ReactorVisuals.Status, ReactorStatusLights.Off);
+            return;
+        }
+
+        // Temperature & radiation warning
+        if (comp.Temperature >= comp.ReactorOverheatTemp || comp.RadiationLevel > 15)
+            if (comp.Temperature >= comp.ReactorFireTemp || comp.RadiationLevel > 30)
+                _appearance.SetData(uid, ReactorVisuals.Lights, ReactorWarningLights.LightsMeltdown);
+            else
+                _appearance.SetData(uid, ReactorVisuals.Lights, ReactorWarningLights.LightsWarning);
+        else
+            _appearance.SetData(uid, ReactorVisuals.Lights, ReactorWarningLights.LightsOff);
+
+        // Status screen / side lights
+        switch (comp.Temperature)
+        {
+            case float n when n is <= Atmospherics.T20C:
+                _appearance.SetData(uid, ReactorVisuals.Status, ReactorStatusLights.Off);
+                break;
+            case float n when n > Atmospherics.T20C && n <= comp.ReactorOverheatTemp:
+                _appearance.SetData(uid, ReactorVisuals.Status, ReactorStatusLights.Active);
+                break;
+            case float n when n > comp.ReactorOverheatTemp && n <= comp.ReactorFireTemp:
+                _appearance.SetData(uid, ReactorVisuals.Status, ReactorStatusLights.Overheat);
+                break;
+            case float n when n > comp.ReactorFireTemp && n <= comp.ReactorMeltdownTemp:
+                _appearance.SetData(uid, ReactorVisuals.Status, ReactorStatusLights.Meltdown);
+                break;
+            case float n when n > comp.ReactorMeltdownTemp && n <= float.PositiveInfinity:
+                _appearance.SetData(uid, ReactorVisuals.Status, ReactorStatusLights.Boom);
+                break;
+            default:
+                _appearance.SetData(uid, ReactorVisuals.Status, ReactorStatusLights.Off);
+                break;
         }
     }
 
+    private void UpdateAudio(Entity<NuclearReactorComponent> ent)
+    {
+        var comp = ent.Comp;
+        var uid = ent.Owner;
+
+        // Stop Alarms after meltdown
+        if(comp.Melted)
+        {
+            if (_audio.IsPlaying(comp.AlarmAudioHighThermal))
+                comp.AlarmAudioHighThermal = _audio.Stop(comp.AlarmAudioHighThermal);
+            if (_audio.IsPlaying(comp.AlarmAudioHighTemp))
+                comp.AlarmAudioHighTemp = _audio.Stop(comp.AlarmAudioHighTemp);
+            if (_audio.IsPlaying(comp.AlarmAudioHighRads))
+                comp.AlarmAudioHighRads = _audio.Stop(comp.AlarmAudioHighRads);
+            return;
+        }
+
+        if (comp.ThermalPower > 10000000)
+        {
+            if (!_audio.IsPlaying(comp.AlarmAudioHighThermal))
+                comp.AlarmAudioHighThermal = _audio.PlayPvs(new SoundPathSpecifier("/Audio/_FarHorizons/Machines/reactor_alarm_1.ogg"), uid, AudioParams.Default.WithLoop(true).WithVolume(-3))?.Entity;
+        }
+        else
+            if (_audio.IsPlaying(comp.AlarmAudioHighThermal))
+            comp.AlarmAudioHighThermal = _audio.Stop(comp.AlarmAudioHighThermal);
+
+        if (comp.Temperature > comp.ReactorOverheatTemp)
+        {
+            if (!_audio.IsPlaying(comp.AlarmAudioHighTemp))
+                comp.AlarmAudioHighTemp = _audio.PlayPvs(new SoundPathSpecifier("/Audio/_FarHorizons/Machines/reactor_alarm_2.ogg"), uid, AudioParams.Default.WithLoop(true).WithVolume(-3))?.Entity;
+        }
+        else
+            if (_audio.IsPlaying(comp.AlarmAudioHighTemp))
+            comp.AlarmAudioHighTemp = _audio.Stop(comp.AlarmAudioHighTemp);
+
+        if (comp.RadiationLevel > 15)
+        {
+            if (!_audio.IsPlaying(comp.AlarmAudioHighRads))
+                comp.AlarmAudioHighRads = _audio.PlayPvs(new SoundPathSpecifier("/Audio/_FarHorizons/Machines/reactor_alarm_3.ogg"), uid, AudioParams.Default.WithLoop(true).WithVolume(-3))?.Entity;
+        }
+        else
+            if (_audio.IsPlaying(comp.AlarmAudioHighRads))
+            comp.AlarmAudioHighRads = _audio.Stop(comp.AlarmAudioHighRads);
+    }
+    #endregion
+
+    #region BUI
     public override void Update(float frameTime)
     {
         var query = EntityQueryEnumerator<NuclearReactorComponent>();
@@ -541,7 +566,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
                 partName[pos] = reactor.ComponentGrid[x, y] != null ? reactor.ComponentGrid[x, y]!.Name : "empty";
                 partInfo[pos] = reactor.ComponentGrid[x, y] != null ? reactor.ComponentGrid[x, y]!.NRadioactive : 0;
                 partInfo[pos + zoff] = reactor.ComponentGrid[x, y] != null ? reactor.ComponentGrid[x, y]!.Radioactive : 0;
-                partInfo[pos + zoff * 2] = reactor.ComponentGrid[x, y] != null ? reactor.ComponentGrid[x, y]!.SpentFuel : 0;
+                partInfo[pos + (zoff * 2)] = reactor.ComponentGrid[x, y] != null ? reactor.ComponentGrid[x, y]!.SpentFuel : 0;
             }
         }
 
@@ -586,6 +611,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
             _metaDataSystem.SetEntityName(item, part!.Name);
             _entityManager.AddComponent(item, new ReactorPartComponent(part!));
 
+            _adminLog.Add(LogType.Action, $"{ToPrettyString(args.Actor):actor} removed {part!.Name} from position {args.Position} from {ToPrettyString(ent):target}");
             comp.ComponentGrid[(int)pos.X, (int)pos.Y] = null;
         }
         else
@@ -595,6 +621,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
             else
                 return;
 
+            _adminLog.Add(LogType.Action, $"{ToPrettyString(args.Actor):actor} added {ToPrettyString(comp.PartSlot.Item):item} to position {args.Position} in {ToPrettyString(ent):target}");
             comp.ComponentGrid[(int)pos.X, (int)pos.Y]!.Name = Identity.Name((EntityUid)comp.PartSlot.Item, _entityManager);
             _entityManager.DeleteEntity(comp.PartSlot.Item);
         }
@@ -602,51 +629,17 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         UpdateGridVisual(ent.Owner, comp);
     }
 
-    private void OnControlRodMessage(Entity<NuclearReactorComponent> ent, ref ReactorControlRodModifyMessage args) 
-        => ent.Comp.ControlRodInsertion = Math.Clamp(ent.Comp.ControlRodInsertion + args.Change, 0, 2);
-
-    private void UpdateVisuals(Entity<NuclearReactorComponent> ent)
+    private void OnControlRodMessage(Entity<NuclearReactorComponent> ent, ref ReactorControlRodModifyMessage args)
     {
-        var comp = ent.Comp;
-        var uid = ent.Owner;
+        ent.Comp.ControlRodInsertion = Math.Clamp(ent.Comp.ControlRodInsertion + args.Change, 0, 2);
+        _adminLog.Add(LogType.Action, $"{ToPrettyString(args.Actor):actor} set control rod insertion of {ToPrettyString(ent):target} to {ent.Comp.ControlRodInsertion}");
+    }
+    #endregion
 
-        if(comp.Melted)
-        {
-            _appearance.SetData(uid, ReactorVisuals.Lights, ReactorWarningLights.LightsOff);
-            _appearance.SetData(uid, ReactorVisuals.Status, ReactorStatusLights.Off);
-            return;
-        }
+    protected override void SendEngiRadio(Entity<NuclearReactorComponent> ent, string message)
+    {
+        _engi ??= _prototypes.Index<RadioChannelPrototype>(ent.Comp.AlertChannel);
 
-        // Temperature & radiation warning
-        if (comp.Temperature >= comp.ReactorOverheatTemp || comp.RadiationLevel > 15)
-            if (comp.Temperature >= comp.ReactorFireTemp || comp.RadiationLevel > 30)
-                _appearance.SetData(uid, ReactorVisuals.Lights, ReactorWarningLights.LightsMeltdown);
-            else
-                _appearance.SetData(uid, ReactorVisuals.Lights, ReactorWarningLights.LightsWarning);
-        else
-            _appearance.SetData(uid, ReactorVisuals.Lights, ReactorWarningLights.LightsOff);
-
-        // Status screen / side lights
-        switch (comp.Temperature)
-        {
-            case float n when n is <= Atmospherics.T20C:
-                _appearance.SetData(uid, ReactorVisuals.Status, ReactorStatusLights.Off);
-                break;
-            case float n when n > Atmospherics.T20C && n <= comp.ReactorOverheatTemp:
-                _appearance.SetData(uid, ReactorVisuals.Status, ReactorStatusLights.Active);
-                break;
-            case float n when n > comp.ReactorOverheatTemp && n <= comp.ReactorFireTemp:
-                _appearance.SetData(uid, ReactorVisuals.Status, ReactorStatusLights.Overheat);
-                break;
-            case float n when n > comp.ReactorFireTemp && n <= comp.ReactorMeltdownTemp:
-                _appearance.SetData(uid, ReactorVisuals.Status, ReactorStatusLights.Meltdown);
-                break;
-            case float n when n > comp.ReactorMeltdownTemp && n <= float.PositiveInfinity:
-                _appearance.SetData(uid, ReactorVisuals.Status, ReactorStatusLights.Boom);
-                break;
-            default:
-                _appearance.SetData(uid, ReactorVisuals.Status, ReactorStatusLights.Off);
-                break;
-        }
+        _radioSystem.SendRadioMessage(ent.Owner, message, _engi, ent);
     }
 }

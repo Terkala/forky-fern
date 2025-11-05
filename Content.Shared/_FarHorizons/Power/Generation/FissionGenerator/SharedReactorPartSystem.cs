@@ -3,18 +3,18 @@ using Content.Shared.Damage.Components;
 using Content.Shared.Examine;
 using Content.Shared.Radiation.Components;
 using Robust.Server.GameObjects;
-using Robust.Shared.Audio;
 using Robust.Shared.Audio.Systems;
+using Robust.Shared.Audio;
 using Robust.Shared.Random;
 
 namespace Content.Shared._FarHorizons.Power.Generation.FissionGenerator;
 
 public abstract class SharedReactorPartSystem : EntitySystem
 {
-    [Dependency] private readonly IRobustRandom _random = default!;
-    [Dependency] private readonly SharedPointLightSystem _lightSystem = default!;
     [Dependency] private readonly EntityManager _entityManager = default!;
+    [Dependency] private readonly IRobustRandom _random = default!;
     [Dependency] private readonly SharedAudioSystem _audio = default!;
+    [Dependency] private readonly SharedPointLightSystem _lightSystem = default!;
 
     private readonly float _rate = 5;
     private readonly float _bias = 1.5f;
@@ -144,7 +144,9 @@ public abstract class SharedReactorPartSystem : EntitySystem
     /// <summary>
     /// Melts the related ReactorPart.
     /// </summary>
-    /// <param name="reactorPart">ReactorPart to be melted</param>
+    /// <param name="reactorPart">Reactor part to be melted</param>
+    /// <param name="reactorEnt">Reactor housing the reactor part</param>
+    /// <param name="reactorSystem">The SharedNuclearReactorSystem</param>
     public void Melt(ReactorPartComponent reactorPart, Entity<NuclearReactorComponent> reactorEnt, SharedNuclearReactorSystem reactorSystem)
     {
         if (reactorPart.Melted)
@@ -161,6 +163,14 @@ public abstract class SharedReactorPartSystem : EntitySystem
             reactorPart.GasThermalCrossSection = 0.1f;
     }
 
+    /// <summary>
+    /// Processes heat transfer within the reactor grid.
+    /// </summary>
+    /// <param name="reactorPart">Reactor part applying the calculations</param>
+    /// <param name="reactorEnt">Reactor housing the reactor part</param>
+    /// <param name="AdjacentComponents">List of reactor parts next to the reactorPart</param>
+    /// <param name="reactorSystem">The SharedNuclearReactorSystem</param>
+    /// <exception cref="Exception">Calculations resulted in a sub-zero value</exception>
     public void ProcessHeat(ReactorPartComponent reactorPart, Entity<NuclearReactorComponent> reactorEnt, List<ReactorPartComponent?> AdjacentComponents, SharedNuclearReactorSystem reactorSystem)
     {
         // Intercomponent calculation
@@ -209,8 +219,10 @@ public abstract class SharedReactorPartSystem : EntitySystem
     /// Returns a list of neutrons from the interation of the given ReactorPart and initial neutrons.
     /// </summary>
     /// <param name="reactorPart">Reactor part applying the calculations</param>
-    /// <param name="neutrons">Neutrons to be processed</param>
-    /// <returns></returns>
+    /// <param name="neutrons">List of neutrons to be processed</param>
+    /// <param name="uid">UID of the host reactor</param>
+    /// <param name="thermalEnergy">Thermal energy released from the process</param>
+    /// <returns>Post-processing list of neutrons</returns>
     public virtual List<ReactorNeutron> ProcessNeutrons(ReactorPartComponent reactorPart, List<ReactorNeutron> neutrons, EntityUid uid, out float thermalEnergy)
     {
         thermalEnergy = 0;
@@ -308,10 +320,16 @@ public abstract class SharedReactorPartSystem : EntitySystem
         return neutrons;
     }
 
+    /// <summary>
+    /// Returns a list of neutrons from the interation of the gasses within the given ReactorPart and initial neutrons.
+    /// </summary>
+    /// <param name="reactorPart">Reactor part applying the calculations</param>
+    /// <param name="neutrons">List of neutrons to be processed</param>
+    /// <returns>Post-processing list of neutrons</returns>
     public virtual List<ReactorNeutron> ProcessNeutronsGas(ReactorPartComponent reactorPart, List<ReactorNeutron> neutrons) => neutrons;
 
     /// <summary>
-    /// Returns true according to a percent chance
+    /// Returns true according to a percent chance.
     /// </summary>
     /// <param name="chance">Double, 0-100 </param>
     /// <returns></returns>

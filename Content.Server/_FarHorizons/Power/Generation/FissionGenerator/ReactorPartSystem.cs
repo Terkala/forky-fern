@@ -2,8 +2,8 @@ using Content.Server.Atmos.EntitySystems;
 using Content.Server.Atmos.Piping.Components;
 using Content.Shared._FarHorizons.Power.Generation.FissionGenerator;
 using Content.Shared.Atmos;
-using Robust.Shared.Random;
 using DependencyAttribute = Robust.Shared.IoC.DependencyAttribute;
+using Robust.Shared.Random;
 
 namespace Content.Server._FarHorizons.Power.Generation.FissionGenerator;
 
@@ -13,7 +13,7 @@ public sealed class ReactorPartSystem : SharedReactorPartSystem
     [Dependency] private readonly IRobustRandom _random = default!;
 
     /// <summary>
-    /// 
+    /// Processes gas flowing through a reactor part.
     /// </summary>
     /// <param name="reactorPart">The reactor part.</param>
     /// <param name="reactorEnt">The entity representing the reactor this part is inserted into.</param>
@@ -86,6 +86,7 @@ public sealed class ReactorPartSystem : SharedReactorPartSystem
         return ProcessedGas;
     }
 
+    /// <inheritdoc/>
     public override List<ReactorNeutron> ProcessNeutronsGas(ReactorPartComponent reactorPart, List<ReactorNeutron> neutrons)
     {
         if (reactorPart.AirContents == null) return neutrons;
@@ -107,6 +108,11 @@ public sealed class ReactorPartSystem : SharedReactorPartSystem
         return neutrons;
     }
 
+    /// <summary>
+    /// Determines the number of additional neutrons the gas makes.
+    /// </summary>
+    /// <param name="reactorPart"></param>
+    /// <returns></returns>
     private int GasNeutronInteract(ReactorPartComponent reactorPart)
     {
         if (reactorPart.AirContents == null)

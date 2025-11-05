@@ -1,23 +1,32 @@
-using Content.Shared.Containers.ItemSlots;
-using Content.Shared.IdentityManagement;
 using Content.Shared.Popups;
-using Robust.Shared.Containers;
+using Content.Shared.Database;
+using Content.Shared.Containers.ItemSlots;
+using Content.Shared.Administration.Logs;
 
 namespace Content.Shared._FarHorizons.Power.Generation.FissionGenerator;
 
 public abstract class SharedNuclearReactorSystem : EntitySystem
 {
-    [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
     [Dependency] private readonly EntityManager _entityManager = default!;
+    [Dependency] private readonly ISharedAdminLogManager _adminLog = default!;
     [Dependency] private readonly ItemSlotsSystem _slotsSystem = default!;
+    [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
     [Dependency] private readonly SharedPopupSystem _popupSystem = default!;
 
     public override void Initialize()
     {
         base.Initialize();
 
-        // Bound UI subscriptions
+        // BUI event
         SubscribeLocalEvent<NuclearReactorComponent, ReactorEjectItemMessage>(OnEjectItemMessage);
+    }
+
+    private void OnEjectItemMessage(EntityUid uid, NuclearReactorComponent component, ReactorEjectItemMessage args)
+    {
+        if (component.PartSlot.Item == null)
+            return;
+
+        _slotsSystem.TryEjectToHands(uid, component.PartSlot, args.Actor);
     }
 
     protected bool ReactorTryGetSlot(EntityUid uid, string slotID, out ItemSlot? itemSlot) => _slotsSystem.TryGetSlot(uid, slotID, out itemSlot);
@@ -70,14 +79,6 @@ public abstract class SharedNuclearReactorSystem : EntitySystem
         _ => ReactorCaps.Base,
     };
 
-    private void OnEjectItemMessage(EntityUid uid, NuclearReactorComponent component, ReactorEjectItemMessage args)
-    {
-        if (component.PartSlot.Item == null)
-            return;
-
-        _slotsSystem.TryEjectToHands(uid, component.PartSlot, args.Actor);
-    }
-
     protected void UpdateTempIndicators(Entity<NuclearReactorComponent> ent)
     {
         var comp = ent.Comp;
@@ -90,6 +91,7 @@ public abstract class SharedNuclearReactorSystem : EntitySystem
                 comp.IsSmoking = true;
                 _appearance.SetData(uid, ReactorVisuals.Smoke, true);
                 _popupSystem.PopupEntity(Loc.GetString("reactor-smoke-start", ("owner", uid)), uid, PopupType.MediumCaution);
+                _adminLog.Add(LogType.Damaged, $"{ToPrettyString(ent):reactor} is at {comp.Temperature}K and may meltdown");
                 SendEngiRadio(ent, Loc.GetString("reactor-smoke-start-message", ("owner", uid), ("temperature", Math.Round(comp.Temperature))));
             }
             if (comp.Temperature >= comp.ReactorFireTemp && !comp.IsBurning)
@@ -97,6 +99,7 @@ public abstract class SharedNuclearReactorSystem : EntitySystem
                 comp.IsBurning = true;
                 _appearance.SetData(uid, ReactorVisuals.Fire, true);
                 _popupSystem.PopupEntity(Loc.GetString("reactor-fire-start", ("owner", uid)), uid, PopupType.MediumCaution);
+                _adminLog.Add(LogType.Damaged, $"{ToPrettyString(ent):reactor} is at {comp.Temperature}K and is likely to meltdown");
                 SendEngiRadio(ent, Loc.GetString("reactor-fire-start-message", ("owner", uid), ("temperature", Math.Round(comp.Temperature))));
             }
             else if (comp.Temperature < comp.ReactorFireTemp && comp.IsBurning)
@@ -104,6 +107,7 @@ public abstract class SharedNuclearReactorSystem : EntitySystem
                 comp.IsBurning = false;
                 _appearance.SetData(uid, ReactorVisuals.Fire, false);
                 _popupSystem.PopupEntity(Loc.GetString("reactor-fire-stop", ("owner", uid)), uid, PopupType.Medium);
+                _adminLog.Add(LogType.Healed, $"{ToPrettyString(ent):reactor} is cooling from {comp.ReactorFireTemp}K");
                 SendEngiRadio(ent, Loc.GetString("reactor-fire-stop-message", ("owner", uid)));
             }
         }
@@ -114,6 +118,7 @@ public abstract class SharedNuclearReactorSystem : EntitySystem
                 comp.IsSmoking = false;
                 _appearance.SetData(uid, ReactorVisuals.Smoke, false);
                 _popupSystem.PopupEntity(Loc.GetString("reactor-smoke-stop", ("owner", uid)), uid, PopupType.Medium);
+                _adminLog.Add(LogType.Healed, $"{ToPrettyString(ent):reactor} is cooling from {comp.ReactorOverheatTemp}K");
                 SendEngiRadio(ent, Loc.GetString("reactor-smoke-stop-message", ("owner", uid)));
             }
         }

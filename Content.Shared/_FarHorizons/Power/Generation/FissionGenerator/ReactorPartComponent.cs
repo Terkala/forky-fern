@@ -27,6 +27,9 @@ public sealed partial class ReactorPartComponent : Component
     [DataField]
     public string IconStateCap = "rod_cap";
 
+    /// <summary>
+    /// Byte indicating what type of rod this reactor part is
+    /// </summary>
     [DataField]
     public byte RodType = (byte)RodTypes.Generic;
 

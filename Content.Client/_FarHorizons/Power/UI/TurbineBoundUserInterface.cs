@@ -1,8 +1,8 @@
-using Content.Client.UserInterface;
-using Content.Shared._FarHorizons.Power.Generation.FissionGenerator;
-using JetBrains.Annotations;
-using Robust.Client.Timing;
 using Robust.Client.UserInterface;
+using Robust.Client.Timing;
+using JetBrains.Annotations;
+using Content.Shared._FarHorizons.Power.Generation.FissionGenerator;
+using Content.Client.UserInterface;
 
 namespace Content.Client._FarHorizons.Power.UI;
 

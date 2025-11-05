@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Content.Client.Stylesheets;
 using Content.Client.UserInterface.Controls;
 using Content.Shared._FarHorizons.Power.Generation.FissionGenerator;
@@ -9,6 +8,7 @@ using Robust.Client.Graphics;
 using Robust.Client.UserInterface.Controls;
 using Robust.Client.UserInterface.XAML;
 using Robust.Shared.Timing;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Content.Client._FarHorizons.Power.UI;
 

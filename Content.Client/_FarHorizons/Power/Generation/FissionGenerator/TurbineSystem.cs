@@ -1,17 +1,17 @@
-using Content.Client.Examine;
-using Content.Client.Popups;
-using Content.Shared._FarHorizons.Power.Generation.FissionGenerator;
-using Content.Shared.Repairable;
-using Robust.Client.GameObjects;
-using Robust.Shared.Map;
 using Robust.Shared.Prototypes;
+using Robust.Shared.Map;
+using Robust.Client.GameObjects;
+using Content.Shared.Repairable;
+using Content.Shared._FarHorizons.Power.Generation.FissionGenerator;
+using Content.Client.Popups;
+using Content.Client.Examine;
 
 namespace Content.Client._FarHorizons.Power.Generation.FissionGenerator;
 
 public sealed class TurbineSystem : SharedTurbineSystem
 {
-    [Dependency] private readonly UserInterfaceSystem _userInterfaceSystem = default!;
     [Dependency] private readonly PopupSystem _popupSystem = default!;
+    [Dependency] private readonly UserInterfaceSystem _userInterfaceSystem = default!;
 
     private static readonly EntProtoId ArrowPrototype = "TurbineFlowArrow";
 

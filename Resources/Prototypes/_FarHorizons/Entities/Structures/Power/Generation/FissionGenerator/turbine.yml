@@ -13,6 +13,12 @@
     - state: turbinebroken
       visible: false
       map: [ "enum.TurbineVisualLayers.TurbineRuined" ]
+    - state: turbine_sparks
+      visible: false
+      map: [ "enum.TurbineVisualLayers.DamageSpark" ]
+    - state: turbine_smoke
+      visible: false
+      map: [ "enum.TurbineVisualLayers.DamageSmoke" ]
   - type: GenericVisualizer
     visuals:
       enum.TurbineVisuals.TurbineRuined:
@@ -22,11 +28,19 @@
       enum.TurbineVisuals.TurbineSpeed:
         enum.TurbineVisualLayers.TurbineSpeed:
           SpeedStill: { state: turbine }
-          # Allows for multiple speed anims
+          # Allows for multiple speed anims, even if there is only one
           SpeedSlow: { state: turbinerun }
           SpeedMid: { state: turbinerun }
           SpeedFast: { state: turbinerun }
           SpeedOverspeed: { state: turbinerun }
+      enum.TurbineVisuals.DamageSpark:
+        enum.TurbineVisualLayers.DamageSpark:
+          True: { visible: true }
+          False: { visible: false }
+      enum.TurbineVisuals.DamageSmoke:
+        enum.TurbineVisualLayers.DamageSmoke:
+          True: { visible: true }
+          False: { visible: false }
   - type: Appearance
   - type: Physics
     bodyType: Static

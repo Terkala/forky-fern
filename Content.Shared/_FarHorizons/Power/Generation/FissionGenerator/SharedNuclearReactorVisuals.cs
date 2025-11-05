@@ -3,18 +3,27 @@ using Robust.Shared.Serialization;
 namespace Content.Shared._FarHorizons.Power.Generation.FissionGenerator;
 
 #region Reactor Caps
+/// <summary>
+/// Appearance keys for the reactor caps.
+/// </summary>
 [Serializable, NetSerializable]
 public enum ReactorCapVisuals
 {
     Sprite
 }
 
+/// <summary>
+/// Visual sprite layers for the reactor cap.
+/// </summary>
 [Serializable, NetSerializable]
 public enum ReactorCapVisualLayers
 {
     Sprite
 }
 
+/// <summary>
+/// Reactor cap sprites.
+/// </summary>
 [Serializable, NetSerializable]
 public enum ReactorCaps
 {
@@ -77,6 +86,9 @@ public enum ReactorVisualLayers
     Fire,
 }
 
+/// <summary>
+/// Reactor sprites.
+/// </summary>
 [Serializable, NetSerializable]
 public enum Reactors
 {
@@ -84,6 +96,9 @@ public enum Reactors
     Melted,
 }
 
+/// <summary>
+/// Status screens.
+/// </summary>
 [Serializable, NetSerializable]
 public enum ReactorStatusLights
 {
@@ -94,6 +109,9 @@ public enum ReactorStatusLights
     Boom,
 }
 
+/// <summary>
+/// Warning lights settings.
+/// </summary>
 [Serializable, NetSerializable]
 public enum ReactorWarningLights
 {

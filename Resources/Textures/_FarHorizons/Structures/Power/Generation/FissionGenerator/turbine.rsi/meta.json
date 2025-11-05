@@ -17,6 +17,12 @@
             "name": "turbinebroken"
         },
         {
+            "name": "turbine_sparks"
+        },
+        {
+            "name": "turbine_smoke"
+        },
+        {
             "name": "turbinerun",
             "delays": [
                 [

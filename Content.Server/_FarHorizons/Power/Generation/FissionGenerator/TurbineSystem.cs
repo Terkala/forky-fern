@@ -1,37 +1,37 @@
+using Content.Server._FarHorizons.NodeContainer.Nodes;
 using Content.Server.Atmos.EntitySystems;
 using Content.Server.Atmos.Piping.Components;
 using Content.Server.Explosion.EntitySystems;
 using Content.Server.NodeContainer.EntitySystems;
 using Content.Server.Popups;
 using Content.Server.Power.Components;
+using Content.Server.Weapons.Ranged.Systems;
 using Content.Shared._FarHorizons.Power.Generation.FissionGenerator;
+using Content.Shared.Administration.Logs;
 using Content.Shared.Atmos;
 using Content.Shared.Database;
 using Content.Shared.Explosion.Components;
 using Content.Shared.Popups;
+using Robust.Server.GameObjects;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Audio;
 using Robust.Shared.Random;
-using Content.Shared.Administration.Logs;
-using Robust.Server.GameObjects;
-using Content.Server.Weapons.Ranged.Systems;
-using Content.Server._FarHorizons.NodeContainer.Nodes;
 
 namespace Content.Server._FarHorizons.Power.Generation.FissionGenerator;
 
 public sealed class TurbineSystem : SharedTurbineSystem
 {
-    [Dependency] private readonly GunSystem _gun = default!;
     [Dependency] private readonly AtmosphereSystem _atmosphereSystem = default!;
     [Dependency] private readonly ExplosionSystem _explosion = default!;
+    [Dependency] private readonly GunSystem _gun = default!;
+    [Dependency] private readonly IRobustRandom _random = default!;
     [Dependency] private readonly ISharedAdminLogManager _adminLogger = default!;
     [Dependency] private readonly NodeContainerSystem _nodeContainer = default!;
+    [Dependency] private readonly NodeGroupSystem _nodeGroupSystem = default!;
     [Dependency] private readonly PopupSystem _popupSystem = default!;
     [Dependency] private readonly SharedAudioSystem _audio = default!;
-    [Dependency] private readonly UserInterfaceSystem _uiSystem = null!;
-    [Dependency] private readonly IRobustRandom _random = default!;
     [Dependency] private readonly TransformSystem _transformSystem = default!;
-    [Dependency] private readonly NodeGroupSystem _nodeGroupSystem = default!;
+    [Dependency] private readonly UserInterfaceSystem _uiSystem = null!;
 
     public event Action<string>? TurbineRepairMessage;
 
@@ -49,6 +49,7 @@ public sealed class TurbineSystem : SharedTurbineSystem
         SubscribeLocalEvent<TurbineComponent, AtmosDeviceUpdateEvent>(OnUpdate);
     }
 
+    #region Main Loop
     private void OnUpdate(EntityUid uid, TurbineComponent comp, ref AtmosDeviceUpdateEvent args)
     {
         var supplier = Comp<PowerSupplierComponent>(uid);
@@ -75,12 +76,6 @@ public sealed class TurbineSystem : SharedTurbineSystem
 
         UpdateAppearance(uid, comp);
 
-        //var InletStartingPressure = inlet.Air.Pressure;
-        //var TransferMoles = 0f;
-        //if (InletStartingPressure > 0)
-        //{
-        //    TransferMoles = comp.FlowRate * InletStartingPressure / (Atmospherics.R * inlet.Air.Temperature);
-        //}
         var AirContents = inlet.Air.RemoveVolume(Math.Min(comp.FlowRate * _atmosphereSystem.PumpSpeedup() * args.dt, inlet.Air.Volume));
 
         comp.LastVolumeTransfer = AirContents.Volume;
@@ -207,7 +202,6 @@ public sealed class TurbineSystem : SharedTurbineSystem
 
             _atmosphereSystem.Merge(outlet.Air, AirContents);
         }
-        //inlet.Air.Volume = comp.FlowRate;
         AirContents!.Volume = comp.FlowRate;
 
         // Explode
@@ -237,7 +231,9 @@ public sealed class TurbineSystem : SharedTurbineSystem
             _gun.ShootProjectile(Spawn("TurbineBladeShrapnel", _transformSystem.GetMapCoordinates(uid)), _random.NextAngle().ToVec().Normalized(), _random.NextVector2(2, 6), uid, uid);
         }
     }
+    #endregion
 
+    #region BUI
     public override void Update(float frameTime)
     {
         var query = EntityQueryEnumerator<TurbineComponent>();
@@ -273,4 +269,5 @@ public sealed class TurbineSystem : SharedTurbineSystem
                StatorLoad = turbine.StatorLoad,
            });
     }
+    #endregion
 }

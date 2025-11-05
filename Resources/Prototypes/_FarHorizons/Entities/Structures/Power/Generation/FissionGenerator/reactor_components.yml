@@ -12,7 +12,7 @@
   - type: Tag
     tags:
     - ReactorPart
-  - type: Edible
+  - type: Edible # Blame Abby for making them edible
     transferAmount: null
     delay: 30
     forceFeedDelay: 60

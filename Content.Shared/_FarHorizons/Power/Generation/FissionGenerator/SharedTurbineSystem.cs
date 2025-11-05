@@ -4,20 +4,19 @@ using Content.Shared.Examine;
 using Content.Shared.Interaction;
 using Content.Shared.Popups;
 using Content.Shared.Repairable;
-using Content.Shared.Tools.Components;
 using Content.Shared.Tools.Systems;
-using Robust.Shared.Audio;
 using Robust.Shared.Audio.Systems;
+using Robust.Shared.Audio;
 
 namespace Content.Shared._FarHorizons.Power.Generation.FissionGenerator;
 
 public abstract class SharedTurbineSystem : EntitySystem
 {
-    [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
     [Dependency] private readonly ISharedAdminLogManager _adminLogger = default!;
-    [Dependency] private readonly SharedToolSystem _toolSystem = default!;
-    [Dependency] private readonly SharedPopupSystem _popupSystem = default!;
+    [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
     [Dependency] private readonly SharedAudioSystem _audio = default!;
+    [Dependency] private readonly SharedPopupSystem _popupSystem = default!;
+    [Dependency] private readonly SharedToolSystem _toolSystem = default!;
 
     public override void Initialize()
     {
@@ -137,7 +136,7 @@ public abstract class SharedTurbineSystem : EntitySystem
         Dirty(uid, turbine);
         UpdateUi((uid, turbine));
         _adminLogger.Add(LogType.AtmosVolumeChanged, LogImpact.Medium,
-            $"{ToPrettyString(args.Actor):player} set the transfer rate on {ToPrettyString(uid):device} to {args.FlowRate}");
+            $"{ToPrettyString(args.Actor):player} set the flow rate on {ToPrettyString(uid):device} to {args.FlowRate}");
     }
 
     private void OnTurbineStatorLoadChanged(EntityUid uid, TurbineComponent turbine, TurbineChangeStatorLoadMessage args)
@@ -145,8 +144,8 @@ public abstract class SharedTurbineSystem : EntitySystem
         turbine.StatorLoad = Math.Clamp(args.StatorLoad, 1000f, 500000f);
         Dirty(uid, turbine);
         UpdateUi((uid, turbine));
-        _adminLogger.Add(LogType.AtmosVolumeChanged, LogImpact.Medium,
-            $"{ToPrettyString(args.Actor):player} set the transfer rate on {ToPrettyString(uid):device} to {args.StatorLoad}");
+        _adminLogger.Add(LogType.AtmosDeviceSetting, LogImpact.Medium,
+            $"{ToPrettyString(args.Actor):player} set the stator load on {ToPrettyString(uid):device} to {args.StatorLoad}");
     }
 
     protected virtual void UpdateUi(Entity<TurbineComponent> entity) { }

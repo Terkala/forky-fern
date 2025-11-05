@@ -131,6 +131,12 @@
                     0.2
                 ]
             ]
+        },
+        {
+            "name": "reactor_smoke"
+        },
+        {
+            "name": "reactor_fire"
         }
     ]
 }
