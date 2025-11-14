@@ -14,7 +14,7 @@
   id: ReactorFuelRodStealCollectionObjective
   components:
   - type: NotJobRequirement
-    job: Engineer #TODO: make it so this also includes AtmosphericTechnician
+    job: StationEngineer #TODO: make it so this also includes AtmosphericTechnician
   - type: StealCondition
     stealGroup: ReactorFuelRodSteal
     minCollectionSize: 1
