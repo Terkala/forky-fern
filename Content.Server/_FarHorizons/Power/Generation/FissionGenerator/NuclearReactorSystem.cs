@@ -62,6 +62,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
 
         SubscribeLocalEvent<NuclearReactorComponent, AtmosDeviceUpdateEvent>(OnUpdate);
         SubscribeLocalEvent<NuclearReactorComponent, AtmosDeviceEnabledEvent>(OnEnable);
+        SubscribeLocalEvent<NuclearReactorComponent, GasAnalyzerScanEvent>(OnAnalyze);
 
         // Item events
         SubscribeLocalEvent<NuclearReactorComponent, EntInsertedIntoContainerMessage>(OnPartChanged);
@@ -71,7 +72,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         SubscribeLocalEvent<NuclearReactorComponent, ReactorItemActionMessage>(OnItemActionMessage);
         SubscribeLocalEvent<NuclearReactorComponent, ReactorControlRodModifyMessage>(OnControlRodMessage);
     }
-
+    
     private void OnEnable(Entity<NuclearReactorComponent> ent, ref AtmosDeviceEnabledEvent args)
     {
         var comp = ent.Comp;
@@ -81,6 +82,27 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
             {
                 comp.FluxGrid[x, y] = [];
             }
+        }
+    }
+
+    private void OnAnalyze(EntityUid uid, NuclearReactorComponent comp, ref GasAnalyzerScanEvent args)
+    {
+        args.GasMixtures ??= [];
+
+        if (_nodeContainer.TryGetNode(comp.InletEnt, comp.PipeName, out PipeNode? inlet) && inlet.Air.Volume != 0f)
+        {
+            var inletAirLocal = inlet.Air.Clone();
+            inletAirLocal.Multiply(inlet.Volume / inlet.Air.Volume);
+            inletAirLocal.Volume = inlet.Volume;
+            args.GasMixtures.Add((Loc.GetString("gas-analyzer-window-text-inlet"), inletAirLocal));
+        }
+
+        if (_nodeContainer.TryGetNode(comp.OutletEnt, comp.PipeName, out PipeNode? outlet) && outlet.Air.Volume != 0f)
+        {
+            var outletAirLocal = outlet.Air.Clone();
+            outletAirLocal.Multiply(outlet.Volume / outlet.Air.Volume);
+            outletAirLocal.Volume = outlet.Volume;
+            args.GasMixtures.Add((Loc.GetString("gas-analyzer-window-text-outlet"), outletAirLocal));
         }
     }
 
@@ -117,15 +139,15 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
             UpdateGridVisual(comp);
         }
 
-        if (!_nodeContainer.TryGetNodes(uid, comp.InletName, comp.OutletName, out OffsetPipeNode? inlet, out OffsetPipeNode? outlet))
-            return;
+        if (comp.InletEnt.Id == 0)
+            comp.InletEnt = SpawnAttachedTo("ReactorGasPipe", new(ent.Owner, -2, -1), rotation:Angle.FromDegrees(-90));
+        if (comp.OutletEnt.Id == 0)
+            comp.OutletEnt = SpawnAttachedTo("ReactorGasPipe", new(ent.Owner, 2, 1), rotation: Angle.FromDegrees(90));
 
-        // Try to connect to a distant pipe
-        // TODO: This is BAD and I HATE IT... and I'm too lazy to fix it
-        if (inlet.ReachableNodes.Count == 0)
-            _nodeGroupSystem.QueueReflood(inlet);
-        if (outlet.ReachableNodes.Count == 0)
-            _nodeGroupSystem.QueueReflood(outlet);
+        if (!_nodeContainer.TryGetNode(comp.InletEnt, comp.PipeName, out PipeNode? inlet))
+            return;
+        if (!_nodeContainer.TryGetNode(comp.OutletEnt, comp.PipeName, out PipeNode? outlet))
+            return;
 
         _appearance.SetData(uid, ReactorVisuals.Input, inlet.Air.Moles.Sum() > 20);
         _appearance.SetData(uid, ReactorVisuals.Output, outlet.Air.Moles.Sum() > 20);
