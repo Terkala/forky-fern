@@ -436,7 +436,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
             SpawnAtPosition("NuclearDebrisChunk", new(uid, _random.NextVector2(4)));
 
         _audio.PlayPvs(new SoundPathSpecifier("/Audio/Effects/metal_break5.ogg"), uid);
-        _explosionSystem.QueueExplosion(ent.Owner, "Default", Math.Max(100, MeltdownBadness * 5), 1, 4, 0, canCreateVacuum: false);
+        _explosionSystem.QueueExplosion(ent.Owner, "Radioactive", Math.Max(100, MeltdownBadness * 5), 1, 5, 0, canCreateVacuum: false);
 
         // Reset grids
         Array.Clear(comp.ComponentGrid);
