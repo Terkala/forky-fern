@@ -83,24 +83,9 @@
   - type: Anchorable
     flags: 
     - Anchorable
-  # - type: NodeContainer
-  #   examinable: true
-  #   nodes:
-  #     inlet:
-  #       !type:OffsetPipeNode
-  #       nodeGroupID: Pipe
-  #       pipeDirection: West
-  #       volume: 1000
-  #       offsetEast: -3
-  #       offsetNorth: -1
-  #     outlet:
-  #       !type:OffsetPipeNode
-  #       nodeGroupID: Pipe
-  #       pipeDirection: East
-  #       volume: 1000
-  #       offsetEast: 3
-  #       offsetNorth: 1
   - type: AtmosDevice
+  - type: AtmosMonitoringConsoleDevice # TODO: this doesn't work?
+    navMapBlip: Thermoregulator
   - type: RadiationSource
     intensity: 0
   - type: ContainerContainer

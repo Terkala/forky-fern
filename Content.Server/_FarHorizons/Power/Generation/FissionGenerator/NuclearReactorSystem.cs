@@ -1,4 +1,3 @@
-using Content.Server._FarHorizons.NodeContainer.Nodes;
 using Content.Server.Administration.Logs;
 using Content.Server.AlertLevel;
 using Content.Server.Atmos.EntitySystems;
@@ -40,7 +39,6 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
     [Dependency] private readonly IPrototypeManager _prototypes = default!;
     [Dependency] private readonly IRobustRandom _random = default!;
     [Dependency] private readonly NodeContainerSystem _nodeContainer = default!;
-    [Dependency] private readonly NodeGroupSystem _nodeGroupSystem = default!;
     [Dependency] private readonly RadioSystem _radioSystem = default!;
     [Dependency] private readonly ReactorPartSystem _partSystem = default!;
     [Dependency] private readonly ServerGlobalSoundSystem _soundSystem = default!;

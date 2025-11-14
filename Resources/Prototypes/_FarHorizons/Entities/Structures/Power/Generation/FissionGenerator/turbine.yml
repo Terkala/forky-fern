@@ -76,6 +76,8 @@
     supplyRampRate: 75000
     supplyRampTolerance: 5000
   - type: AtmosDevice
+  - type: AtmosMonitoringConsoleDevice
+    navMapBlip: Thermoregulator
   - type: Explosive
     explosionType: Default
     tileBreakScale: 0
