@@ -267,7 +267,7 @@ public sealed class TurbineSystem : SharedTurbineSystem
         }
     }
 
-    private void UpdateUI(EntityUid uid, TurbineComponent turbine)
+    protected override void UpdateUI(EntityUid uid, TurbineComponent turbine)
     {
         if (!_uiSystem.IsUiOpen(uid, TurbineUiKey.Key))
             return;
