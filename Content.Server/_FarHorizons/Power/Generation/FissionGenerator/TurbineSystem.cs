@@ -12,7 +12,6 @@ using Content.Shared.Database;
 using Content.Shared.Explosion.Components;
 using Content.Shared.Popups;
 using Robust.Server.GameObjects;
-using Robust.Shared.Audio.Systems;
 using Robust.Shared.Audio;
 using Robust.Shared.Random;
 using Content.Server.NodeContainer.Nodes;
@@ -32,7 +31,6 @@ public sealed class TurbineSystem : SharedTurbineSystem
     [Dependency] private readonly ISharedAdminLogManager _adminLogger = default!;
     [Dependency] private readonly NodeContainerSystem _nodeContainer = default!;
     [Dependency] private readonly PopupSystem _popupSystem = default!;
-    [Dependency] private readonly SharedAudioSystem _audio = default!;
     [Dependency] private readonly TransformSystem _transformSystem = default!;
     [Dependency] private readonly UserInterfaceSystem _uiSystem = null!;
 
@@ -183,10 +181,6 @@ public sealed class TurbineSystem : SharedTurbineSystem
             if (NewRPM < 0 || NextRPM < 0)
             {
                 // Stator load is too high
-                if (!_audio.IsPlaying(comp.AlarmAudioUnderspeed) && !comp.Undertemp && comp.FlowRate > 0)
-                {
-                    comp.AlarmAudioUnderspeed = _audio.PlayPvs(new SoundPathSpecifier("/Audio/_FarHorizons/Machines/alarm_beep.ogg"), uid, AudioParams.Default.WithLoop(true).WithVolume(-4))?.Entity;
-                }
                 comp.Stalling = true;
                 comp.RPM = 0;
             }
@@ -195,8 +189,10 @@ public sealed class TurbineSystem : SharedTurbineSystem
                 comp.Stalling = false;
                 comp.RPM = NextRPM;
             }
-
-            if (_audio.IsPlaying(comp.AlarmAudioUnderspeed) && (comp.FlowRate <= 0 || comp.Undertemp || comp.RPM > 10))
+            
+            if (!_audio.IsPlaying(comp.AlarmAudioUnderspeed) && !comp.Undertemp && comp.FlowRate > 0 && comp.Stalling)
+                 PlayAudio(new SoundPathSpecifier("/Audio/_FarHorizons/Machines/alarm_beep.ogg"), uid, out comp.AlarmAudioUnderspeed, AudioParams.Default.WithLoop(true).WithVolume(-4));
+            else if (_audio.IsPlaying(comp.AlarmAudioUnderspeed) && (comp.FlowRate <= 0 || comp.Undertemp || comp.RPM > 10))
                 comp.AlarmAudioUnderspeed = _audio.Stop(comp.AlarmAudioUnderspeed);
 
             if (comp.RPM > 10)
@@ -220,7 +216,6 @@ public sealed class TurbineSystem : SharedTurbineSystem
                 // TODO: damage flash
                 _audio.PlayPvs(new SoundPathSpecifier(_damageSoundList[_random.Next(0, _damageSoundList.Count - 1)]), uid, AudioParams.Default.WithVariation(0.25f).WithVolume(-1));
                 comp.BladeHealth--;
-                Dirty(uid, comp);
                 UpdateHealthIndicators(uid, comp);
             }
 

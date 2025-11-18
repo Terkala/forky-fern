@@ -18,7 +18,7 @@ public abstract class SharedTurbineSystem : EntitySystem
 {
     [Dependency] private readonly ISharedAdminLogManager _adminLogger = default!;
     [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
-    [Dependency] private readonly SharedAudioSystem _audio = default!;
+    [Dependency] protected readonly SharedAudioSystem _audio = default!;
     [Dependency] private readonly SharedPopupSystem _popupSystem = default!;
     [Dependency] private readonly SharedToolSystem _toolSystem = default!;
 
@@ -129,6 +129,21 @@ public abstract class SharedTurbineSystem : EntitySystem
 
         _appearance.SetData(uid, TurbineVisuals.DamageSpark, comp.IsSparking);
         _appearance.SetData(uid, TurbineVisuals.DamageSmoke, comp.IsSmoking);
+    }
+
+    protected void PlayAudio(SoundSpecifier? sound, EntityUid uid, out EntityUid? audioStream, AudioParams? audioParams = null)
+    {
+        if (sound == null || audioParams == null)
+        {
+            audioStream = null;
+            return;
+        }
+
+        var loop = audioParams.Value.WithLoop(true);
+        var stream = false
+            ? _audio.PlayPredicted(sound, uid, uid, loop)
+            : _audio.PlayPvs(sound, uid, loop);
+        audioStream = stream?.Entity is { } entity ? entity : null;
     }
 
     #region User Interface

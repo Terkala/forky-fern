@@ -127,9 +127,9 @@ public sealed partial class TurbineComponent : Component
     [DataField]
     public float PowerMultiplier = 1;
 
-    [ViewVariables]
+    [ViewVariables, AutoNetworkedField]
     public EntityUid? AlarmAudioOvertemp;
-    [ViewVariables]
+    [ViewVariables, AutoNetworkedField]
     public EntityUid? AlarmAudioUnderspeed;
 
     /// <summary>
