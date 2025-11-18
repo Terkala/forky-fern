@@ -12,7 +12,6 @@ namespace Content.Shared._FarHorizons.Power.Generation.FissionGenerator;
 public abstract class SharedNuclearReactorSystem : EntitySystem
 {
     [Dependency] private readonly EntityManager _entityManager = default!;
-    [Dependency] private readonly ISharedAdminLogManager _adminLog = default!;
     [Dependency] private readonly ItemSlotsSystem _slotsSystem = default!;
     [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
     [Dependency] private readonly SharedPopupSystem _popupSystem = default!;
@@ -260,6 +259,31 @@ public static class NuclearReactorPrefabs
         },
         {
             c, null, null, null, null, null, c
+        }
+    };
+
+    public static readonly ReactorPartComponent?[,] Arachne =
+    {
+        {
+            g, h, g, h, g, h, g
+        },
+        {
+            h, f, c, f, c, f, h
+        },
+        {
+            g, c, c, g, c, c, g
+        },
+        {
+            h, f, g, c, g, f, h
+        },
+        {
+            g, c, c, g, c, c, g
+        },
+        {
+            h, f, c, f, c, f, h
+        },
+        {
+            g, h, g, h, g, h, g
         }
     };
 }
