@@ -42,7 +42,7 @@ public sealed partial class NuclearReactorComponent : Component
     /// <summary>
     /// Reactor casing temperature
     /// </summary>
-    [ViewVariables]
+    [DataField]
     public float Temperature = Atmospherics.T20C;
 
     /// <summary>
@@ -158,7 +158,7 @@ public sealed partial class NuclearReactorComponent : Component
     /// <summary>
     /// Flag indicating the reactor should apply the selected prefab
     /// </summary>
-    [ViewVariables]
+    [DataField]
     public bool ApplyPrefab = true;
 
     /// <summary>
