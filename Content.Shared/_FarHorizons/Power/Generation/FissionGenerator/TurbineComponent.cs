@@ -5,6 +5,10 @@ using Content.Shared.Atmos;
 
 namespace Content.Shared._FarHorizons.Power.Generation.FissionGenerator;
 
+// Ported and modified from goonstation by Jhrushbe.
+// CC-BY-NC-SA-3.0
+// https://github.com/goonstation/goonstation/blob/ff86b044/code/obj/nuclearreactor/turbine.dm
+
 [RegisterComponent, NetworkedComponent, AutoGenerateComponentState]
 public sealed partial class TurbineComponent : Component
 {
