@@ -50,6 +50,8 @@ public sealed class TurbineSystem : SharedTurbineSystem
     public override void Initialize()
     {
         base.Initialize();
+        SubscribeLocalEvent<TurbineComponent, ComponentShutdown>(OnShutdown);
+
         SubscribeLocalEvent<TurbineComponent, AtmosDeviceUpdateEvent>(OnUpdate);
         SubscribeLocalEvent<TurbineComponent, GasAnalyzerScanEvent>(OnAnalyze);
     }
@@ -76,6 +78,12 @@ public sealed class TurbineSystem : SharedTurbineSystem
             outletAirLocal.Volume = outlet.Volume;
             args.GasMixtures.Add((Loc.GetString("gas-analyzer-window-text-outlet"), outletAirLocal));
         }
+    }
+
+    private void OnShutdown(EntityUid uid, TurbineComponent comp, ref ComponentShutdown args)
+    {
+        QueueDel(comp.InletEnt);
+        QueueDel(comp.OutletEnt);
     }
 
     #region Main Loop

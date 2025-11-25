@@ -61,6 +61,8 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
     {
         base.Initialize();
 
+        SubscribeLocalEvent<NuclearReactorComponent, ComponentShutdown>(OnShutdown);
+
         SubscribeLocalEvent<NuclearReactorComponent, AtmosDeviceUpdateEvent>(OnUpdate);
         SubscribeLocalEvent<NuclearReactorComponent, AtmosDeviceEnabledEvent>(OnEnable);
         SubscribeLocalEvent<NuclearReactorComponent, GasAnalyzerScanEvent>(OnAnalyze);
@@ -111,6 +113,20 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
     }
 
     private void OnPartChanged(EntityUid uid, NuclearReactorComponent component, ContainerModifiedMessage args) => ReactorTryGetSlot(uid, "part_slot", out component.PartSlot!);
+
+    private void OnShutdown(Entity<NuclearReactorComponent> ent, ref ComponentShutdown args)
+    {
+        var comp = ent.Comp;
+        for (var x = 0; x < _gridWidth; x++)
+        {
+            for (var y = 0; y < _gridHeight; y++)
+            {
+                QueueDel(_entityManager.GetEntity(comp.VisualGrid[x, y]));
+            }
+        }
+        QueueDel(comp.InletEnt);
+        QueueDel(comp.OutletEnt);
+    }
 
     #region Main Loop
     private void OnUpdate(Entity<NuclearReactorComponent> ent, ref AtmosDeviceUpdateEvent args)
