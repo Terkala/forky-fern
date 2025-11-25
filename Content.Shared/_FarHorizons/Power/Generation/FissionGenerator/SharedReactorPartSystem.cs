@@ -297,12 +297,11 @@ public abstract class SharedReactorPartSystem : EntitySystem
                 }
                 else
                 {
-                    // Put control rods first so they'd have a bigger effect
-                    if (reactorPart.IsControlRod)
-                        neutron.velocity = 0;
-                    else if (Prob(_rate * reactorPart.Properties.Hardness)) // reflection, based on hardness
+                    if (Prob(_rate * reactorPart.Properties.Hardness)) // reflection, based on hardness
                         // A really complicated way of saying do a 180 or a 180+/-45
                         neutron.dir = (neutron.dir.GetOpposite().ToAngle() + (_random.NextAngle() / 4) - (MathF.Tau / 8)).GetDir();
+                    else if (reactorPart.IsControlRod)
+                        neutron.velocity = 0;
                     else
                         neutron.velocity--;
 
