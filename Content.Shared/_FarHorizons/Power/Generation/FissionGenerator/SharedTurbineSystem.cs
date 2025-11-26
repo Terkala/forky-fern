@@ -146,6 +146,8 @@ public abstract class SharedTurbineSystem : EntitySystem
         audioStream = stream?.Entity is { } entity ? entity : null;
     }
 
+    protected static void AdjustStatorLoad(TurbineComponent turbine, float change) => turbine.StatorLoad = Math.Clamp(turbine.StatorLoad + change, 1000f, 500000f);
+
     #region User Interface
     private void OnTurbineFlowRateChanged(EntityUid uid, TurbineComponent turbine, TurbineChangeFlowRateMessage args)
     {

@@ -4,6 +4,8 @@ using Content.Shared.Containers.ItemSlots;
 using Content.Shared.Atmos;
 using Robust.Shared.Prototypes;
 using Content.Shared.Materials;
+using Content.Shared.DeviceLinking;
+using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype;
 
 namespace Content.Shared._FarHorizons.Power.Generation.FissionGenerator;
 
@@ -177,6 +179,12 @@ public sealed partial class NuclearReactorComponent : Component
     public EntityUid? InletEnt;
     [ViewVariables]
     public EntityUid? OutletEnt;
+
+    [DataField("controlRodRetractPort", customTypeSerializer: typeof(PrototypeIdSerializer<SinkPortPrototype>))]
+    public string ControlRodRetractPort = "RetractControlRods";
+
+    [DataField("controlRodInsertPort", customTypeSerializer: typeof(PrototypeIdSerializer<SinkPortPrototype>))]
+    public string ControlRodInsertPort = "InsertControlRods";
 
     #region Debug
     [ViewVariables(VVAccess.ReadOnly)]

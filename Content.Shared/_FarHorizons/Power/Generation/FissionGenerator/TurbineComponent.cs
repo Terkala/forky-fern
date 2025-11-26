@@ -2,6 +2,8 @@ using Robust.Shared.Prototypes;
 using Robust.Shared.GameStates;
 using Content.Shared.Tools;
 using Content.Shared.Atmos;
+using Content.Shared.DeviceLinking;
+using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype;
 
 namespace Content.Shared._FarHorizons.Power.Generation.FissionGenerator;
 
@@ -160,6 +162,18 @@ public sealed partial class TurbineComponent : Component
     public EntityUid? InletEnt;
     [ViewVariables]
     public EntityUid? OutletEnt;
+
+    [DataField("speedHighPort", customTypeSerializer: typeof(PrototypeIdSerializer<SourcePortPrototype>))]
+    public string SpeedHighPort = "TurbineSpeedHigh";
+
+    [DataField("speedLowPort", customTypeSerializer: typeof(PrototypeIdSerializer<SourcePortPrototype>))]
+    public string SpeedLowPort = "TurbineSpeedLow";
+
+    [DataField("statorLoadIncreasePort", customTypeSerializer: typeof(PrototypeIdSerializer<SinkPortPrototype>))]
+    public string StatorLoadIncreasePort = "IncreaseStatorLoad";
+
+    [DataField("statorLoadDecreasePort", customTypeSerializer: typeof(PrototypeIdSerializer<SinkPortPrototype>))]
+    public string StatorLoadDecreasePort = "DecreaseStatorLoad";
 
     #region Debug
     [ViewVariables(VVAccess.ReadOnly)]

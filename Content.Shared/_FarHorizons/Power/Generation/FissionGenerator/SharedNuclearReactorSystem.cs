@@ -128,6 +128,8 @@ public abstract class SharedNuclearReactorSystem : EntitySystem
             }
         }
     }
+
+    protected static void AdjustControlRods(NuclearReactorComponent comp, float change) => comp.ControlRodInsertion = Math.Clamp(comp.ControlRodInsertion + change, 0, 2);
 }
 
 public static class NuclearReactorPrefabs

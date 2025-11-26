@@ -78,6 +78,19 @@
     maxIntensity: 70
     repeatable: true
   - type: Turbine
+  - type: DeviceNetwork
+    deviceNetId: Wireless
+    receiveFrequencyId: BasicDevice
+  - type: WirelessNetworkConnection
+    range: 200
+  - type: DeviceLinkSource
+    ports:
+      - TurbineSpeedHigh
+      - TurbineSpeedLow
+  - type: DeviceLinkSink
+    ports:
+      - IncreaseStatorLoad
+      - DecreaseStatorLoad
   - type: ActivatableUI
     key: enum.TurbineUiKey.Key
   - type: ActivatableUIRequiresAnchor

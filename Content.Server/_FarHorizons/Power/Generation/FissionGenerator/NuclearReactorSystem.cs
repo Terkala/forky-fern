@@ -24,6 +24,8 @@ using System.Linq;
 using Content.Shared.Atmos.Piping.Components;
 using Content.Shared._FarHorizons.Materials.Systems;
 using Content.Server.NodeContainer.Nodes;
+using Content.Shared.DeviceLinking.Events;
+using Content.Server.DeviceLinking.Systems;
 
 namespace Content.Server._FarHorizons.Power.Generation.FissionGenerator;
 
@@ -50,6 +52,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
     [Dependency] private readonly SharedAudioSystem _audio = default!;
     [Dependency] private readonly StationSystem _station = default!;
     [Dependency] private readonly UserInterfaceSystem _uiSystem = null!;
+    [Dependency] private readonly DeviceLinkSystem _signal = default!;
 
     private static readonly int _gridWidth = NuclearReactorComponent.ReactorGridWidth;
     private static readonly int _gridHeight = NuclearReactorComponent.ReactorGridHeight;
@@ -61,8 +64,11 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
     {
         base.Initialize();
 
+        // Component events
+        SubscribeLocalEvent<NuclearReactorComponent, ComponentInit>(OnInit);
         SubscribeLocalEvent<NuclearReactorComponent, ComponentShutdown>(OnShutdown);
 
+        // Atmos events
         SubscribeLocalEvent<NuclearReactorComponent, AtmosDeviceUpdateEvent>(OnUpdate);
         SubscribeLocalEvent<NuclearReactorComponent, AtmosDeviceEnabledEvent>(OnEnable);
         SubscribeLocalEvent<NuclearReactorComponent, GasAnalyzerScanEvent>(OnAnalyze);
@@ -74,8 +80,16 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         // BUI events
         SubscribeLocalEvent<NuclearReactorComponent, ReactorItemActionMessage>(OnItemActionMessage);
         SubscribeLocalEvent<NuclearReactorComponent, ReactorControlRodModifyMessage>(OnControlRodMessage);
+
+        // Signal events
+        SubscribeLocalEvent<NuclearReactorComponent, SignalReceivedEvent>(OnSignalReceived);
     }
-    
+
+    private void OnInit(EntityUid uid, NuclearReactorComponent comp, ref ComponentInit args)
+    {
+        _signal.EnsureSinkPorts(uid, comp.ControlRodInsertPort, comp.ControlRodRetractPort);
+    }
+
     private void OnEnable(Entity<NuclearReactorComponent> ent, ref AtmosDeviceEnabledEvent args)
     {
         var comp = ent.Comp;
@@ -793,9 +807,19 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
 
     private void OnControlRodMessage(Entity<NuclearReactorComponent> ent, ref ReactorControlRodModifyMessage args)
     {
-        ent.Comp.ControlRodInsertion = Math.Clamp(ent.Comp.ControlRodInsertion + args.Change, 0, 2);
+        AdjustControlRods(ent.Comp, args.Change);
         _adminLog.Add(LogType.Action, $"{ToPrettyString(args.Actor):actor} set control rod insertion of {ToPrettyString(ent):target} to {ent.Comp.ControlRodInsertion}");
         UpdateUI(ent.Owner, ent.Comp);
     }
     #endregion
+
+    private void OnSignalReceived(EntityUid uid, NuclearReactorComponent comp, ref SignalReceivedEvent args)
+    {
+        if (args.Port == comp.ControlRodInsertPort)
+            AdjustControlRods(comp, 0.1f);
+        else if (args.Port == comp.ControlRodRetractPort)
+            AdjustControlRods(comp, -0.1f);
+
+        _adminLog.Add(LogType.Action, $"{ToPrettyString(args.Trigger):trigger} set control rod insertion of {ToPrettyString(uid):target} to {comp.ControlRodInsertion}");
+    }
 }

@@ -15,6 +15,8 @@ using Robust.Server.GameObjects;
 using Robust.Shared.Audio;
 using Robust.Shared.Random;
 using Content.Server.NodeContainer.Nodes;
+using Content.Shared.DeviceLinking.Events;
+using Content.Server.DeviceLinking.Systems;
 
 namespace Content.Server._FarHorizons.Power.Generation.FissionGenerator;
 
@@ -33,6 +35,7 @@ public sealed class TurbineSystem : SharedTurbineSystem
     [Dependency] private readonly PopupSystem _popupSystem = default!;
     [Dependency] private readonly TransformSystem _transformSystem = default!;
     [Dependency] private readonly UserInterfaceSystem _uiSystem = null!;
+    [Dependency] private readonly DeviceLinkSystem _signal = default!;
 
     public event Action<string>? TurbineRepairMessage;
 
@@ -50,10 +53,19 @@ public sealed class TurbineSystem : SharedTurbineSystem
     public override void Initialize()
     {
         base.Initialize();
+        SubscribeLocalEvent<TurbineComponent, ComponentInit>(OnInit);
         SubscribeLocalEvent<TurbineComponent, ComponentShutdown>(OnShutdown);
 
         SubscribeLocalEvent<TurbineComponent, AtmosDeviceUpdateEvent>(OnUpdate);
         SubscribeLocalEvent<TurbineComponent, GasAnalyzerScanEvent>(OnAnalyze);
+
+        SubscribeLocalEvent<TurbineComponent, SignalReceivedEvent>(OnSignalReceived);
+    }
+
+    private void OnInit(EntityUid uid, TurbineComponent comp, ref ComponentInit args)
+    {
+        _signal.EnsureSourcePorts(uid, comp.SpeedHighPort, comp.SpeedLowPort);
+        _signal.EnsureSinkPorts(uid, comp.StatorLoadIncreasePort, comp.StatorLoadDecreasePort);
     }
 
     private void OnAnalyze(EntityUid uid, TurbineComponent comp, ref GasAnalyzerScanEvent args)
@@ -235,6 +247,13 @@ public sealed class TurbineSystem : SharedTurbineSystem
         {
             TearApart(uid, comp);
         }
+
+        // Send signals to device network
+        if (comp.RPM > comp.BestRPM*1.05)
+            _signal.InvokePort(uid, comp.SpeedHighPort);
+        else if (comp.RPM < comp.BestRPM*0.95)
+            _signal.InvokePort(uid, comp.SpeedLowPort);
+
         Dirty(uid, comp);
     }
 
@@ -317,4 +336,14 @@ public sealed class TurbineSystem : SharedTurbineSystem
            });
     }
     #endregion
+
+    private void OnSignalReceived(EntityUid uid, TurbineComponent comp, ref SignalReceivedEvent args)
+    {
+        if (args.Port == comp.StatorLoadIncreasePort)
+            AdjustStatorLoad(comp, 1000);
+        else if (args.Port == comp.StatorLoadDecreasePort)
+            AdjustStatorLoad(comp, -1000);
+
+        _adminLogger.Add(LogType.Action, $"{ToPrettyString(args.Trigger):trigger} set the stator load on {ToPrettyString(uid):target} to {comp.StatorLoad}");
+    }
 }
