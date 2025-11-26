@@ -26,6 +26,9 @@ using Content.Shared._FarHorizons.Materials.Systems;
 using Content.Server.NodeContainer.Nodes;
 using Content.Shared.DeviceLinking.Events;
 using Content.Server.DeviceLinking.Systems;
+using Content.Shared.Construction.Components;
+using Content.Shared.Popups;
+using Content.Server.Popups;
 
 namespace Content.Server._FarHorizons.Power.Generation.FissionGenerator;
 
@@ -53,6 +56,8 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
     [Dependency] private readonly StationSystem _station = default!;
     [Dependency] private readonly UserInterfaceSystem _uiSystem = null!;
     [Dependency] private readonly DeviceLinkSystem _signal = default!;
+    [Dependency] private readonly PopupSystem _popupSystem = default!;
+    [Dependency] private readonly SharedTransformSystem _transform = default!;
 
     private static readonly int _gridWidth = NuclearReactorComponent.ReactorGridWidth;
     private static readonly int _gridHeight = NuclearReactorComponent.ReactorGridHeight;
@@ -83,7 +88,12 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
 
         // Signal events
         SubscribeLocalEvent<NuclearReactorComponent, SignalReceivedEvent>(OnSignalReceived);
+
+        SubscribeLocalEvent<NuclearReactorComponent, AnchorStateChangedEvent>(OnAnchorChanged);
+        SubscribeLocalEvent<NuclearReactorComponent, UnanchorAttemptEvent>(OnUnanchorAttempt);
     }
+
+    
 
     private void OnInit(EntityUid uid, NuclearReactorComponent comp, ref ComponentInit args)
     {
@@ -128,19 +138,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
 
     private void OnPartChanged(EntityUid uid, NuclearReactorComponent component, ContainerModifiedMessage args) => ReactorTryGetSlot(uid, "part_slot", out component.PartSlot!);
 
-    private void OnShutdown(Entity<NuclearReactorComponent> ent, ref ComponentShutdown args)
-    {
-        var comp = ent.Comp;
-        for (var x = 0; x < _gridWidth; x++)
-        {
-            for (var y = 0; y < _gridHeight; y++)
-            {
-                QueueDel(_entityManager.GetEntity(comp.VisualGrid[x, y]));
-            }
-        }
-        QueueDel(comp.InletEnt);
-        QueueDel(comp.OutletEnt);
-    }
+    private void OnShutdown(Entity<NuclearReactorComponent> ent, ref ComponentShutdown args) => CleanUp(ent.Comp);
 
     #region Main Loop
     private void OnUpdate(Entity<NuclearReactorComponent> ent, ref AtmosDeviceUpdateEvent args)
@@ -155,10 +153,13 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         if (comp.Melted)
             return;
 
+        // I wish I could do a lot of this stuff on init, but it gets mad if I try
         if (!comp.InletEnt.HasValue || EntityManager.Deleted(comp.InletEnt.Value))
-            comp.InletEnt = SpawnAttachedTo("ReactorGasPipe", new(ent.Owner, -2, -1), rotation: Angle.FromDegrees(-90));
+            comp.InletEnt = SpawnAttachedTo("ReactorGasPipe", new(uid, -2, -1), rotation: Angle.FromDegrees(-90));
         if (!comp.OutletEnt.HasValue || EntityManager.Deleted(comp.OutletEnt.Value))
-            comp.OutletEnt = SpawnAttachedTo("ReactorGasPipe", new(ent.Owner, 2, 1), rotation: Angle.FromDegrees(90));
+            comp.OutletEnt = SpawnAttachedTo("ReactorGasPipe", new(uid, 2, 1), rotation: Angle.FromDegrees(90));
+
+        CheckAnchoredPipes(uid, comp);
 
         if (!_nodeContainer.TryGetNode(comp.InletEnt.Value, comp.PipeName, out PipeNode? inlet))
             return;
@@ -821,5 +822,52 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
             AdjustControlRods(comp, -0.1f);
 
         _adminLog.Add(LogType.Action, $"{ToPrettyString(args.Trigger):trigger} set control rod insertion of {ToPrettyString(uid):target} to {comp.ControlRodInsertion}");
+    }
+
+    private void OnAnchorChanged(EntityUid uid, NuclearReactorComponent comp, ref AnchorStateChangedEvent args)
+    {
+        if (!args.Anchored)
+            CleanUp(comp);
+    }
+
+    private void OnUnanchorAttempt(EntityUid uid, NuclearReactorComponent comp, ref UnanchorAttemptEvent args)
+    {
+        if (comp.Temperature>=Atmospherics.T0C+80 || !CheckEmpty(comp))
+        {
+            _popupSystem.PopupEntity(Loc.GetString("reactor-unanchor-warning"), args.User, args.User, PopupType.LargeCaution);
+            args.Cancel();
+        }
+    }
+
+    private static bool CheckEmpty(NuclearReactorComponent comp)
+    {
+        for (var x = 0; x < _gridWidth; x++)
+            for (var y = 0; y < _gridHeight; y++)
+                if (comp.ComponentGrid![x, y] != null)
+                    return false;
+        return true;
+    }
+
+    private void CheckAnchoredPipes(EntityUid uid, NuclearReactorComponent comp)
+    {
+        if (comp.InletEnt == null || comp.OutletEnt == null)
+            return;
+
+        if (!Transform(comp.InletEnt.Value).Anchored || !Transform(comp.OutletEnt.Value).Anchored)
+        {
+            _popupSystem.PopupEntity(Loc.GetString("reactor-anchor-warning"), uid, PopupType.MediumCaution);
+            CleanUp(comp);
+            _transform.Unanchor(uid);
+        }
+    }
+
+    private void CleanUp(NuclearReactorComponent comp)
+    {
+        for (var x = 0; x < _gridWidth; x++)
+            for (var y = 0; y < _gridHeight; y++)
+                QueueDel(_entityManager.GetEntity(comp.VisualGrid[x, y]));
+
+        QueueDel(comp.InletEnt);
+        QueueDel(comp.OutletEnt);
     }
 }

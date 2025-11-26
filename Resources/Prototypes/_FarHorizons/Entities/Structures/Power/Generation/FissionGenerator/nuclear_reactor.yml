@@ -81,8 +81,6 @@
         - MachineLayer
         - HighImpassable
   - type: Anchorable
-    flags: 
-    - Anchorable
   - type: AtmosDevice
   - type: AtmosMonitoringConsoleDevice # TODO: this doesn't work?
     navMapBlip: Thermoregulator

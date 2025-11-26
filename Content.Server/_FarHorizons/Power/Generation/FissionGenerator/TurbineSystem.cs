@@ -17,6 +17,8 @@ using Robust.Shared.Random;
 using Content.Server.NodeContainer.Nodes;
 using Content.Shared.DeviceLinking.Events;
 using Content.Server.DeviceLinking.Systems;
+using Content.Shared.Construction.Components;
+using Robust.Shared.Physics;
 
 namespace Content.Server._FarHorizons.Power.Generation.FissionGenerator;
 
@@ -36,6 +38,7 @@ public sealed class TurbineSystem : SharedTurbineSystem
     [Dependency] private readonly TransformSystem _transformSystem = default!;
     [Dependency] private readonly UserInterfaceSystem _uiSystem = null!;
     [Dependency] private readonly DeviceLinkSystem _signal = default!;
+    [Dependency] private readonly SharedTransformSystem _transform = default!;
 
     public event Action<string>? TurbineRepairMessage;
 
@@ -60,6 +63,9 @@ public sealed class TurbineSystem : SharedTurbineSystem
         SubscribeLocalEvent<TurbineComponent, GasAnalyzerScanEvent>(OnAnalyze);
 
         SubscribeLocalEvent<TurbineComponent, SignalReceivedEvent>(OnSignalReceived);
+
+        SubscribeLocalEvent<TurbineComponent, AnchorStateChangedEvent>(OnAnchorChanged);
+        SubscribeLocalEvent<TurbineComponent, UnanchorAttemptEvent>(OnUnanchorAttempt);
     }
 
     private void OnInit(EntityUid uid, TurbineComponent comp, ref ComponentInit args)
@@ -110,6 +116,8 @@ public sealed class TurbineSystem : SharedTurbineSystem
             comp.InletEnt = SpawnAttachedTo("TurbineGasPipe", new(uid, -1, -1), rotation: Angle.FromDegrees(-90));
         if (!comp.OutletEnt.HasValue || EntityManager.Deleted(comp.OutletEnt.Value))
             comp.OutletEnt = SpawnAttachedTo("TurbineGasPipe", new(uid, 1, -1), rotation: Angle.FromDegrees(90));
+
+        CheckAnchoredPipes(uid, comp);
 
         if (!_nodeContainer.TryGetNode(comp.InletEnt.Value, comp.PipeName, out PipeNode? inlet))
             return;
@@ -345,5 +353,39 @@ public sealed class TurbineSystem : SharedTurbineSystem
             AdjustStatorLoad(comp, -1000);
 
         _adminLogger.Add(LogType.Action, $"{ToPrettyString(args.Trigger):trigger} set the stator load on {ToPrettyString(uid):target} to {comp.StatorLoad}");
+    }
+
+    private void OnAnchorChanged(EntityUid uid, TurbineComponent comp, ref AnchorStateChangedEvent args)
+    {
+        if (!args.Anchored)
+            CleanUp(comp);
+    }
+
+    private void OnUnanchorAttempt(EntityUid uid, TurbineComponent comp, ref UnanchorAttemptEvent args)
+    {
+        if (comp.RPM>1)
+        {
+            _popupSystem.PopupEntity(Loc.GetString("turbine-unanchor-warning"), args.User, args.User, PopupType.LargeCaution);
+            args.Cancel();
+        }
+    }
+
+    private void CheckAnchoredPipes(EntityUid uid, TurbineComponent comp)
+    {
+        if (comp.InletEnt == null || comp.OutletEnt == null)
+            return;
+
+        if (!Transform(comp.InletEnt.Value).Anchored || !Transform(comp.OutletEnt.Value).Anchored)
+        {
+            _popupSystem.PopupEntity(Loc.GetString("turbine-anchor-warning"), uid, PopupType.MediumCaution);
+            CleanUp(comp);
+            _transform.Unanchor(uid);
+        }
+    }
+
+    private void CleanUp(TurbineComponent comp)
+    {
+        QueueDel(comp.InletEnt);
+        QueueDel(comp.OutletEnt);
     }
 }
