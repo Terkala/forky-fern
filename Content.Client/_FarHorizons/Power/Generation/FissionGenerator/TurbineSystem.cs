@@ -20,7 +20,7 @@ public sealed class TurbineSystem : SharedTurbineSystem
     [Dependency] private readonly AnimationPlayerSystem _animationPlayer = default!;
     [Dependency] private readonly SpriteSystem _sprite = default!;
 
-    private static readonly EntProtoId ArrowPrototype = "TurbineFlowArrow";
+    private static readonly EntProtoId _arrowPrototype = "TurbineFlowArrow";
 
     public override void Initialize()
     {
@@ -50,10 +50,7 @@ public sealed class TurbineSystem : SharedTurbineSystem
         _popupSystem.PopupClient(Loc.GetString("turbine-repair", ("target", ent.Owner), ("tool", args.Used!)), ent.Owner, args.User);
     }
 
-    private void TurbineExamined(EntityUid uid, TurbineComponent comp, ClientExaminedEvent args)
-    {
-        Spawn(ArrowPrototype, new EntityCoordinates(uid, 0, 0));
-    }
+    private void TurbineExamined(EntityUid uid, TurbineComponent comp, ClientExaminedEvent args) => Spawn(_arrowPrototype, new EntityCoordinates(uid, 0, 0));
 
     private void OnAnimationCompleted(Entity<TurbineComponent> ent, ref AnimationCompletedEvent args) => PlayAnimation(ent);
 
@@ -78,42 +75,44 @@ public sealed class TurbineSystem : SharedTurbineSystem
         if (!TryComp<SpriteComponent>(ent.Owner, out var sprite))
             return;
 
-        ent.Comp.AnimRPM = ent.Comp.RPM;
-        var layer = TurbineVisualLayers.TurbineSpeed;
         var state = "speedanim";
-        var time = 0.5f * ent.Comp.BestRPM / ent.Comp.RPM;
         if (_animationPlayer.HasRunningAnimation(ent.Owner, state))
             _animationPlayer.Stop(ent.Owner, state);
-        if (!_animationPlayer.HasRunningAnimation(ent.Owner, state)) // Despite what you'd think, this is not always true
+
+        if (_animationPlayer.HasRunningAnimation(ent.Owner, state)) // Despite what you'd think, this is not always true
+            return;
+
+        ent.Comp.AnimRPM = ent.Comp.RPM;
+        var layer = TurbineVisualLayers.TurbineSpeed;
+        var time = 0.5f * ent.Comp.BestRPM / ent.Comp.RPM;
+        var timestep = time/12;
+        var animation = new Animation
         {
-            var animation = new Animation
+            Length = TimeSpan.FromSeconds(time),
+            AnimationTracks =
             {
-                Length = TimeSpan.FromSeconds(time),
-                AnimationTracks =
+                new AnimationTrackSpriteFlick
                 {
-                    new AnimationTrackSpriteFlick
+                    LayerKey = layer,
+                    KeyFrames =
                     {
-                        LayerKey = layer,
-                        KeyFrames =
-                        {
-                            new AnimationTrackSpriteFlick.KeyFrame("turbinerun_00", 0),
-                            new AnimationTrackSpriteFlick.KeyFrame("turbinerun_01", time/12),
-                            new AnimationTrackSpriteFlick.KeyFrame("turbinerun_02", time/12),
-                            new AnimationTrackSpriteFlick.KeyFrame("turbinerun_03", time/12),
-                            new AnimationTrackSpriteFlick.KeyFrame("turbinerun_04", time/12),
-                            new AnimationTrackSpriteFlick.KeyFrame("turbinerun_05", time/12),
-                            new AnimationTrackSpriteFlick.KeyFrame("turbinerun_06", time/12),
-                            new AnimationTrackSpriteFlick.KeyFrame("turbinerun_07", time/12),
-                            new AnimationTrackSpriteFlick.KeyFrame("turbinerun_08", time/12),
-                            new AnimationTrackSpriteFlick.KeyFrame("turbinerun_09", time/12),
-                            new AnimationTrackSpriteFlick.KeyFrame("turbinerun_10", time/12),
-                            new AnimationTrackSpriteFlick.KeyFrame("turbinerun_11", time/12)
-                        }
+                        new AnimationTrackSpriteFlick.KeyFrame("turbinerun_00", 0),
+                        new AnimationTrackSpriteFlick.KeyFrame("turbinerun_01", timestep),
+                        new AnimationTrackSpriteFlick.KeyFrame("turbinerun_02", timestep),
+                        new AnimationTrackSpriteFlick.KeyFrame("turbinerun_03", timestep),
+                        new AnimationTrackSpriteFlick.KeyFrame("turbinerun_04", timestep),
+                        new AnimationTrackSpriteFlick.KeyFrame("turbinerun_05", timestep),
+                        new AnimationTrackSpriteFlick.KeyFrame("turbinerun_06", timestep),
+                        new AnimationTrackSpriteFlick.KeyFrame("turbinerun_07", timestep),
+                        new AnimationTrackSpriteFlick.KeyFrame("turbinerun_08", timestep),
+                        new AnimationTrackSpriteFlick.KeyFrame("turbinerun_09", timestep),
+                        new AnimationTrackSpriteFlick.KeyFrame("turbinerun_10", timestep),
+                        new AnimationTrackSpriteFlick.KeyFrame("turbinerun_11", timestep)
                     }
                 }
-            };
-            _sprite.LayerSetVisible((ent.Owner, sprite), layer, true);
-            _animationPlayer.Play(ent.Owner, animation, state);
-        }
+            }
+        };
+        _sprite.LayerSetVisible((ent.Owner, sprite), layer, true);
+        _animationPlayer.Play(ent.Owner, animation, state);
     }
 }
