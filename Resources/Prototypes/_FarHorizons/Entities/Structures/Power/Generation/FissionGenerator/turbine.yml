@@ -123,6 +123,8 @@
         - MachineMask
         layer:
         - MachineLayer
+  - type: PowerMonitoringDevice
+    sprite: _FarHorizons/Structures/Power/Generation/FissionGenerator/small_turbine.rsi
   - type: Turbine
     turbineMass: 400
     powerMultiplier: 0.4
