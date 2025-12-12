@@ -211,7 +211,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         var transferVolume = CalculateTransferVolume(inlet.Air.Volume, inlet, outlet, args.dt);
         var GasInput = inlet.Air.RemoveVolume(transferVolume);
 
-        GasInput.Volume = transferVolume;
+        GasInput.Volume = inlet.Volume;
 
         // Even though it's probably bad for performace, we have to do the for x, for y loops 3 times
         // to ensure the processes do not interfere with each other
@@ -228,7 +228,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
                     if (ReactorComp.Properties == null)
                         _partSystem.SetProperties(ReactorComp, out ReactorComp.Properties);
 
-                    var gas = _partSystem.ProcessGas(ReactorComp, ent, args, GasInput);
+                    var gas = _partSystem.ProcessGas(ReactorComp, ent, GasInput);
                     GasInput.Volume -= ReactorComp.GasVolume;
 
                     if (gas != null)
@@ -376,7 +376,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
                 {
                     totalGasVolume += reactor.ComponentGrid[x, y]!.GasVolume;
                 }
-        inlet.Air.Volume = totalGasVolume;
+        inlet.Volume = totalGasVolume;
     }
 
     private GasMixture? ProcessCasingGas(NuclearReactorComponent reactor, AtmosDeviceUpdateEvent args, GasMixture inGas)
