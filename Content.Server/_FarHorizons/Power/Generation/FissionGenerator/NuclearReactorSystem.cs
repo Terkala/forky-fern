@@ -61,9 +61,6 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
     [Dependency] private readonly PopupSystem _popupSystem = default!;
     [Dependency] private readonly SharedTransformSystem _transform = default!;
 
-    private readonly float _threshold = 0.5f;
-    private float _accumulator = 0f;
-
     public override void Initialize()
     {
         base.Initialize();
@@ -682,26 +679,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
     #endregion
 
     #region BUI
-    //public override void Update(float frameTime)
-    //{
-    //    _accumulator += frameTime;
-    //    if (_accumulator > _threshold)
-    //    {
-    //        AccUpdate();
-    //        _accumulator = 0;
-    //    }
-    //}
-    //private void AccUpdate()
-    //{
-    //    var query = EntityQueryEnumerator<NuclearReactorComponent>();
-
-    //    while (query.MoveNext(out var uid, out var reactor))
-    //    {
-    //        UpdateUI(uid, reactor);
-    //    }
-    //}
-
-    private void UpdateUI(EntityUid uid, NuclearReactorComponent reactor)
+    public void UpdateUI(EntityUid uid, NuclearReactorComponent reactor)
     {
         if (!_uiSystem.IsUiOpen(uid, NuclearReactorUiKey.Key))
             return;
