@@ -148,6 +148,16 @@
     prefab: meltdown
 
 - type: entity
+  id: NuclearReactorMelted
+  parent: NuclearReactorEmpty
+  suffix: Melted
+  description: A nuclear reactor vessel, long since melted down. It still glows with residual heat and radiation.
+  components:
+  - type: NuclearReactor
+    melted: true
+    meltdownRadiation: 3.5
+
+- type: entity
   id: NuclearReactorSmall
   parent: BaseNuclearReactor
   name: small nuclear reactor
@@ -177,6 +187,17 @@
     outletRot: 180
     arrowPrototype: ReactorSmallFlowArrow
     gridbounds: [ 12, 11, 0, 0 ]
+
+- type: entity
+  id: NuclearReactorSmallMelted
+  parent: NuclearReactorSmall
+  suffix: Melted
+  description: A nuclear reactor vessel, long since melted down. It still glows with residual heat and radiation.
+  components:
+  - type: NuclearReactor
+    prefab: empty
+    melted: true
+    meltdownRadiation: 2.5
 
 # Nuclear debris resultant from a meltdown
 - type: entity

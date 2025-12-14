@@ -315,7 +315,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         // If there's still input gas left over
         _atmosphereSystem.Merge(outlet.Air, GasInput);
 
-        comp.RadiationLevel = Math.Clamp(comp.RadiationLevel + TempRads, 0, 50);
+        comp.RadiationLevel = Math.Clamp(comp.RadiationLevel + TempRads, 0, comp.MaximumRadiation);
 
         comp.NeutronCount = NeutronCount;
         comp.MeltedParts = MeltedComps;
@@ -344,10 +344,11 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
 
     private void ProcessCaseRadiation(Entity<NuclearReactorComponent> ent)
     {
+        var reactor = ent.Comp;
         var comp = EnsureComp<RadiationSourceComponent>(ent.Owner);
 
-        comp.Intensity = Math.Max(ent.Comp.RadiationLevel, ent.Comp.Melted ? 10 : 0);
-        ent.Comp.RadiationLevel /= 2;
+        comp.Intensity = Math.Max(reactor.RadiationLevel, reactor.Melted ? reactor.MeltdownRadiation : 0);
+        reactor.RadiationLevel /= Math.Max(reactor.RadiationStability, 1);
     }
 
     private static List<ReactorPartComponent?> GetGridNeighbors(NuclearReactorComponent reactor, int x, int y)
@@ -570,7 +571,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
             return;
         }
 
-        if (comp.ThermalPower > 10000000)
+        if (comp.ThermalPower > comp.MaximumThermalPower)
         {
             if (!_audio.IsPlaying(comp.AlarmAudioHighThermal))
                 comp.AlarmAudioHighThermal = _audio.PlayPvs(new SoundPathSpecifier("/Audio/_FarHorizons/Machines/reactor_alarm_1.ogg"), uid, AudioParams.Default.WithLoop(true).WithVolume(-3))?.Entity;
@@ -588,7 +589,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
             if (_audio.IsPlaying(comp.AlarmAudioHighTemp))
             comp.AlarmAudioHighTemp = _audio.Stop(comp.AlarmAudioHighTemp);
 
-        if (comp.RadiationLevel > 15)
+        if (comp.RadiationLevel > comp.MaximumRadiation * 0.5)
         {
             if (!_audio.IsPlaying(comp.AlarmAudioHighRads))
                 comp.AlarmAudioHighRads = _audio.PlayPvs(new SoundPathSpecifier("/Audio/_FarHorizons/Machines/reactor_alarm_3.ogg"), uid, AudioParams.Default.WithLoop(true).WithVolume(-3))?.Entity;
@@ -640,7 +641,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
             }
         }
 
-        if (comp.Temperature >= 1700 && !comp.HasSentWarning)
+        if (comp.Temperature >= (comp.ReactorFireTemp + comp.ReactorMeltdownTemp) >> 1 && !comp.HasSentWarning)
         {
             var stationUid = _station.GetStationInMap(Transform(uid).MapID);
             var announcement = Loc.GetString("reactor-melting-announcement");
@@ -814,7 +815,15 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
 
     private void OnUnanchorAttempt(EntityUid uid, NuclearReactorComponent comp, ref UnanchorAttemptEvent args)
     {
-        if (comp.Temperature>=Atmospherics.T0C+80 || !CheckEmpty(comp))
+        // One does not simply move a reactor that has welded itself in place
+        if (comp.Melted)
+        {
+            _popupSystem.PopupEntity(Loc.GetString("reactor-unanchor-melted"), args.User, args.User, PopupType.LargeCaution);
+            args.Cancel();
+            return;
+        }
+
+        if (comp.Temperature >= Atmospherics.T0C + 80 || !CheckEmpty(comp))
         {
             _popupSystem.PopupEntity(Loc.GetString("reactor-unanchor-warning"), args.User, args.User, PopupType.LargeCaution);
             args.Cancel();
@@ -825,7 +834,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
     {
         for (var x = 0; x < comp.ReactorGridWidth; x++)
             for (var y = 0; y < comp.ReactorGridHeight; y++)
-                if (comp.ComponentGrid![x, y] != null)
+                if (comp.ComponentGrid[x, y] != null)
                     return false;
         return true;
     }

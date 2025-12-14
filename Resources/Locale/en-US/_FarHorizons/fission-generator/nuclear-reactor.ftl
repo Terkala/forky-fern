@@ -4,6 +4,7 @@ reactor-smoke-stop = The {$owner} stops smoking.
 reactor-fire-start = The {$owner} begins to burn!
 reactor-fire-stop = The {$owner} stops burning.
 
+reactor-unanchor-melted = You cannot unanchor the nuclear reactor, it's melted into the hull!
 reactor-unanchor-warning = You cannot unanchor the nuclear reactor while it's not empty or hotter than 80C!
 reactor-anchor-warning = Invalid anchor position.
 
