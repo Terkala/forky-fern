@@ -140,6 +140,14 @@
     prefab: empty
 
 - type: entity
+  id: NuclearReactorRandom
+  parent: BaseNuclearReactor
+  suffix: Random
+  components:
+  - type: NuclearReactor
+    prefab: random
+
+- type: entity
   id: NuclearReactorMeltdown
   parent: BaseNuclearReactor
   suffix: Meltdown
@@ -187,6 +195,14 @@
     outletRot: 180
     arrowPrototype: ReactorSmallFlowArrow
     gridbounds: [ 12, 11, 0, 0 ]
+
+- type: entity
+  id: NuclearReactorSmallRandom
+  parent: NuclearReactorSmall
+  suffix: Random
+  components:
+  - type: NuclearReactor
+    prefab: random
 
 - type: entity
   id: NuclearReactorSmallMelted

@@ -34,18 +34,6 @@ public abstract class SharedNuclearReactorSystem : EntitySystem
 
     protected bool ReactorTryGetSlot(EntityUid uid, string slotID, out ItemSlot? itemSlot) => _slotsSystem.TryGetSlot(uid, slotID, out itemSlot);
 
-    protected static ReactorPartComponent?[,] SelectPrefab(string select) => select switch
-    {
-        "normal" => NuclearReactorPrefabs.Normal,
-        "normal5x5" => NuclearReactorPrefabs.Normal5x5,
-        "debug" => NuclearReactorPrefabs.Debug,
-        "meltdown" => NuclearReactorPrefabs.Meltdown,
-        "alignment" => NuclearReactorPrefabs.Alignment,
-        "arachne" => NuclearReactorPrefabs.Arachne,
-        "lens" => NuclearReactorPrefabs.Lens,
-        _ => NuclearReactorPrefabs.Empty,
-    };
-
     public void UpdateGridVisual(Entity<NuclearReactorComponent> ent)
     {
         var comp = ent.Comp;

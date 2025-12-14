@@ -31,6 +31,8 @@ using Content.Shared.Popups;
 using Content.Server.Popups;
 using Content.Shared.DeviceLinking;
 using Content.Shared.DeviceNetwork;
+using Content.Shared.Random;
+using Content.Shared.Random.Helpers;
 
 namespace Content.Server._FarHorizons.Power.Generation.FissionGenerator;
 
@@ -103,9 +105,15 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         comp.TemperatureGrid = new double[gridWidth, gridHeight];
         comp.NeutronGrid = new int[gridWidth, gridHeight];
 
-        var prefab = SelectPrefab(comp.Prefab);
-        for (var x = 0; x < gridWidth; x++)
-            for (var y = 0; y < gridHeight; y++)
+        ApplyPrefab(uid, comp);
+    }
+
+    #region Prefab
+    private void ApplyPrefab(EntityUid uid, NuclearReactorComponent comp)
+    {
+        var prefab = comp.Prefab == "random" ? GenerateRandomPrefab(comp) : SelectPrefab(comp.Prefab);
+        for (var x = 0; x < comp.ReactorGridWidth; x++)
+            for (var y = 0; y < comp.ReactorGridHeight; y++)
             {
                 if (x < prefab.GetLength(0) && y < prefab.GetLength(1))
                     comp.ComponentGrid[x, y] = prefab[x, y] != null ? new ReactorPartComponent(prefab[x, y]!) : null;
@@ -115,6 +123,40 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         UpdateGasVolume(comp);
         UpdateGridVisual((uid, comp));
     }
+
+    private static ReactorPartComponent?[,] SelectPrefab(string select) => select switch
+    {
+        "normal" => NuclearReactorPrefabs.Normal,
+        "normal5x5" => NuclearReactorPrefabs.Normal5x5,
+        "debug" => NuclearReactorPrefabs.Debug,
+        "meltdown" => NuclearReactorPrefabs.Meltdown,
+        "alignment" => NuclearReactorPrefabs.Alignment,
+        "arachne" => NuclearReactorPrefabs.Arachne,
+        "lens" => NuclearReactorPrefabs.Lens,
+        _ => NuclearReactorPrefabs.Empty,
+    };
+
+    private ReactorPartComponent?[,] GenerateRandomPrefab(NuclearReactorComponent comp)
+    {
+        var grid = new ReactorPartComponent?[comp.ReactorGridWidth, comp.ReactorGridHeight];
+        for (var x = 0; x < comp.ReactorGridWidth; x++)
+            for (var y = 0; y < comp.ReactorGridHeight; y++)
+                grid[x, y] = _random.Prob(0.3f) ? RandomComponent() : null;
+        return grid;
+    }
+
+    private ReactorPartComponent RandomComponent()
+    {
+        var compName = Factory.GetComponentName<ReactorPartComponent>();
+        var source = "NuclearReactorRandomParts";
+        var protoID = _prototypes.Index<WeightedRandomPrototype>(source).Pick(_random);
+        if (!_prototypes.TryIndex(protoID, out var entProto)
+                || !entProto.TryGetComponent<ReactorPartComponent>(compName, out var comp))
+            return new();
+        comp.ProtoId = protoID;
+        return comp;
+    }
+    #endregion
 
     private void OnEnable(Entity<NuclearReactorComponent> ent, ref AtmosDeviceEnabledEvent args)
     {
@@ -180,15 +222,8 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
 
         if (comp.ApplyPrefab)
         {
-            var prefab = SelectPrefab(comp.Prefab);
-            for (var x = 0; x < gridWidth; x++)
-                for (var y = 0; y < gridHeight; y++)
-                    if (x < prefab.GetLength(0) && y < prefab.GetLength(1))
-                        comp.ComponentGrid[x, y] = prefab[x, y] != null ? new ReactorPartComponent(prefab[x, y]!) : null;
-
+            ApplyPrefab(uid, comp);
             comp.ApplyPrefab = false;
-            UpdateGridVisual(ent);
-            UpdateGasVolume(comp);
         }
 
         _appearance.SetData(uid, ReactorVisuals.Input, inlet.Air.Moles.Sum() > 20);
@@ -807,6 +842,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         _adminLog.Add(LogType.Action, $"{ToPrettyString(args.Trigger):trigger} set control rod insertion of {ToPrettyString(uid):target} to {logtext}");
     }
 
+    #region Anchoring
     private void OnAnchorChanged(EntityUid uid, NuclearReactorComponent comp, ref AnchorStateChangedEvent args)
     {
         if (!args.Anchored)
@@ -851,6 +887,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
             _transform.Unanchor(uid);
         }
     }
+    #endregion
 
     private void CleanUp(NuclearReactorComponent comp)
     {
