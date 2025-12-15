@@ -74,6 +74,9 @@
     intensitySlope: 15
     maxIntensity: 70
     repeatable: true
+  - type: Electrified
+    enabled: false
+    requirePower: false
   - type: Turbine
   - type: DeviceNetwork
     deviceNetId: Wireless

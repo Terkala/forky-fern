@@ -18,7 +18,6 @@ using Content.Server.NodeContainer.Nodes;
 using Content.Shared.DeviceLinking.Events;
 using Content.Server.DeviceLinking.Systems;
 using Content.Shared.Construction.Components;
-using Robust.Shared.Physics;
 using Content.Shared.DeviceLinking;
 using Content.Shared.DeviceNetwork;
 
@@ -43,9 +42,6 @@ public sealed class TurbineSystem : SharedTurbineSystem
     [Dependency] private readonly SharedTransformSystem _transform = default!;
 
     public event Action<string>? TurbineRepairMessage;
-
-    private readonly float _threshold = 0.5f;
-    private float _accumulator = 0f;
 
     private readonly List<string> _damageSoundList = [
         "/Audio/_FarHorizons/Effects/engine_grump1.ogg",
