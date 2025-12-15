@@ -33,6 +33,7 @@ using Content.Shared.DeviceLinking;
 using Content.Shared.DeviceNetwork;
 using Content.Shared.Random;
 using Content.Shared.Random.Helpers;
+using Content.Shared.Throwing;
 
 namespace Content.Server._FarHorizons.Power.Generation.FissionGenerator;
 
@@ -62,7 +63,8 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
     [Dependency] private readonly DeviceLinkSystem _signal = default!;
     [Dependency] private readonly PopupSystem _popupSystem = default!;
     [Dependency] private readonly SharedTransformSystem _transform = default!;
-
+    [Dependency] private readonly ThrowingSystem _throwingSystem = default!;
+    [Dependency] private readonly TransformSystem _transformSystem = default!;
     public override void Initialize()
     {
         base.Initialize();
@@ -533,7 +535,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
 
         // You did not see graphite on the roof. You're in shock. Report to medical.
         for (var i = 0; i < _random.Next(10, 30); i++)
-            SpawnAtPosition("NuclearDebrisChunk", new(uid, _random.NextVector2(4)));
+            _throwingSystem.TryThrow(Spawn("NuclearDebrisChunk", _transformSystem.GetMapCoordinates(uid)), _random.NextAngle().ToVec().Normalized(), _random.NextFloat(8, 16), uid);
 
         _audio.PlayPvs(new SoundPathSpecifier("/Audio/Effects/metal_break5.ogg"), uid);
         _explosionSystem.QueueExplosion(ent.Owner, "Radioactive", Math.Max(100, MeltdownBadness * 5), 1, 5, 0, canCreateVacuum: false);
