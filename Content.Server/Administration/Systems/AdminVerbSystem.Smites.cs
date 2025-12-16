@@ -1143,5 +1143,23 @@ public sealed partial class AdminVerbSystem
 
         if (TryComp<TimedDespawnComponent>(rod, out var despawn))
             despawn.Lifetime = offset.Length() / speed * 3; // exists thrice as long as it takes to get to you.
+            
+        // Far Horizons - Start
+        var fuelRodifyName = Loc.GetString("admin-smite-become-fuelrod-name").ToLowerInvariant();
+        Verb fuelRodify = new()
+        {
+            Text = fuelRodifyName,
+            Category = VerbCategory.Smite,
+            Icon = new SpriteSpecifier.Rsi(new("/Textures/_FarHorizons/Structures/Power/Generation/FissionGenerator/reactor_parts.rsi"), "default_rod"),
+            Act = () =>
+            {
+                _bodySystem.GibBody(args.Target);
+                _polymorphSystem.PolymorphEntity(args.Target, "AdminFuelRodSmite");
+            },
+            Impact = LogImpact.Extreme,
+            Message = string.Join(": ", fuelRodifyName, Loc.GetString("admin-smite-become-fuelrod-description"))
+        };
+        args.Verbs.Add(fuelRodify);
+        // Far Horizons - End
     }
 }
