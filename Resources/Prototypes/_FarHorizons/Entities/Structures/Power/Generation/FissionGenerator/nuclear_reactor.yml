@@ -286,6 +286,25 @@
         nodeGroupID: Pipe
         pipeDirection: South
         volume: 1000
+        pipeLayer: 0
+      pipe1:
+        !type:PipeNode
+        nodeGroupID: Pipe
+        pipeDirection: South
+        volume: 1000
+        pipeLayer: 1
+      pipe2:
+        !type:PipeNode
+        nodeGroupID: Pipe
+        pipeDirection: South
+        volume: 1000
+        pipeLayer: 2
+  - type: GasPipeManifold
+    inlets:
+    - pipe1
+    - pipe2
+    outlets:
+    - pipe
   - type: Tag
     tags:
       - HideContextMenu
