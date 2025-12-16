@@ -189,7 +189,11 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         }
     }
 
-    private void OnPartChanged(EntityUid uid, NuclearReactorComponent component, ContainerModifiedMessage args) => ReactorTryGetSlot(uid, "part_slot", out component.PartSlot!);
+    private void OnPartChanged(EntityUid uid, NuclearReactorComponent component, ContainerModifiedMessage args) 
+    {
+        ReactorTryGetSlot(uid, "part_slot", out component.PartSlot!);
+        UpdateUI(uid, component);
+    }
 
     private void OnShutdown(Entity<NuclearReactorComponent> ent, ref ComponentShutdown args) => CleanUp(ent.Comp);
 

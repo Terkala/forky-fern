@@ -21,6 +21,7 @@ public sealed partial class NuclearReactorWindow : FancyWindow
 
     private readonly Dictionary<Vector2i, StyleBoxFlat> _reactorGrid = [];
     private readonly Dictionary<Vector2i, TextureRect> _reactorRect = [];
+    private readonly Dictionary<Vector2i, Button> _reactorButton = [];
 
     private readonly StyleBoxFlat _temperatureBar = new(Color.Black);
     private readonly StyleBoxFlat _radiationBar = new(Color.Black);
@@ -145,12 +146,15 @@ public sealed partial class NuclearReactorWindow : FancyWindow
                 var button = new Button
                 {
                     Margin = new(0),
-                    StyleBoxOverride = new StyleBoxFlat(Color.Transparent)
+                    StyleBoxOverride = new StyleBoxFlat(Color.Transparent),
+                    ToolTip = "",
+                    TooltipDelay = 0.5f
                 };
 
                 var vect = new Vector2i(x, y);
                 _reactorGrid.Add(vect, styleBox);
                 _reactorRect.Add(vect, icon);
+                _reactorButton.Add(vect, button);
 
                 var control = new PanelContainer
                 {
@@ -198,6 +202,10 @@ public sealed partial class NuclearReactorWindow : FancyWindow
 
                 var icon = exists ? _data[vect].IconName : "base";
                 _reactorRect[vect].TexturePath = "/Textures/_FarHorizons/Structures/Power/Generation/FissionGenerator/reactor_part_inserted/" +  icon + ".png";
+                
+                _reactorButton[vect].ToolTip = exists && _data[vect].SpentFuel > 0
+                    ? "Fuel Level: " + (Math.Round(1 - (_data[vect].SpentFuel / (_data[vect].SpentFuel + (_data[vect].Radioactivity * 0.5) + (_data[vect].NeutronRadioactivity * 0.25))), 2) * 100) + "%"
+                    : "";
             }
         }
 
