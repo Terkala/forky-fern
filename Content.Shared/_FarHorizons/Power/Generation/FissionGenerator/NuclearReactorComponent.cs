@@ -198,13 +198,19 @@ public sealed partial class NuclearReactorComponent : Component
     /// The selected prefab
     /// </summary>
     [DataField]
-    public string Prefab = "normal";
+    public string Prefab = "ReactorPrefab7x7Normal";
 
     /// <summary>
     /// Flag indicating the reactor should apply the selected prefab
     /// </summary>
     [DataField]
     public bool ApplyPrefab = false;
+
+    /// <summary>
+    /// Chance that a reactor slot is filled when applying the random prefab
+    /// </summary>
+    [DataField]
+    public float RandomPrefabFill = 0.3f;
 
     /// <summary>
     /// Material the reactor is made out of

@@ -93,8 +93,6 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         SubscribeLocalEvent<NuclearReactorComponent, UnanchorAttemptEvent>(OnUnanchorAttempt);
     }
 
-    
-
     private void OnInit(EntityUid uid, NuclearReactorComponent comp, ref ComponentInit args)
     {
         _signal.EnsureSinkPorts(uid, comp.ControlRodInsertPort, comp.ControlRodRetractPort);
@@ -113,12 +111,11 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
     #region Prefab
     private void ApplyPrefab(EntityUid uid, NuclearReactorComponent comp)
     {
-        var prefab = comp.Prefab == "random" ? GenerateRandomPrefab(comp) : SelectPrefab(comp.Prefab);
+        var prefab = comp.Prefab == "random" ? GenerateRandomPrefab(comp) : GetPrefabFromProto(comp);
         for (var x = 0; x < comp.ReactorGridWidth; x++)
             for (var y = 0; y < comp.ReactorGridHeight; y++)
             {
-                if (x < prefab.GetLength(0) && y < prefab.GetLength(1))
-                    comp.ComponentGrid[x, y] = prefab[x, y] != null ? new ReactorPartComponent(prefab[x, y]!) : null;
+                comp.ComponentGrid[x, y] = prefab.TryGetValue(new Vector2i(x, y), out var part) ? new ReactorPartComponent(part) : null;
                 comp.FluxGrid[x, y] = [];
             }
 
@@ -126,25 +123,14 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         UpdateGridVisual((uid, comp));
     }
 
-    private static ReactorPartComponent?[,] SelectPrefab(string select) => select switch
+    private Dictionary<Vector2i, ReactorPartComponent> GenerateRandomPrefab(NuclearReactorComponent comp)
     {
-        "normal" => NuclearReactorPrefabs.Normal,
-        "normal5x5" => NuclearReactorPrefabs.Normal5x5,
-        "debug" => NuclearReactorPrefabs.Debug,
-        "meltdown" => NuclearReactorPrefabs.Meltdown,
-        "alignment" => NuclearReactorPrefabs.Alignment,
-        "arachne" => NuclearReactorPrefabs.Arachne,
-        "lens" => NuclearReactorPrefabs.Lens,
-        _ => NuclearReactorPrefabs.Empty,
-    };
-
-    private ReactorPartComponent?[,] GenerateRandomPrefab(NuclearReactorComponent comp)
-    {
-        var grid = new ReactorPartComponent?[comp.ReactorGridWidth, comp.ReactorGridHeight];
+        var exportDict = new Dictionary<Vector2i, ReactorPartComponent>();
         for (var x = 0; x < comp.ReactorGridWidth; x++)
             for (var y = 0; y < comp.ReactorGridHeight; y++)
-                grid[x, y] = _random.Prob(0.3f) ? RandomComponent() : null;
-        return grid;
+                if (_random.Prob(comp.RandomPrefabFill))
+                    exportDict.Add(new Vector2i(x, y), RandomComponent());
+        return exportDict;
     }
 
     private ReactorPartComponent RandomComponent()
@@ -157,6 +143,28 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
             return new();
         comp.ProtoId = protoID;
         return comp;
+    }
+
+    private Dictionary<Vector2i, ReactorPartComponent> GetPrefabFromProto(NuclearReactorComponent comp)
+    {
+        var exportDict = new Dictionary<Vector2i, ReactorPartComponent>();
+
+        if (!_prototypes.TryIndex<NuclearReactorPrefabPrototype>(comp.Prefab, out var proto) || proto.ReactorComponents == null)
+            return exportDict;
+
+        var compName = Factory.GetComponentName<ReactorPartComponent>();
+
+        foreach (var pair in proto.ReactorComponents)
+        {
+            if (!_prototypes.TryIndex(pair.Value, out var entProto)
+                || !entProto.TryGetComponent<ReactorPartComponent>(compName, out var reactorPart))
+                continue;
+
+            reactorPart.ProtoId = pair.Value;
+            exportDict.Add(pair.Key, reactorPart);
+        }
+
+        return exportDict;
     }
     #endregion
 
@@ -566,8 +574,8 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         }
 
         // Temperature & radiation warning
-        if (comp.Temperature >= comp.ReactorOverheatTemp || comp.RadiationLevel > 15)
-            if (comp.Temperature >= comp.ReactorFireTemp || comp.RadiationLevel > 30)
+        if (comp.Temperature >= comp.ReactorOverheatTemp || comp.RadiationLevel > comp.MaximumRadiation * 0.5)
+            if (comp.Temperature >= comp.ReactorFireTemp || comp.RadiationLevel > comp.MaximumRadiation)
                 _appearance.SetData(uid, ReactorVisuals.Lights, ReactorWarningLights.LightsMeltdown);
             else
                 _appearance.SetData(uid, ReactorVisuals.Lights, ReactorWarningLights.LightsWarning);

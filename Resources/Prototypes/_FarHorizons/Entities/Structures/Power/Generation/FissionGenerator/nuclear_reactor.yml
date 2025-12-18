@@ -137,7 +137,7 @@
   suffix: Empty
   components:
   - type: NuclearReactor
-    prefab: empty
+    prefab: ReactorPrefabEmpty
 
 - type: entity
   id: NuclearReactorRandom
@@ -153,7 +153,7 @@
   suffix: Meltdown
   components:
   - type: NuclearReactor
-    prefab: meltdown
+    prefab: ReactorPrefab7x7Meltdown
 
 - type: entity
   id: NuclearReactorMelted
@@ -188,7 +188,7 @@
     thermalMass: 302400
     reactorGridWidth: 5
     reactorGridHeight: 5
-    prefab: normal5x5
+    prefab: ReactorPrefab5x5Normal
     inletPos: -1, 1
     inletRot: 180
     outletPos: 1, 1
@@ -211,7 +211,7 @@
   description: A nuclear reactor vessel, long since melted down. It still glows with residual heat and radiation.
   components:
   - type: NuclearReactor
-    prefab: empty
+    prefab: ReactorPrefabEmpty
     melted: true
     meltdownRadiation: 2.5
 
