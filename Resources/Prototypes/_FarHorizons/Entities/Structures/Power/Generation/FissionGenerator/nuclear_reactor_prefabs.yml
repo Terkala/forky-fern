@@ -225,3 +225,30 @@
     3,3: CerenkiteReactorFuelRod
     5,1: CerenkiteReactorFuelRod
     5,5: CerenkiteReactorFuelRod
+
+- type: nuclearReactorPrefab
+  id: ReactorPrefab5x5Normal
+  parts:
+    0,0: SteelReactorGasChannel
+    0,2: SteelReactorGasChannel
+    0,4: SteelReactorGasChannel
+    2,0: SteelReactorGasChannel
+    2,4: SteelReactorGasChannel
+    4,0: SteelReactorGasChannel
+    4,2: SteelReactorGasChannel
+    4,4: SteelReactorGasChannel
+    
+    0,1: SteelReactorHeatExchanger
+    0,3: SteelReactorHeatExchanger
+    1,0: SteelReactorHeatExchanger
+    1,4: SteelReactorHeatExchanger
+    3,0: SteelReactorHeatExchanger
+    3,4: SteelReactorHeatExchanger
+    4,1: SteelReactorHeatExchanger
+    4,3: SteelReactorHeatExchanger
+
+    1,2: BohrumReactorControlRod
+    2,1: BohrumReactorControlRod
+    2,2: BohrumReactorControlRod
+    2,3: BohrumReactorControlRod
+    3,2: BohrumReactorControlRod
