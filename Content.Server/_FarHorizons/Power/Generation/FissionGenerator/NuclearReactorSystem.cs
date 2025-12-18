@@ -571,6 +571,8 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         {
             _appearance.SetData(uid, ReactorVisuals.Lights, ReactorWarningLights.LightsOff);
             _appearance.SetData(uid, ReactorVisuals.Status, ReactorStatusLights.Off);
+            _appearance.SetData(uid, ReactorVisuals.Input, false);
+            _appearance.SetData(uid, ReactorVisuals.Output, false);
             return;
         }
 

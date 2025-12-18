@@ -161,6 +161,9 @@
   suffix: Melted
   description: A nuclear reactor vessel, long since melted down. It still glows with residual heat and radiation.
   components:
+  - type: Sprite
+    layers:
+    - state: reactorbroken
   - type: NuclearReactor
     melted: true
     meltdownRadiation: 3.5
@@ -210,6 +213,9 @@
   suffix: Melted
   description: A nuclear reactor vessel, long since melted down. It still glows with residual heat and radiation.
   components:
+  - type: Sprite
+    layers:
+    - state: reactorbroken
   - type: NuclearReactor
     prefab: ReactorPrefabEmpty
     melted: true
