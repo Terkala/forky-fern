@@ -61,7 +61,10 @@ public sealed partial class TurbineWindow : FancyWindow
 
     private int _speedLevel;
 
-    private EntityUid _entity;
+    private EntityUid _turbine;
+
+    private bool _isMonitor = false;
+    private EntityUid _monitor;
 
     private bool _suppressSliderEvents;
     private bool _suppressStatorUpdate;
@@ -128,13 +131,19 @@ public sealed partial class TurbineWindow : FancyWindow
     }
 
     #region Graphics
-    public void SetEntity(EntityUid entity)
+    public void SetEntity(EntityUid turbine, EntityUid? monitor = null)
     {
-        _entity = entity;
+        _turbine = turbine;
 
-        this.SetInfoFromEntity(_entityManager, _entity);
+        if (monitor != null)
+        {
+            _monitor = monitor.Value;
+            _isMonitor = true;
+        }
 
-        EntityView.SetEntity(entity);
+        this.SetInfoFromEntity(_entityManager, _isMonitor ? _monitor : _turbine);
+
+        EntityView.SetEntity(turbine);
     }
 
     [MemberNotNull(nameof(_speedMeter))]
@@ -177,8 +186,9 @@ public sealed partial class TurbineWindow : FancyWindow
         if(!_suppressStatorUpdate)
             TurbineStatorLoadLabel.Text = Math.Round(msg.StatorLoad).ToString();
 
-        Inputs.Visible = !_lock.IsLocked(_entity);
-        LockedMessage.Visible = _lock.IsLocked(_entity);
+        var locktarget = _isMonitor ? _monitor : _turbine;
+        Inputs.Visible = !_lock.IsLocked(locktarget);
+        LockedMessage.Visible = _lock.IsLocked(locktarget);
 
         _suppressSliderEvents = true;
         TurbineFlowRateSlider.MaxValue = msg.FlowRateMax;

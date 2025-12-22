@@ -59,6 +59,9 @@ public sealed class TurbineSystem : SharedTurbineSystem
         SubscribeLocalEvent<TurbineComponent, AtmosDeviceUpdateEvent>(OnUpdate);
         SubscribeLocalEvent<TurbineComponent, GasAnalyzerScanEvent>(OnAnalyze);
 
+        SubscribeLocalEvent<TurbineComponent, TurbineChangeFlowRateMessage>(OnTurbineFlowRateChanged);
+        SubscribeLocalEvent<TurbineComponent, TurbineChangeStatorLoadMessage>(OnTurbineStatorLoadChanged);
+
         SubscribeLocalEvent<TurbineComponent, SignalReceivedEvent>(OnSignalReceived);
 
         SubscribeLocalEvent<TurbineComponent, AnchorStateChangedEvent>(OnAnchorChanged);
@@ -67,7 +70,7 @@ public sealed class TurbineSystem : SharedTurbineSystem
 
     private void OnInit(EntityUid uid, TurbineComponent comp, ref ComponentInit args)
     {
-        _signal.EnsureSourcePorts(uid, comp.SpeedHighPort, comp.SpeedLowPort);
+        //_signal.EnsureSourcePorts(uid, comp.SpeedHighPort, comp.SpeedLowPort, comp.TurbineDataPort);
         _signal.EnsureSinkPorts(uid, comp.StatorLoadIncreasePort, comp.StatorLoadDecreasePort);
     }
 
@@ -305,7 +308,7 @@ public sealed class TurbineSystem : SharedTurbineSystem
     #endregion
 
     #region BUI
-    protected override void UpdateUI(EntityUid uid, TurbineComponent turbine)
+    public void UpdateUI(EntityUid uid, TurbineComponent turbine)
     {
         if (!_uiSystem.IsUiOpen(uid, TurbineUiKey.Key))
             return;
@@ -329,6 +332,24 @@ public sealed class TurbineSystem : SharedTurbineSystem
                StatorLoadMax = turbine.StatorLoadMax,
                StatorLoad = turbine.StatorLoad,
            });
+    }
+
+    private void OnTurbineFlowRateChanged(EntityUid uid, TurbineComponent turbine, TurbineChangeFlowRateMessage args)
+    {
+        turbine.FlowRate = Math.Clamp(args.FlowRate, 0f, turbine.FlowRateMax);
+        Dirty(uid, turbine);
+        UpdateUI(uid, turbine);
+        _adminLogger.Add(LogType.AtmosVolumeChanged, LogImpact.Medium,
+            $"{ToPrettyString(args.Actor):player} set the flow rate on {ToPrettyString(uid):device} to {args.FlowRate}");
+    }
+
+    private void OnTurbineStatorLoadChanged(EntityUid uid, TurbineComponent turbine, TurbineChangeStatorLoadMessage args)
+    {
+        turbine.StatorLoad = Math.Clamp(args.StatorLoad, 1000f, turbine.StatorLoadMax);
+        Dirty(uid, turbine);
+        UpdateUI(uid, turbine);
+        _adminLogger.Add(LogType.AtmosDeviceSetting, LogImpact.Medium,
+            $"{ToPrettyString(args.Actor):player} set the stator load on {ToPrettyString(uid):device} to {args.StatorLoad}");
     }
     #endregion
 

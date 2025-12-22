@@ -233,6 +233,12 @@ public sealed partial class TurbineComponent : Component
     public string SpeedLowPort = "TurbineSpeedLow";
 
     /// <summary>
+    /// The proto ID of the "Turbine Data" source port
+    /// </summary>
+    [DataField("turbineDataPort", customTypeSerializer: typeof(PrototypeIdSerializer<SourcePortPrototype>))]
+    public string TurbineDataPort = "GasTurbineDataSender";
+
+    /// <summary>
     /// The proto ID of the "Increase Stator Load" sink port
     /// </summary>
     [DataField("statorLoadIncreasePort", customTypeSerializer: typeof(PrototypeIdSerializer<SinkPortPrototype>))]
