@@ -72,14 +72,16 @@
     requirePower: false
   - type: Turbine
   - type: DeviceNetwork
-    deviceNetId: Wired
+    deviceNetId: Wireless
     receiveFrequencyId: BasicDevice
+  - type: WirelessNetworkConnection
+    range: 200
   - type: DeviceLinkSource
     range: 50
     ports:
-      - GasTurbineDataSender
       - TurbineSpeedHigh
       - TurbineSpeedLow
+      - GasTurbineDataSender
   - type: DeviceLinkSink
     ports:
       - IncreaseStatorLoad

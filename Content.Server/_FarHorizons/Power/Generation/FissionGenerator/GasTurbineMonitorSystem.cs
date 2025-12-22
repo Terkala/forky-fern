@@ -1,8 +1,11 @@
 using System.Diagnostics.CodeAnalysis;
 using Content.Server.Administration.Logs;
+using Content.Server.DeviceLinking.Systems;
 using Content.Shared._FarHorizons.Power.Generation.FissionGenerator;
 using Content.Shared.Database;
+using Content.Shared.DeviceLinking;
 using Content.Shared.DeviceLinking.Events;
+using Robust.Server.GameObjects;
 
 namespace Content.Server._FarHorizons.Power.Generation.FissionGenerator;
 
@@ -11,6 +14,9 @@ public sealed partial class GasTurbineMonitorSystem : EntitySystem
     [Dependency] private readonly EntityManager _entityManager = default!;
     [Dependency] private readonly IAdminLogManager _adminLog = default!;
     [Dependency] private readonly TurbineSystem _turbineSystem = default!;
+    [Dependency] private readonly SharedTransformSystem _transformSystem = default!;
+    [Dependency] private readonly DeviceLinkSystem _signal = default!;
+    [Dependency] private readonly UserInterfaceSystem _uiSystem = null!;
 
     private readonly float _threshold = 0.5f;
     private float _accumulator = 0f;
@@ -19,11 +25,31 @@ public sealed partial class GasTurbineMonitorSystem : EntitySystem
     {
         base.Initialize();
 
+        SubscribeLocalEvent<GasTurbineMonitorComponent, MapInitEvent>(OnMapInit);
+
         SubscribeLocalEvent<GasTurbineMonitorComponent, NewLinkEvent>(OnNewLink);
         SubscribeLocalEvent<GasTurbineMonitorComponent, PortDisconnectedEvent>(OnPortDisconnected);
 
         SubscribeLocalEvent<GasTurbineMonitorComponent, TurbineChangeFlowRateMessage>(OnTurbineFlowRateChanged);
         SubscribeLocalEvent<GasTurbineMonitorComponent, TurbineChangeStatorLoadMessage>(OnTurbineStatorLoadChanged);
+
+        SubscribeLocalEvent<GasTurbineMonitorComponent, AnchorStateChangedEvent>(OnAnchorChanged);
+    }
+
+    private void OnMapInit(EntityUid uid, GasTurbineMonitorComponent comp, ref MapInitEvent args)
+    {
+        if (!_entityManager.TryGetComponent<DeviceLinkSinkComponent>(uid, out var sink))
+            return;
+
+        foreach (var source in sink.LinkedSources)
+        {
+            if (!HasComp<TurbineComponent>(source))
+                continue;
+
+            comp.turbine = GetNetEntity(source);
+            Dirty(uid, comp);
+            return; // The return is to make it behave such that the first connetion that's a turbine is the one chosen
+        }
     }
 
     private void OnNewLink(EntityUid uid, GasTurbineMonitorComponent comp, ref NewLinkEvent args)
@@ -74,6 +100,7 @@ public sealed partial class GasTurbineMonitorSystem : EntitySystem
 
         while (query.MoveNext(out var uid, out var turbineMonitor))
         {
+            CheckRange(uid, turbineMonitor);
             if (!TryGetTurbineComp(turbineMonitor, out var turbine))
                 continue;
 
@@ -105,4 +132,37 @@ public sealed partial class GasTurbineMonitorSystem : EntitySystem
             $"{ToPrettyString(args.Actor):player} set the stator load on {ToPrettyString(uid):device} to {args.StatorLoad} through {ToPrettyString(uid):monitor}");
     }
     #endregion
+
+    private void OnAnchorChanged(EntityUid uid, GasTurbineMonitorComponent comp, ref AnchorStateChangedEvent args)
+    {
+        if (!args.Anchored)
+            return;
+
+        CheckRange(uid, comp);
+    }
+
+    private void CheckRange(EntityUid uid, GasTurbineMonitorComponent comp)
+    {
+        if (!_entityManager.TryGetComponent<DeviceLinkSinkComponent>(uid, out var sink) || sink.LinkedSources.Count < 1)
+            return;
+
+        if (!_entityManager.TryGetEntity(comp.turbine, out var uidTurbine))
+            return;
+
+        if (!_entityManager.TryGetComponent<DeviceLinkSourceComponent>(uidTurbine, out var source))
+            return;
+
+        var xformMonitor = Transform(uid);
+        var xformReactor = Transform(uidTurbine.Value);
+        var posMonitor = _transformSystem.GetWorldPosition(xformMonitor);
+        var posReactor = _transformSystem.GetWorldPosition(xformReactor);
+
+        if (xformMonitor.MapID == xformReactor.MapID && (posMonitor - posReactor).Length() <= source.Range)
+            return;
+
+        _uiSystem.CloseUi(uid, TurbineUiKey.Key);
+        comp.turbine = null;
+        _signal.RemoveSinkFromSource(uidTurbine.Value, uid, source, sink);
+        Dirty(uid, comp);
+    }
 }

@@ -63,6 +63,7 @@ public sealed class TurbineSystem : SharedTurbineSystem
         SubscribeLocalEvent<TurbineComponent, TurbineChangeStatorLoadMessage>(OnTurbineStatorLoadChanged);
 
         SubscribeLocalEvent<TurbineComponent, SignalReceivedEvent>(OnSignalReceived);
+        SubscribeLocalEvent<TurbineComponent, PortDisconnectedEvent>(OnPortDisconnected);
 
         SubscribeLocalEvent<TurbineComponent, AnchorStateChangedEvent>(OnAnchorChanged);
         SubscribeLocalEvent<TurbineComponent, UnanchorAttemptEvent>(OnUnanchorAttempt);
@@ -70,7 +71,7 @@ public sealed class TurbineSystem : SharedTurbineSystem
 
     private void OnInit(EntityUid uid, TurbineComponent comp, ref ComponentInit args)
     {
-        //_signal.EnsureSourcePorts(uid, comp.SpeedHighPort, comp.SpeedLowPort, comp.TurbineDataPort);
+        _signal.EnsureSourcePorts(uid, comp.SpeedHighPort, comp.SpeedLowPort, comp.TurbineDataPort);
         _signal.EnsureSinkPorts(uid, comp.StatorLoadIncreasePort, comp.StatorLoadDecreasePort);
     }
 
@@ -370,6 +371,14 @@ public sealed class TurbineSystem : SharedTurbineSystem
             logtext = "decrease";
 
         _adminLogger.Add(LogType.Action, $"{ToPrettyString(args.Trigger):trigger} set the stator load on {ToPrettyString(uid):target} to {logtext}");
+    }
+
+    private void OnPortDisconnected(EntityUid uid, TurbineComponent comp, ref PortDisconnectedEvent args)
+    {
+        if (args.Port == comp.StatorLoadIncreasePort)
+            comp.IncreasePortState = SignalState.Low;
+        if (args.Port == comp.StatorLoadDecreasePort)
+            comp.DecreasePortState = SignalState.Low;
     }
 
     #region Anchoring

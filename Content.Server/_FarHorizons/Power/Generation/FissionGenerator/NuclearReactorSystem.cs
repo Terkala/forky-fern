@@ -65,6 +65,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
     [Dependency] private readonly SharedTransformSystem _transform = default!;
     [Dependency] private readonly ThrowingSystem _throwingSystem = default!;
     [Dependency] private readonly TransformSystem _transformSystem = default!;
+
     public override void Initialize()
     {
         base.Initialize();
@@ -87,7 +88,9 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
 
         // Signal events
         SubscribeLocalEvent<NuclearReactorComponent, SignalReceivedEvent>(OnSignalReceived);
+        SubscribeLocalEvent<NuclearReactorComponent, PortDisconnectedEvent>(OnPortDisconnected);
 
+        // Anchor events
         SubscribeLocalEvent<NuclearReactorComponent, AnchorStateChangedEvent>(OnAnchorChanged);
         SubscribeLocalEvent<NuclearReactorComponent, UnanchorAttemptEvent>(OnUnanchorAttempt);
     }
@@ -867,6 +870,14 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
             logtext = "retract";
 
         _adminLog.Add(LogType.Action, $"{ToPrettyString(args.Trigger):trigger} set control rod insertion of {ToPrettyString(uid):target} to {logtext}");
+    }
+
+    private void OnPortDisconnected(EntityUid uid, NuclearReactorComponent comp, ref PortDisconnectedEvent args)
+    {
+        if (args.Port == comp.ControlRodInsertPort)
+            comp.InsertPortState = SignalState.Low;
+        if (args.Port == comp.ControlRodRetractPort)
+            comp.RetractPortState = SignalState.Low;
     }
 
     #region Anchoring
