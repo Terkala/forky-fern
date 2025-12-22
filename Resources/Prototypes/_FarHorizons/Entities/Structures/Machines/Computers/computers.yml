@@ -23,7 +23,7 @@
   - type: UserInterface
     interfaces:
       enum.NuclearReactorUiKey.Key:
-        type: NuclearReactorMonitorBoundUserInterface
+        type: NuclearReactorBoundUserInterface
   - type: AccessReader # You got a permit for that meltdown?
     access: [["Engineering"]]
   - type: Lock
