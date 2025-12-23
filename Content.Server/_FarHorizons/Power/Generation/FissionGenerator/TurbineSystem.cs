@@ -110,6 +110,7 @@ public sealed class TurbineSystem : SharedTurbineSystem
     {
         var supplier = Comp<PowerSupplierComponent>(uid);
         comp.SupplierMaxSupply = supplier.MaxSupply;
+        comp.SupplierLastSupply = supplier.CurrentSupply;
 
         supplier.MaxSupply = comp.LastGen;
 
@@ -332,6 +333,12 @@ public sealed class TurbineSystem : SharedTurbineSystem
                StatorLoadMin = 1000,
                StatorLoadMax = turbine.StatorLoadMax,
                StatorLoad = turbine.StatorLoad,
+
+               PowerGeneration = turbine.SupplierMaxSupply,
+               PowerSupply = turbine.SupplierLastSupply,
+
+               Health = turbine.BladeHealth,
+               HealthMax = turbine.BladeHealthMax,
            });
     }
 

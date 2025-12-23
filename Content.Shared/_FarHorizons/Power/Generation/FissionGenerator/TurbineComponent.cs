@@ -269,6 +269,8 @@ public sealed partial class TurbineComponent : Component
     [ViewVariables(VVAccess.ReadOnly)]
     public float SupplierMaxSupply = 0;
     [ViewVariables(VVAccess.ReadOnly)]
+    public float SupplierLastSupply = 0;
+    [ViewVariables(VVAccess.ReadOnly)]
     public float LastVolumeTransfer = 0;
     #endregion
 }

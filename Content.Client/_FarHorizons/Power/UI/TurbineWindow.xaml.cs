@@ -113,6 +113,9 @@ public sealed partial class TurbineWindow : FancyWindow
         StatorLoadIncrease.OnPressed += _ => TurbineStatorLoadChanged?.Invoke(TurbineStatorLoadSlider.Value + 100);
         StatorLoadIncreaseLarge.OnPressed += _ => TurbineStatorLoadChanged?.Invoke(TurbineStatorLoadSlider.Value + 1000);
 
+        CTabContainer.SetTabTitle(0, Loc.GetString("comp-turbine-ui-tab-main"));
+        CTabContainer.SetTabTitle(1, Loc.GetString("comp-turbine-ui-tab-parts"));
+
         return;
 
         void FlowTextChanged(bool suppress = false)
@@ -200,7 +203,13 @@ public sealed partial class TurbineWindow : FancyWindow
         TurbineStatorLoadSlider.Value = msg.StatorLoad;
         _suppressSliderEvents = false;
 
-        _speedLevel = ContentHelpers.RoundToNearestLevels(msg.RPM, msg.BestRPM*1.2, _speedMeter.Length);
+        _speedLevel = ContentHelpers.RoundToNearestLevels(msg.RPM, msg.BestRPM * 1.2, _speedMeter.Length);
+
+        BladeInfoIntegrity.Text = Math.Round(msg.Health * 100 / msg.HealthMax).ToString() + "%";
+        BladeInfoStress.Text = Math.Round(msg.RPM * 100 / (msg.BestRPM * 1.2)).ToString() + "%";
+
+        StatorInfoPotential.Text = Loc.GetString("comp-turbine-ui-power", ("power", msg.PowerGeneration));
+        StatorInfoSupply.Text = Loc.GetString("comp-turbine-ui-power", ("power", msg.PowerSupply));
     }
 
     private void UpdateIndicators(TurbineBuiState msg)

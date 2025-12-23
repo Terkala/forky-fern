@@ -101,7 +101,7 @@ public sealed partial class NuclearReactorWindow : FancyWindow
         ReactorRadsBar.Value = msg.ReactorRads;
         _radiationBar.BackgroundColor = GetColor(0, ReactorRadsBar.MaxValue * 0.5, msg.ReactorRads);
 
-        ReactorThermValue.Text = FormatPower(msg.ReactorTherm) + "t";
+        ReactorThermValue.Text = FormatPower(msg.ReactorTherm);
         ReactorThermBar.Value = msg.ReactorTherm;
         _powerBar.BackgroundColor = GetSteppedColor(ReactorThermBar.MaxValue * 0.75, ReactorThermBar.MaxValue, msg.ReactorTherm);
 
