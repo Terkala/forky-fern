@@ -68,8 +68,6 @@
           True: { visible: true }
           False: { visible: false }
   - type: Appearance
-  - type: Physics
-    bodyType: Static
   - type: InteractionOutline
   - type: Rotatable
   - type: Fixtures
