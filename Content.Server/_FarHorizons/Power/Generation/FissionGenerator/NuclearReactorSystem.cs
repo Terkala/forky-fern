@@ -284,9 +284,6 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
                     continue;
                 }
 
-                if (ReactorComp.Properties == null)
-                    _partSystem.SetProperties(ReactorComp, out ReactorComp.Properties);
-
                 var gas = _partSystem.ProcessGas(ReactorComp, ent, GasInput);
                 GasInput.Volume -= ReactorComp.GasVolume;
 
@@ -537,7 +534,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
                     var RC = comp.ComponentGrid[x, y];
                     if (RC == null)
                         return;
-                    MeltdownBadness += ((RC.Properties!.Radioactivity * 2) + (RC.Properties.NeutronRadioactivity * 5) + (RC.Properties.FissileIsotopes * 10)) * (RC.Melted ? 2 : 1);
+                    MeltdownBadness += ((RC.Properties.Radioactivity * 2) + (RC.Properties.NeutronRadioactivity * 5) + (RC.Properties.FissileIsotopes * 10)) * (RC.Melted ? 2 : 1);
                     if (RC.HasRodType(ReactorPartComponent.RodTypes.GasChannel))
                         _atmosphereSystem.Merge(comp.AirContents, RC.AirContents ?? new());
                 }
@@ -767,9 +764,6 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
                         dict.Add(new(x,y), new ReactorSlotBUIData { NeutronCount = reactor.NeutronGrid[x, y] });
                     continue;
                 }
-
-                if (reactorPart.Properties == null)
-                    _partSystem.SetProperties(reactorPart, out reactorPart.Properties);
 
                 dict.Add(new(x, y), new ReactorSlotBUIData
                 {
