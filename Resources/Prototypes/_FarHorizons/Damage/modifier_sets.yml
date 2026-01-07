@@ -1,0 +1,10 @@
+- type: damageModifierSet
+  id: StructuralReactorCasing
+  coefficients:
+    Blunt: 0            #you
+    Slash: 0            #aint
+    Piercing: 0         #gonna
+    Shock: 0            #do
+    Structural: 0.25    #shit
+  flatReductions:
+    Structural: 10

@@ -34,6 +34,10 @@ using Content.Shared.DeviceNetwork;
 using Content.Shared.Random;
 using Content.Shared.Random.Helpers;
 using Content.Shared.Throwing;
+using Content.Shared.Damage;
+using JetBrains.FormatRipper.Elf;
+using NAudio.CoreAudioApi;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Content.Server._FarHorizons.Power.Generation.FissionGenerator;
 
@@ -65,6 +69,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
     [Dependency] private readonly SharedTransformSystem _transform = default!;
     [Dependency] private readonly ThrowingSystem _throwingSystem = default!;
     [Dependency] private readonly TransformSystem _transformSystem = default!;
+    [Dependency] private readonly SharedPointLightSystem _lightSystem = default!;
 
     public override void Initialize()
     {
@@ -73,6 +78,8 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         // Component events
         SubscribeLocalEvent<NuclearReactorComponent, ComponentInit>(OnInit);
         SubscribeLocalEvent<NuclearReactorComponent, ComponentShutdown>(OnShutdown);
+
+        SubscribeLocalEvent<NuclearReactorComponent, DamageChangedEvent>(OnDamaged);
 
         // Atmos events
         SubscribeLocalEvent<NuclearReactorComponent, AtmosDeviceUpdateEvent>(OnUpdate);
@@ -557,6 +564,12 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         _audio.PlayPvs(new SoundPathSpecifier("/Audio/Effects/metal_break5.ogg"), uid);
         _explosionSystem.QueueExplosion(ent.Owner, "Radioactive", Math.Max(100, MeltdownBadness * 5), 1, 5, 0, canCreateVacuum: false);
 
+        var lightcomp = _lightSystem.EnsureLight(uid);
+        _lightSystem.SetEnergy(uid, 0.1f, lightcomp);
+        _lightSystem.SetFalloff(uid, 2, lightcomp);
+        _lightSystem.SetRadius(uid, (comp.ReactorGridWidth + comp.ReactorGridHeight) / 4, lightcomp);
+        _lightSystem.SetColor(uid, Color.FromHex("#FFAAAAFF"), lightcomp);
+
         // Reset grids
         comp.ComponentGrid = new ReactorPartComponent[comp.ReactorGridWidth, comp.ReactorGridHeight]; // Not Array.Clear due to ammonia
         Array.Clear(comp.NeutronGrid);
@@ -929,5 +942,43 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
     {
         QueueDel(comp.InletEnt);
         QueueDel(comp.OutletEnt);
+    }
+
+    private void OnDamaged(EntityUid uid, NuclearReactorComponent comp, ref DamageChangedEvent args)
+    {
+        if (!args.DamageIncreased || args.DamageDelta == null)
+            return;
+
+        var damage = (float)args.DamageDelta.GetTotal();
+        var destruction = 100;
+
+        var throwProb = Math.Clamp(damage / destruction, 0, 1);
+        var coords = _transformSystem.GetMapCoordinates(uid);
+        for (var x = 0; x < comp.ReactorGridWidth; x++)
+            for (var y = 0; y < comp.ReactorGridHeight; y++)
+                if (comp.ComponentGrid[x, y] != null && _random.Prob(throwProb))
+                {
+                    var reactorPart = comp.ComponentGrid[x, y];
+                    if (reactorPart == null)
+                        continue;
+
+                    EntityUid item;
+                    if (_random.Prob(0.5f) || reactorPart.Melted)
+                        item = Spawn("NuclearDebrisChunk", coords);
+                    else
+                    {
+                        item = Spawn(reactorPart.ProtoId, coords);
+                        _entityManager.RemoveComponent<ReactorPartComponent>(item);
+                        _entityManager.AddComponent(item, new ReactorPartComponent(reactorPart));
+                    }
+
+                    _throwingSystem.TryThrow(item, _random.NextAngle().ToVec().Normalized(), _random.NextFloat(8, 16), uid);
+                    _adminLog.Add(LogType.Action, $"Damage by {ToPrettyString(args.Origin):actor} removed {ToPrettyString(item):item} from position {x},{y} in {ToPrettyString(uid):target}");
+
+                    comp.ComponentGrid[x, y] = null;
+
+                    UpdateGridVisual((uid, comp));
+                    UpdateGasVolume(comp);
+                }
     }
 }
