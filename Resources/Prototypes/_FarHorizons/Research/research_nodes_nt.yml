@@ -1,0 +1,74 @@
+- type: researchTreeNode
+  id: NuclearPowerGeneration
+  name: research-tree-node-nuclear-reactor
+  cost: 7500
+  icon:
+    state: power
+    color: "#EFB341"
+  tier: Tier1
+  requires:
+    - PowerGeneration
+  unlocks:
+    - NuclearFabricatorMachineCircuitboard
+    - UraniumReactorFuelRod
+    - PlasmaReactorFuelRod
+    - UraniumGlassReactorFuelRod
+    - SilverReactorControlRod
+    - PlasteelReactorControlRod
+    - PlasmaGlassReactorControlRod
+    - SilverReactorGasChannel
+    - PlasteelReactorGasChannel
+    - PlasmaGlassReactorGasChannel
+    - SilverReactorHeatExchanger
+    - PlasteelReactorHeatExchanger
+    - PlasmaGlassReactorHeatExchanger
+    - PlasteelGasTurbineBlade
+    - BrassGasTurbineBlade
+    - SilverGasTurbineStator
+
+# Power
+- type: researchTreeNode
+  id: NuclearPowerRecycling
+  name: research-tree-node-nuclear-2
+  cost: 12500
+  icon:
+    state: power
+    color: "#EFB341"
+  tier: Tier2
+  requires:
+    - NuclearPowerGeneration
+  unlocks:
+    - NuclearCentrifugeMachineCircuitboard
+    - PlutoniumReactorFuelRod
+    - BananiumReactorFuelRod
+    - GoldReactorControlRod
+    - DiamondReactorControlRod
+    - GoldReactorGasChannel
+    - DiamondReactorGasChannel
+    - GoldReactorHeatExchanger
+    - DiamondReactorHeatExchanger
+    - GoldGasTurbineBlade
+    - DiamondGasTurbineBlade
+    - GoldGasTurbineStator
+  announceTo:
+    - Engineering
+
+# Power
+- type: researchTreeNode
+  id: Microreactor
+  name: research-tree-node-microreactor
+  cost: 10000
+  icon:
+    state: power
+    color: "#EFB341"
+  tier: Tier3
+  requires:
+    - AdvancedTools
+    - NuclearPowerRecycling
+  unlocks:
+    - PowerCellMicroreactor
+    - PowerCellHyper
+  announceTo:
+    - Engineering
+
+
