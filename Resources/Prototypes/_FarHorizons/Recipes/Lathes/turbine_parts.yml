@@ -1,0 +1,26 @@
+# Base prototypes
+
+- type: latheRecipe
+  abstract: true
+  id: BaseGasTurbinePartRecipe
+  categories:
+  - Engineering
+  completetime: 10
+
+## Recipes
+
+# Blades
+- type: latheRecipe
+  parent: BaseGasTurbinePartRecipe
+  id: SteelGasTurbineBlade
+  result: SteelGasTurbineBlade
+  materials:
+    Steel: 2000
+
+# Stators
+- type: latheRecipe
+  parent: BaseGasTurbinePartRecipe
+  id: SteelGasTurbineStator
+  result: SteelGasTurbineStator
+  materials:
+    Steel: 2000

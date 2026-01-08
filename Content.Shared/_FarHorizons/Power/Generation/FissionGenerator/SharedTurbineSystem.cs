@@ -6,6 +6,7 @@ using Content.Shared.Examine;
 using Content.Shared.Interaction;
 using Content.Shared.Popups;
 using Content.Shared.Repairable;
+using Content.Shared.Tools.Components;
 using Content.Shared.Tools.Systems;
 using Robust.Shared.Audio;
 using Robust.Shared.Audio.Systems;
@@ -164,10 +165,27 @@ public abstract class SharedTurbineSystem : EntitySystem
         if (args.Handled)
             return;
 
-        if (comp.BladeHealth >= comp.BladeHealthMax && !comp.Ruined)
-            return;
+        if(_toolSystem.HasQuality(args.Used, comp.RepairTool))
+        {
+            if (comp.CurrentBlade == null)
+            {
+                _popupSystem.PopupEntity(Loc.GetString("gas-turbine-repair-fail-blade"), args.User, args.User, PopupType.Medium);
+                args.Handled = true;
+                return;
+            }
 
-        args.Handled = _toolSystem.UseTool(args.Used, args.User, uid, comp.RepairDelay, comp.RepairTool, new RepairFinishedEvent(), comp.RepairFuelCost);
+            if (comp.CurrentStator == null)
+            {
+                _popupSystem.PopupEntity(Loc.GetString("gas-turbine-repair-fail-stator"), args.User, args.User, PopupType.Medium);
+                args.Handled = true;
+                return;
+            }
+
+            if (comp.BladeHealth >= comp.BladeHealthMax && !comp.Ruined)
+                return;
+
+            args.Handled = _toolSystem.UseTool(args.Used, args.User, uid, comp.RepairDelay, comp.RepairTool, new RepairFinishedEvent(), comp.RepairFuelCost);
+        }
     }
 
     //Gotta love server/client desync

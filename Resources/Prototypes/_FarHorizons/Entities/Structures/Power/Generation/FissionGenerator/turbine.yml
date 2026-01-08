@@ -74,6 +74,22 @@
   - type: Electrified
     enabled: false
     requirePower: false
+  - type: ContainerContainer
+    containers:
+      blade_slot: !type:ContainerSlot {}
+      stator_slot: !type:ContainerSlot {}
+  - type: ItemSlots
+    slots:
+      blade_slot:
+        startingItem: SteelGasTurbineBlade
+        whitelist:
+          components:
+            - GasTurbineBlade
+      stator_slot:
+        startingItem: SteelGasTurbineStator
+        whitelist:
+          components:
+            - GasTurbineStator
   - type: Turbine
   - type: DeviceNetwork
     deviceNetId: Wireless

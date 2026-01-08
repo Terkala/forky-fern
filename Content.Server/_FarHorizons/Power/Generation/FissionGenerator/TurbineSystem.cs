@@ -22,6 +22,9 @@ using Content.Shared.DeviceNetwork;
 using Content.Shared.Damage;
 using Content.Shared.EntityEffects.Effects;
 using Content.Shared.Explosion;
+using Content.Shared.Containers.ItemSlots;
+using Robust.Shared.Containers;
+using System.Linq;
 
 namespace Content.Server._FarHorizons.Power.Generation.FissionGenerator;
 
@@ -42,6 +45,8 @@ public sealed class TurbineSystem : SharedTurbineSystem
     [Dependency] private readonly UserInterfaceSystem _uiSystem = null!;
     [Dependency] private readonly DeviceLinkSystem _signal = default!;
     [Dependency] private readonly SharedTransformSystem _transform = default!;
+    [Dependency] private readonly EntityManager _entityManager = default!;
+    [Dependency] private readonly ItemSlotsSystem _slotsSystem = default!;
 
     public event Action<string>? TurbineRepairMessage;
 
@@ -61,6 +66,11 @@ public sealed class TurbineSystem : SharedTurbineSystem
 
         SubscribeLocalEvent<TurbineComponent, DamageChangedEvent>(OnDamaged);
 
+        SubscribeLocalEvent<TurbineComponent, ItemSlotInsertAttemptEvent>(OnInsertAttempt);
+        SubscribeLocalEvent<TurbineComponent, ItemSlotEjectAttemptEvent>(OnEjectAttempt);
+        SubscribeLocalEvent<TurbineComponent, EntInsertedIntoContainerMessage>(OnPartInserted);
+        SubscribeLocalEvent<TurbineComponent, EntRemovedFromContainerMessage>(OnPartEjected);
+
         SubscribeLocalEvent<TurbineComponent, AtmosDeviceUpdateEvent>(OnUpdate);
         SubscribeLocalEvent<TurbineComponent, GasAnalyzerScanEvent>(OnAnalyze);
 
@@ -78,6 +88,13 @@ public sealed class TurbineSystem : SharedTurbineSystem
     {
         _signal.EnsureSourcePorts(uid, comp.SpeedHighPort, comp.SpeedLowPort, comp.TurbineDataPort);
         _signal.EnsureSinkPorts(uid, comp.StatorLoadIncreasePort, comp.StatorLoadDecreasePort);
+
+        if (_slotsSystem.TryGetSlot(uid, "blade_slot", out var bladeSlot))
+            comp.CurrentBlade = bladeSlot.Item;
+        if (_slotsSystem.TryGetSlot(uid, "stator_slot", out var statorSlot))
+            comp.CurrentStator = statorSlot.Item;
+
+        UpdatePartValues(comp);
     }
 
     private void OnAnalyze(EntityUid uid, TurbineComponent comp, ref GasAnalyzerScanEvent args)
@@ -130,6 +147,9 @@ public sealed class TurbineSystem : SharedTurbineSystem
             return;
         if (!_nodeContainer.TryGetNode(comp.OutletEnt.Value, comp.PipeName, out PipeNode? outlet))
             return;
+
+        if (comp.CurrentBlade == null || comp.CurrentStator == null)
+            comp.Ruined = true;
 
         UpdateAppearance(uid, comp);
 
@@ -296,12 +316,19 @@ public sealed class TurbineSystem : SharedTurbineSystem
     {
         _audio.PlayPvs(new SoundPathSpecifier("/Audio/Effects/metal_break5.ogg"), uid, AudioParams.Default);
         _popupSystem.PopupEntity(Loc.GetString("turbine-explode", ("owner", uid)), uid, PopupType.LargeCaution);
+
         _explosion.QueueExplosion(uid, "Default", comp.RPM / 10, 15, 5, 0, canCreateVacuum: false);
+
         if (comp.RPM > comp.BestRPM / 6) // If it's barely moving then there's not really reason it would throw shrapnel
             ShootShrapnel(uid);
+
         _adminLogger.Add(LogType.Explosion, LogImpact.High, $"{ToPrettyString(uid)} destroyed by overspeeding for too long");
+
         comp.Ruined = true;
         comp.RPM = 0;
+        _entityManager.QueueDeleteEntity(comp.CurrentBlade);
+        comp.CurrentBlade = null;
+
         UpdateAppearance(uid, comp);
     }
 
@@ -454,9 +481,84 @@ public sealed class TurbineSystem : SharedTurbineSystem
 
         if (comp.RPM > comp.BestRPM / 6)
             TearApart(uid, comp);
-        //set blade to null
-        //if (_random.Prob(Math.Clamp(ratio - 1f, 0, 1)))
-        //    set stator to null
+        _entityManager.QueueDeleteEntity(comp.CurrentBlade);
+        comp.CurrentBlade = null;
+        if (_random.Prob(Math.Clamp(ratio - 1f, 0, 1)))
+        {
+            _entityManager.QueueDeleteEntity(comp.CurrentStator);
+            comp.CurrentStator = null;
+        }
         comp.Ruined = true;
+    }
+
+    private void OnEjectAttempt(EntityUid uid, TurbineComponent comp, ref ItemSlotEjectAttemptEvent args)
+    {
+        if (comp.RPM < 1)
+            return;
+
+        args.Cancelled = true;
+        if(args.User != null)
+            _popupSystem.PopupEntity(Loc.GetString("gas-turbine-eject-fail-speed", ("item", args.Item)), args.User.Value, args.User.Value);
+    }
+
+    private void OnInsertAttempt(EntityUid uid, TurbineComponent comp, ref ItemSlotInsertAttemptEvent args)
+    {
+        if (comp.RPM < 1)
+            return;
+
+        args.Cancelled = true;
+        if (args.User != null)
+            _popupSystem.PopupEntity(Loc.GetString("gas-turbine-insert-fail-speed", ("item", args.Item)), args.User.Value, args.User.Value);
+    }
+
+    private void OnPartInserted(EntityUid uid, TurbineComponent comp, ref EntInsertedIntoContainerMessage args)
+    {
+        switch (args.Container.ID)
+        {
+            case "blade_slot":
+                comp.CurrentBlade = args.Container.ContainedEntities[0];
+                break;
+            case "stator_slot":
+                comp.CurrentStator = args.Container.ContainedEntities[0];
+                break;
+            default:
+                return;
+        }
+        UpdatePartValues(comp);
+    }
+
+    private void OnPartEjected(EntityUid uid, TurbineComponent comp, ref EntRemovedFromContainerMessage args)
+    {
+        switch (args.Container.ID)
+        {
+            case "blade_slot":
+                comp.CurrentBlade = null;
+                break;
+            case "stator_slot":
+                comp.CurrentStator = null;
+                break;
+            default:
+                return;
+        }
+        UpdatePartValues(comp);
+    }
+
+    private void UpdatePartValues(TurbineComponent comp)
+    {
+        _entityManager.TryGetComponent<GasTurbineBladeComponent>(comp.CurrentBlade, out var bladeComp);
+        _entityManager.TryGetComponent<GasTurbineStatorComponent>(comp.CurrentStator, out var statorComp);
+
+        if (bladeComp != null)
+        {
+            comp.TurbineMass = Math.Max(200, 200 * bladeComp.Properties.Density);
+            comp.BladeHealthMax = (int)Math.Max(1, 5 * bladeComp.Properties.Hardness);
+            comp.BladeHealth = comp.BladeHealthMax;
+        }
+
+        if (statorComp != null)
+        {
+            comp.PowerMultiplier = (float)Math.Max(0.2, 0.2 * statorComp.Properties.ElectricalConductivity);
+            comp.StatorLoadMax = (float)Math.Max(100000, 100000 * statorComp.Properties.ElectricalConductivity);
+        }
     }
 }

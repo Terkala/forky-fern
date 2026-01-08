@@ -1,0 +1,58 @@
+- type: entity
+  id: BaseGasTurbinePart
+  parent: BaseItem
+  abstract: true
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Sprite
+    sprite: _FarHorizons/Structures/Power/Generation/FissionGenerator/turbine_parts.rsi
+    state: turbine_blade
+  - type: Item
+    size: Huge
+  - type: MultiHandedItem
+  - type: GuideHelp
+    guides:
+    - NuclearReactor
+    - Power
+ 
+# Blades
+- type: entity
+  id: BaseGasTurbineBlade
+  parent: BaseGasTurbinePart
+  categories: [ HideSpawnMenu ]
+  name: gas turbine blade
+  description: A replacement blade for the gas turbine.
+  components:
+  - type: GasTurbineBlade
+  - type: Tag
+    tags:
+    - GasTurbineBlade
+
+- type: entity
+  id: SteelGasTurbineBlade
+  parent: BaseGasTurbineBlade
+  components:
+  - type: GasTurbineBlade
+    material: Steel
+
+# Stators
+- type: entity
+  id: BaseGasTurbineStator
+  parent: BaseGasTurbinePart
+  categories: [ HideSpawnMenu ]
+  name: gas turbine stator
+  description: A replacement stator for the gas turbine.
+  components:
+  - type: Sprite
+    state: turbine_stator
+  - type: GasTurbineStator
+  - type: Tag
+    tags:
+    - GasTurbineStator
+
+- type: entity
+  id: SteelGasTurbineStator
+  parent: BaseGasTurbineStator
+  components:
+  - type: GasTurbineStator
+    material: Steel
