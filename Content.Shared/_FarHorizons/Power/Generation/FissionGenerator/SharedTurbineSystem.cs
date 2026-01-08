@@ -1,4 +1,5 @@
 using Content.Shared.Administration.Logs;
+using Content.Shared.Damage;
 using Content.Shared.Database;
 using Content.Shared.Electrocution;
 using Content.Shared.Examine;
@@ -23,6 +24,7 @@ public abstract class SharedTurbineSystem : EntitySystem
     [Dependency] private readonly SharedPopupSystem _popupSystem = default!;
     [Dependency] private readonly SharedToolSystem _toolSystem = default!;
     [Dependency] private readonly EntityManager _entityManager = default!;
+    [Dependency] private readonly DamageableSystem _damageableSystem = default!;
 
     private readonly float _threshold = 0.5f;
     private float _accumulator = 0f;
@@ -182,19 +184,21 @@ public abstract class SharedTurbineSystem : EntitySystem
             comp.Ruined = false;
             if (comp.BladeHealth <= 0) { comp.BladeHealth = 1; }
             UpdateHealthIndicators(ent.Owner, comp);
-            return;
         }
         else if (comp.BladeHealth < comp.BladeHealthMax)
         {
             comp.BladeHealth++;
             UpdateHealthIndicators(ent.Owner, comp);
-            return;
         }
         else if (comp.BladeHealth >= comp.BladeHealthMax)
         {
             // This should technically never occur, but just in case...
-            return;
         }
+
+        if (!_entityManager.TryGetComponent<DamageableComponent>(ent.Owner, out var damageableComponent))
+            return;
+
+        _damageableSystem.SetAllDamage(ent.Owner, damageableComponent, 0);
     }
 
     protected void UpdateHealthIndicators(EntityUid uid, TurbineComponent comp)

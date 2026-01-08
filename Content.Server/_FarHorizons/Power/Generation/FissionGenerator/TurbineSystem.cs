@@ -19,6 +19,9 @@ using Content.Server.DeviceLinking.Systems;
 using Content.Shared.Construction.Components;
 using Content.Shared.DeviceLinking;
 using Content.Shared.DeviceNetwork;
+using Content.Shared.Damage;
+using Content.Shared.EntityEffects.Effects;
+using Content.Shared.Explosion;
 
 namespace Content.Server._FarHorizons.Power.Generation.FissionGenerator;
 
@@ -55,6 +58,8 @@ public sealed class TurbineSystem : SharedTurbineSystem
         base.Initialize();
         SubscribeLocalEvent<TurbineComponent, ComponentInit>(OnInit);
         SubscribeLocalEvent<TurbineComponent, ComponentShutdown>(OnShutdown);
+
+        SubscribeLocalEvent<TurbineComponent, DamageChangedEvent>(OnDamaged);
 
         SubscribeLocalEvent<TurbineComponent, AtmosDeviceUpdateEvent>(OnUpdate);
         SubscribeLocalEvent<TurbineComponent, GasAnalyzerScanEvent>(OnAnalyze);
@@ -292,7 +297,8 @@ public sealed class TurbineSystem : SharedTurbineSystem
         _audio.PlayPvs(new SoundPathSpecifier("/Audio/Effects/metal_break5.ogg"), uid, AudioParams.Default);
         _popupSystem.PopupEntity(Loc.GetString("turbine-explode", ("owner", uid)), uid, PopupType.LargeCaution);
         _explosion.QueueExplosion(uid, "Default", comp.RPM / 10, 15, 5, 0, canCreateVacuum: false);
-        ShootShrapnel(uid);
+        if (comp.RPM > comp.BestRPM / 6) // If it's barely moving then there's not really reason it would throw shrapnel
+            ShootShrapnel(uid);
         _adminLogger.Add(LogType.Explosion, LogImpact.High, $"{ToPrettyString(uid)} destroyed by overspeeding for too long");
         comp.Ruined = true;
         comp.RPM = 0;
@@ -425,5 +431,32 @@ public sealed class TurbineSystem : SharedTurbineSystem
     {
         QueueDel(comp.InletEnt);
         QueueDel(comp.OutletEnt);
+    }
+
+    private void OnDamaged(EntityUid uid, TurbineComponent comp, ref DamageChangedEvent args)
+    {
+        if (comp.Ruined)
+            return;
+
+        if (!args.DamageIncreased || args.DamageDelta == null)
+            return;
+
+        var damage = (float)args.DamageDelta.GetTotal();
+        var threshold = 50;
+        var ratio = damage / threshold;
+
+        if(ratio < 1)
+        {
+            comp.BladeHealth -= _random.Next(1, (int)(3f * ratio) + 1);
+            UpdateHealthIndicators(uid, comp);
+            return;
+        }
+
+        if (comp.RPM > comp.BestRPM / 6)
+            TearApart(uid, comp);
+        //set blade to null
+        //if (_random.Prob(Math.Clamp(ratio - 1f, 0, 1)))
+        //    set stator to null
+        comp.Ruined = true;
     }
 }

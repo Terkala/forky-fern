@@ -49,6 +49,9 @@
         - MachineMask
         layer:
         - MachineLayer
+  - type: Damageable
+    damageContainer: StructuralInorganic
+    damageModifierSet: StructuralMetallicStrong
   - type: Anchorable
   - type: NodeContainer
     examinable: true
