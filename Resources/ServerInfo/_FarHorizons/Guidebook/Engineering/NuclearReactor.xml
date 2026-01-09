@@ -37,7 +37,7 @@
 
 	If it is hotter than 80C you'll need gloves to be able to handle them. At 400C, not even gloves will protect you.
 
-	There are four different types of Reactor Rods that can be manufactured from a variety of materials and placed into the Reactor grid: Fuel Rods, Control Rods, Gas Channels, and Heat Exchangers.
+	There are four different types of Reactor Rods that can be manufactured from a variety of [textlink="materials" link="NuclearMaterials"] and placed into the Reactor grid: Fuel Rods, Control Rods, Gas Channels, and Heat Exchangers.
 
 	### Fuel Rods
 	Fuel Rods are the source of neutrons and heat within the Reactor.
@@ -49,7 +49,7 @@
 	- [bold]Radioactivity[/bold]: Creates neutrons and heat. Decays into Spent Fuel.
 
 	They also keep track of how much [bold]Spent Fuel[/bold] they contain, which does not affect the Fuel Rod's performance, but can indicate when it is time to replace it.
-	
+
 	<Box>
 		<GuideEntityEmbed Entity="NuclearCentrifuge"/>
 		<GuideEntityEmbed Entity="IngotPlutonium"/>
@@ -229,6 +229,31 @@
 	The gas going into the Turbine is too cold.
 
 	If the gas is at or below room temperature (20C), there is no energy for the Turbine to take out of it.
+
+	## Turbine Parts
+	<Box>
+		<GuideEntityEmbed Entity="NuclearFabricator"/>
+	</Box>
+	<Box>
+		<GuideEntityEmbed Entity="SteelGasTurbineBlade" Caption="turbine blade"/>
+		<GuideEntityEmbed Entity="SteelGasTurbineStator" Caption="stator"/>
+	</Box>
+
+	Turbine parts are what define how well the turbine functions.
+
+	Turbine parts are made in the Nuclear Fabricator from a set of [textlink="materials" link="NuclearMaterials"].
+
+	The Turbine is capable of accepting two different types of parts: Blades and Stators
+
+	### Turbine Blades
+	Turbine blades govern the integrity and inertia of the turbine.
+
+	Higher integrity means it can take more damage before failing, making it generally safer.
+
+	Higher inertia means it will take more energy to change the RPM, which leads to smoother operation.
+	
+	### Stators
+	Stators affect the power efficiency and output of the Turbine.
 
 
 	# Starting the Nuclear Generator
