@@ -1,12 +1,10 @@
 using Content.Shared.Administration.Logs;
 using Content.Shared.Damage;
-using Content.Shared.Database;
 using Content.Shared.Electrocution;
 using Content.Shared.Examine;
 using Content.Shared.Interaction;
 using Content.Shared.Popups;
 using Content.Shared.Repairable;
-using Content.Shared.Tools.Components;
 using Content.Shared.Tools.Systems;
 using Robust.Shared.Audio;
 using Robust.Shared.Audio.Systems;
@@ -26,9 +24,6 @@ public abstract class SharedTurbineSystem : EntitySystem
     [Dependency] private readonly SharedToolSystem _toolSystem = default!;
     [Dependency] private readonly EntityManager _entityManager = default!;
     [Dependency] private readonly DamageableSystem _damageableSystem = default!;
-
-    private readonly float _threshold = 0.5f;
-    private float _accumulator = 0f;
 
     public override void Initialize()
     {
@@ -95,39 +90,12 @@ public abstract class SharedTurbineSystem : EntitySystem
         }
     }
 
-    public override void Update(float frameTime)
-    {
-        _accumulator += frameTime;
-        if (_accumulator > _threshold)
-        {
-            AccUpdate();
-            _accumulator = 0;
-        }
-    }
-
-    protected virtual void AccUpdate() { }
-
     protected void UpdateAppearance(EntityUid uid, TurbineComponent? comp = null, AppearanceComponent? appearance = null)
     {
         if (!Resolve(uid, ref comp, ref appearance, false))
             return;
 
-        _appearance.TryGetData<bool>(uid, TurbineVisuals.TurbineRuined, out var IsSpriteRuined);
-        if (comp.Ruined)
-        {
-            if (!IsSpriteRuined)
-            {
-                _appearance.SetData(uid, TurbineVisuals.TurbineRuined, true);
-            }
-        }
-        else
-        {
-            if (IsSpriteRuined)
-            {
-                _appearance.SetData(uid, TurbineVisuals.TurbineRuined, false);
-            }
-            _appearance.SetData(uid, TurbineVisuals.TurbineSpeed, comp.RPM > 1);
-        }
+        _appearance.SetData(uid, TurbineVisuals.TurbineRuined, comp.Ruined);
 
         _appearance.SetData(uid, TurbineVisuals.DamageSpark, comp.IsSparking);
         _appearance.SetData(uid, TurbineVisuals.DamageSmoke, comp.IsSmoking);
@@ -189,34 +157,31 @@ public abstract class SharedTurbineSystem : EntitySystem
     }
 
     //Gotta love server/client desync
-    protected virtual void OnRepairTurbineFinished(Entity<TurbineComponent> ent, ref RepairFinishedEvent args)
+    protected virtual void OnRepairTurbineFinished(EntityUid uid, TurbineComponent comp, ref RepairFinishedEvent args)
     {
         if (args.Cancelled)
-            return;
-
-        if (!TryComp(ent.Owner, out TurbineComponent? comp))
             return;
 
         if (comp.Ruined)
         {
             comp.Ruined = false;
             if (comp.BladeHealth <= 0) { comp.BladeHealth = 1; }
-            UpdateHealthIndicators(ent.Owner, comp);
+            UpdateHealthIndicators(uid, comp);
         }
         else if (comp.BladeHealth < comp.BladeHealthMax)
         {
             comp.BladeHealth++;
-            UpdateHealthIndicators(ent.Owner, comp);
+            UpdateHealthIndicators(uid, comp);
         }
         else if (comp.BladeHealth >= comp.BladeHealthMax)
         {
             // This should technically never occur, but just in case...
         }
 
-        if (!_entityManager.TryGetComponent<DamageableComponent>(ent.Owner, out var damageableComponent))
+        if (!_entityManager.TryGetComponent<DamageableComponent>(uid, out var damageableComponent))
             return;
 
-        _damageableSystem.SetAllDamage(ent.Owner, damageableComponent, 0);
+        _damageableSystem.SetAllDamage(uid, damageableComponent, 0);
     }
 
     protected void UpdateHealthIndicators(EntityUid uid, TurbineComponent comp)
