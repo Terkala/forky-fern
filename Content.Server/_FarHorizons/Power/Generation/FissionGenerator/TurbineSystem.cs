@@ -20,11 +20,9 @@ using Content.Shared.Construction.Components;
 using Content.Shared.DeviceLinking;
 using Content.Shared.DeviceNetwork;
 using Content.Shared.Damage;
-using Content.Shared.EntityEffects.Effects;
-using Content.Shared.Explosion;
 using Content.Shared.Containers.ItemSlots;
 using Robust.Shared.Containers;
-using System.Linq;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Content.Server._FarHorizons.Power.Generation.FissionGenerator;
 
@@ -46,7 +44,7 @@ public sealed class TurbineSystem : SharedTurbineSystem
     [Dependency] private readonly DeviceLinkSystem _signal = default!;
     [Dependency] private readonly SharedTransformSystem _transform = default!;
     [Dependency] private readonly EntityManager _entityManager = default!;
-    [Dependency] private readonly ItemSlotsSystem _slotsSystem = default!;
+    [Dependency] private readonly SharedContainerSystem _containerSystem = default!;
 
     public event Action<string>? TurbineRepairMessage;
 
@@ -61,7 +59,7 @@ public sealed class TurbineSystem : SharedTurbineSystem
     public override void Initialize()
     {
         base.Initialize();
-        SubscribeLocalEvent<TurbineComponent, ComponentInit>(OnInit);
+        SubscribeLocalEvent<TurbineComponent, MapInitEvent>(OnInit);
         SubscribeLocalEvent<TurbineComponent, ComponentShutdown>(OnShutdown);
 
         SubscribeLocalEvent<TurbineComponent, DamageChangedEvent>(OnDamaged);
@@ -83,18 +81,31 @@ public sealed class TurbineSystem : SharedTurbineSystem
         SubscribeLocalEvent<TurbineComponent, AnchorStateChangedEvent>(OnAnchorChanged);
         SubscribeLocalEvent<TurbineComponent, UnanchorAttemptEvent>(OnUnanchorAttempt);
     }
-    
-    private void OnInit(EntityUid uid, TurbineComponent comp, ref ComponentInit args)
+
+    private const string BladeContainer = "blade_slot";
+    private const string StatorContainer = "stator_slot";
+
+    private void OnInit(EntityUid uid, TurbineComponent comp, ref MapInitEvent args)
     {
         _signal.EnsureSourcePorts(uid, comp.SpeedHighPort, comp.SpeedLowPort, comp.TurbineDataPort);
         _signal.EnsureSinkPorts(uid, comp.StatorLoadIncreasePort, comp.StatorLoadDecreasePort);
 
-        if (_slotsSystem.TryGetSlot(uid, "blade_slot", out var bladeSlot))
-            comp.CurrentBlade = bladeSlot.Item;
-        if (_slotsSystem.TryGetSlot(uid, "stator_slot", out var statorSlot))
-            comp.CurrentStator = statorSlot.Item;
+        TryGetPart(uid, BladeContainer, out comp.CurrentBlade);
+        TryGetPart(uid, StatorContainer, out comp.CurrentStator);
 
         UpdatePartValues(comp);
+    }
+
+    private bool TryGetPart(EntityUid uid, string slot, [NotNullWhen(true)] out EntityUid? part)
+    {
+        part = null;
+
+        if (!_containerSystem.TryGetContainer(uid, slot, out var container) || container.ContainedEntities.Count == 0)
+            return false;
+
+        part = container.ContainedEntities[0];
+
+        return true;
     }
 
     private void OnAnalyze(EntityUid uid, TurbineComponent comp, ref GasAnalyzerScanEvent args)
@@ -514,10 +525,10 @@ public sealed class TurbineSystem : SharedTurbineSystem
     {
         switch (args.Container.ID)
         {
-            case "blade_slot":
+            case BladeContainer:
                 comp.CurrentBlade = args.Container.ContainedEntities[0];
                 break;
-            case "stator_slot":
+            case StatorContainer:
                 comp.CurrentStator = args.Container.ContainedEntities[0];
                 break;
             default:
@@ -530,10 +541,10 @@ public sealed class TurbineSystem : SharedTurbineSystem
     {
         switch (args.Container.ID)
         {
-            case "blade_slot":
+            case BladeContainer:
                 comp.CurrentBlade = null;
                 break;
-            case "stator_slot":
+            case StatorContainer:
                 comp.CurrentStator = null;
                 break;
             default:

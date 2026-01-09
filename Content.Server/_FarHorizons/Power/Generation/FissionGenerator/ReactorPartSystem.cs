@@ -45,15 +45,19 @@ public sealed class ReactorPartSystem : SharedReactorPartSystem
     public override void Initialize()
     {
         base.Initialize();
-        SubscribeLocalEvent<ReactorPartComponent, ComponentInit>(OnInit);
+        SubscribeLocalEvent<ReactorPartComponent, MapInitEvent>(OnInit);
         SubscribeLocalEvent<ReactorPartComponent, ExaminedEvent>(OnExamine);
         SubscribeLocalEvent<ReactorPartComponent, IngestedEvent>(OnIngest);
     }
 
-    private void OnInit(EntityUid uid, ReactorPartComponent component, ref ComponentInit args)
+    private void OnInit(EntityUid uid, ReactorPartComponent component, ref MapInitEvent args)
     {
-        var radcomp = EnsureComp<RadiationSourceComponent>(uid);
-        radcomp.Intensity = (component.Properties.Radioactivity * 0.1f) + (component.Properties.NeutronRadioactivity * 0.15f) + (component.Properties.FissileIsotopes * 0.125f);
+        var radvalue = (component.Properties.Radioactivity * 0.1f) + (component.Properties.NeutronRadioactivity * 0.15f) + (component.Properties.FissileIsotopes * 0.125f);
+        if (radvalue > 0)
+        {
+            var radcomp = EnsureComp<RadiationSourceComponent>(uid);
+            radcomp.Intensity = radvalue;
+        }
 
         if (component.Properties.NeutronRadioactivity > 0)
         {

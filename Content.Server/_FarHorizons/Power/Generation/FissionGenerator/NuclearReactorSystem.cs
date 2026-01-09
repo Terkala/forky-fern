@@ -76,7 +76,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         base.Initialize();
 
         // Component events
-        SubscribeLocalEvent<NuclearReactorComponent, ComponentInit>(OnInit);
+        SubscribeLocalEvent<NuclearReactorComponent, MapInitEvent>(OnInit);
         SubscribeLocalEvent<NuclearReactorComponent, ComponentShutdown>(OnShutdown);
 
         SubscribeLocalEvent<NuclearReactorComponent, DamageChangedEvent>(OnDamaged);
@@ -102,7 +102,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         SubscribeLocalEvent<NuclearReactorComponent, UnanchorAttemptEvent>(OnUnanchorAttempt);
     }
 
-    private void OnInit(EntityUid uid, NuclearReactorComponent comp, ref ComponentInit args)
+    private void OnInit(EntityUid uid, NuclearReactorComponent comp, ref MapInitEvent args)
     {
         _signal.EnsureSinkPorts(uid, comp.ControlRodInsertPort, comp.ControlRodRetractPort);
 
