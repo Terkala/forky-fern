@@ -38,6 +38,7 @@ using Content.Shared.Damage;
 using JetBrains.FormatRipper.Elf;
 using NAudio.CoreAudioApi;
 using System.Diagnostics.CodeAnalysis;
+using Content.Shared.Damage.Systems;
 
 namespace Content.Server._FarHorizons.Power.Generation.FissionGenerator;
 
