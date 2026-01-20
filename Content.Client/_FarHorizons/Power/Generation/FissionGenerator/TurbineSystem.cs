@@ -35,13 +35,12 @@ public sealed class TurbineSystem : SharedTurbineSystem
         SubscribeLocalEvent<TurbineComponent, ItemSlotEjectAttemptEvent>(OnEjectAttempt);
     }
 
-    protected override void OnRepairTurbineFinished(EntityUid uid, TurbineComponent comp, ref RepairFinishedEvent args)
-    {
-        if (args.Cancelled)
-            return;
+   protected override void OnRepairTurbineFinished(EntityUid uid, TurbineComponent comp, ref RepairedEvent args)
+{
 
-        _popupSystem.PopupClient(Loc.GetString("turbine-repair", ("target", uid), ("tool", args.Used!)), uid, args.User);
-    }
+    
+    _popupSystem.PopupClient(Loc.GetString("turbine-repair", ("target", uid), ("tool", "repair tool")), uid, args.User);
+}
 
     private void TurbineExamined(EntityUid uid, TurbineComponent comp, ClientExaminedEvent args) => Spawn(comp.ArrowPrototype, new EntityCoordinates(uid, 0, 0));
 

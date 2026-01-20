@@ -35,8 +35,6 @@ using Content.Shared.Random;
 using Content.Shared.Random.Helpers;
 using Content.Shared.Throwing;
 using Content.Shared.Damage;
-using JetBrains.FormatRipper.Elf;
-using NAudio.CoreAudioApi;
 using System.Diagnostics.CodeAnalysis;
 using Content.Shared.Damage.Systems;
 
@@ -245,8 +243,8 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
             comp.ApplyPrefab = false;
         }
 
-        _appearance.SetData(uid, ReactorVisuals.Input, inlet.Air.Moles.Sum() > 20);
-        _appearance.SetData(uid, ReactorVisuals.Output, outlet.Air.Moles.Sum() > 20);
+         _appearance.SetData(uid, ReactorVisuals.Input, inlet.Air.TotalMoles > 20);
+        _appearance.SetData(uid, ReactorVisuals.Output, outlet.Air.TotalMoles > 20);
 
         var TempRads = 0;
         var ControlRods = 0;
