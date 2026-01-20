@@ -382,7 +382,6 @@ public sealed class TurbineSystem : SharedTurbineSystem
                FlowRate = turbine.FlowRate,
 
                StatorLoadMin = 1000,
-               StatorLoadMax = turbine.StatorLoadMax,
                StatorLoad = turbine.StatorLoad,
 
                PowerGeneration = turbine.SupplierMaxSupply,
@@ -407,7 +406,7 @@ public sealed class TurbineSystem : SharedTurbineSystem
 
     private void OnTurbineStatorLoadChanged(EntityUid uid, TurbineComponent turbine, TurbineChangeStatorLoadMessage args)
     {
-        turbine.StatorLoad = Math.Clamp(args.StatorLoad, 1000f, turbine.StatorLoadMax);
+        turbine.StatorLoad = Math.Max(args.StatorLoad, 1000f);
         Dirty(uid, turbine);
         UpdateUI(uid, turbine);
         _adminLogger.Add(LogType.AtmosDeviceSetting, LogImpact.Medium,
@@ -575,7 +574,6 @@ public sealed class TurbineSystem : SharedTurbineSystem
         if (statorComp != null)
         {
             comp.PowerMultiplier = (float)Math.Max(0.2, 0.2 * statorComp.Properties.ElectricalConductivity);
-            comp.StatorLoadMax = (float)Math.Max(100000, 100000 * statorComp.Properties.ElectricalConductivity);
         }
     }
 }
