@@ -157,7 +157,7 @@ public sealed partial class NuclearReactorComponent : Component
     public float RadiationStability = 2;
 
     /// <summary>
-    /// The maximum radiation the reactor can emit during normal operation
+    /// The soft maximum radiation the reactor is expected to produce, beyond which radiation increases logarithmically. Also used for alarms and UI.
     /// </summary>
     [DataField]
     public float MaximumRadiation = 50;
