@@ -174,7 +174,7 @@ public abstract class SharedTurbineSystem : EntitySystem
     }
 
     //Gotta love server/client desync
-    protected virtual void OnRepairTurbineFinished(EntityUid uid, TurbineComponent comp, ref RepairFinishedEvent args)
+        protected virtual void OnRepairTurbineFinished(EntityUid uid, TurbineComponent comp, ref RepairedEvent args)
     {
         if (args.Cancelled)
             return;
