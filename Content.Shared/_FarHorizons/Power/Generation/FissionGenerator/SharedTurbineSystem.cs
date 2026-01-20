@@ -36,8 +36,7 @@ public abstract class SharedTurbineSystem : EntitySystem
         SubscribeLocalEvent<TurbineComponent, ExaminedEvent>(OnExamined);
 
         SubscribeLocalEvent<TurbineComponent, InteractUsingEvent>(RepairTurbine);
-        SubscribeLocalEvent<TurbineComponent, RepairFinishedEvent>(OnRepairTurbineFinished);
-    }
+        SubscribeLocalEvent<TurbineComponent, RepairedEvent>(OnRepairTurbineFinished);    }
 
     private void OnExamined(Entity<TurbineComponent> ent, ref ExaminedEvent args)
     {
@@ -169,38 +168,34 @@ public abstract class SharedTurbineSystem : EntitySystem
             if (comp.BladeHealth >= comp.BladeHealthMax && !comp.Ruined)
                 return;
 
-            args.Handled = _toolSystem.UseTool(args.Used, args.User, uid, comp.RepairDelay, comp.RepairTool, new RepairFinishedEvent(), comp.RepairFuelCost);
+            args.Handled = _toolSystem.UseTool(args.Used, args.User, uid, comp.RepairDelay, comp.RepairTool, new RepairDoAfterEvent(), comp.RepairFuelCost);
         }
     }
 
-    //Gotta love server/client desync
-        protected virtual void OnRepairTurbineFinished(EntityUid uid, TurbineComponent comp, ref RepairedEvent args)
+    protected virtual void OnRepairTurbineFinished(EntityUid uid, TurbineComponent comp, ref RepairedEvent args)
+{
+    
+    if (comp.Ruined)
     {
-        if (args.Cancelled)
-            return;
-
-        if (comp.Ruined)
-        {
-            comp.Ruined = false;
-            if (comp.BladeHealth <= 0) { comp.BladeHealth = 1; }
-            UpdateHealthIndicators(uid, comp);
-        }
-        else if (comp.BladeHealth < comp.BladeHealthMax)
-        {
-            comp.BladeHealth++;
-            UpdateHealthIndicators(uid, comp);
-        }
-        else if (comp.BladeHealth >= comp.BladeHealthMax)
-        {
-            // This should technically never occur, but just in case...
-        }
-
-        if (!_entityManager.TryGetComponent<DamageableComponent>(uid, out var damageableComponent))
-            return;
-
-        _damageableSystem.SetAllDamage((uid, damageableComponent), 0);
+        comp.Ruined = false;
+        if (comp.BladeHealth <= 0) { comp.BladeHealth = 1; }
+        UpdateHealthIndicators(uid, comp);
+    }
+    else if (comp.BladeHealth < comp.BladeHealthMax)
+    {
+        comp.BladeHealth++;
+        UpdateHealthIndicators(uid, comp);
+    }
+    else if (comp.BladeHealth >= comp.BladeHealthMax)
+    {
+   
     }
 
+    if (!_entityManager.TryGetComponent<DamageableComponent>(uid, out var damageableComponent))
+        return;
+
+    _damageableSystem.SetAllDamage((uid, damageableComponent), 0);
+}
     protected void UpdateHealthIndicators(EntityUid uid, TurbineComponent comp)
     {
         if (comp.BladeHealth <= 0.75 * comp.BladeHealthMax && !comp.IsSparking)
