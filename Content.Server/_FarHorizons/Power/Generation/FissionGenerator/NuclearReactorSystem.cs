@@ -232,17 +232,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         if (comp.Melted)
             return;
 
-        // I wish I could do a lot of this stuff on init, but it gets mad if I try
-        if (!comp.InletEnt.HasValue || EntityManager.Deleted(comp.InletEnt.Value))
-            comp.InletEnt = SpawnAttachedTo(comp.PipePrototype, new(uid, comp.InletPos), rotation: Angle.FromDegrees(comp.InletRot));
-        if (!comp.OutletEnt.HasValue || EntityManager.Deleted(comp.OutletEnt.Value))
-            comp.OutletEnt = SpawnAttachedTo(comp.PipePrototype, new(uid, comp.OutletPos), rotation: Angle.FromDegrees(comp.OutletRot));
-
-        CheckAnchoredPipes(uid, comp);
-
-        if (!_nodeContainer.TryGetNode(comp.InletEnt.Value, comp.PipeName, out PipeNode? inlet))
-            return;
-        if (!_nodeContainer.TryGetNode(comp.OutletEnt.Value, comp.PipeName, out PipeNode? outlet))
+        if(!GetPipes(uid, comp, out var inlet, out var outlet))
             return;
 
         var gridWidth = comp.ReactorGridWidth;
@@ -901,17 +891,33 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         return true;
     }
 
-    private void CheckAnchoredPipes(EntityUid uid, NuclearReactorComponent comp)
+    private bool GetPipes(EntityUid uid, NuclearReactorComponent comp, [NotNullWhen(true)] out PipeNode? inlet, [NotNullWhen(true)] out PipeNode? outlet)
     {
+        inlet = null;
+        outlet = null;
+
+        if (!comp.InletEnt.HasValue || EntityManager.Deleted(comp.InletEnt.Value))
+            comp.InletEnt = SpawnAttachedTo(comp.PipePrototype, new(uid, comp.InletPos), rotation: Angle.FromDegrees(comp.InletRot));
+        if (!comp.OutletEnt.HasValue || EntityManager.Deleted(comp.OutletEnt.Value))
+            comp.OutletEnt = SpawnAttachedTo(comp.PipePrototype, new(uid, comp.OutletPos), rotation: Angle.FromDegrees(comp.OutletRot));
+
         if (comp.InletEnt == null || comp.OutletEnt == null)
-            return;
+            return false;
 
         if (!Transform(comp.InletEnt.Value).Anchored || !Transform(comp.OutletEnt.Value).Anchored)
         {
-            _popupSystem.PopupEntity(Loc.GetString("reactor-anchor-warning"), uid, PopupType.MediumCaution);
+            _popupSystem.PopupEntity(Loc.GetString("turbine-anchor-warning"), uid, PopupType.MediumCaution);
             CleanUp(comp);
             _transform.Unanchor(uid);
+            return false;
         }
+
+        if (!_nodeContainer.TryGetNode(comp.InletEnt.Value, comp.PipeName, out inlet))
+            return false;
+        if (!_nodeContainer.TryGetNode(comp.OutletEnt.Value, comp.PipeName, out outlet))
+            return false;
+
+        return true;
     }
     #endregion
 

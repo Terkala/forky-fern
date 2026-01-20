@@ -159,16 +159,7 @@ public sealed class TurbineSystem : SharedTurbineSystem
 
         supplier.MaxSupply = comp.LastGen;
 
-        if (!comp.InletEnt.HasValue || EntityManager.Deleted(comp.InletEnt.Value))
-            comp.InletEnt = SpawnAttachedTo(comp.PipePrototype, new(uid, comp.InletPos), rotation: Angle.FromDegrees(comp.InletRot));
-        if (!comp.OutletEnt.HasValue || EntityManager.Deleted(comp.OutletEnt.Value))
-            comp.OutletEnt = SpawnAttachedTo(comp.PipePrototype, new(uid, comp.OutletPos), rotation: Angle.FromDegrees(comp.OutletRot));
-
-        CheckAnchoredPipes(uid, comp);
-
-        if (!_nodeContainer.TryGetNode(comp.InletEnt.Value, comp.PipeName, out PipeNode? inlet))
-            return;
-        if (!_nodeContainer.TryGetNode(comp.OutletEnt.Value, comp.PipeName, out PipeNode? outlet))
+        if(!GetPipes(uid, comp, out var inlet, out var outlet))
             return;
 
         if (comp.CurrentBlade == null || comp.CurrentStator == null)
@@ -460,17 +451,33 @@ public sealed class TurbineSystem : SharedTurbineSystem
         }
     }
 
-    private void CheckAnchoredPipes(EntityUid uid, TurbineComponent comp)
+    private bool GetPipes(EntityUid uid, TurbineComponent comp, [NotNullWhen(true)] out PipeNode? inlet, [NotNullWhen(true)] out PipeNode? outlet)
     {
+        inlet = null;
+        outlet = null;
+
+        if (!comp.InletEnt.HasValue || EntityManager.Deleted(comp.InletEnt.Value))
+            comp.InletEnt = SpawnAttachedTo(comp.PipePrototype, new(uid, comp.InletPos), rotation: Angle.FromDegrees(comp.InletRot));
+        if (!comp.OutletEnt.HasValue || EntityManager.Deleted(comp.OutletEnt.Value))
+            comp.OutletEnt = SpawnAttachedTo(comp.PipePrototype, new(uid, comp.OutletPos), rotation: Angle.FromDegrees(comp.OutletRot));
+
         if (comp.InletEnt == null || comp.OutletEnt == null)
-            return;
+            return false;
 
         if (!Transform(comp.InletEnt.Value).Anchored || !Transform(comp.OutletEnt.Value).Anchored)
         {
             _popupSystem.PopupEntity(Loc.GetString("turbine-anchor-warning"), uid, PopupType.MediumCaution);
             CleanUp(comp);
             _transform.Unanchor(uid);
+            return false;
         }
+
+        if (!_nodeContainer.TryGetNode(comp.InletEnt.Value, comp.PipeName, out inlet))
+            return false;
+        if (!_nodeContainer.TryGetNode(comp.OutletEnt.Value, comp.PipeName, out outlet))
+            return false;
+
+        return true;
     }
     #endregion
 
