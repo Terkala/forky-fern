@@ -50,12 +50,12 @@ public sealed partial class RCDPrototype : IPrototype
     /// </summary>
     [DataField, ViewVariables(VVAccess.ReadOnly)]
     public string? MirrorPrototype { get; private set; } = string.Empty;
-    
+
     /// <summary>
     /// Number of charges consumed when the operation is completed
     /// </summary>
     [DataField, ViewVariables(VVAccess.ReadOnly)]
-    public FixedPoint2 Cost { get; private set; } = 1;
+    public int Cost { get; private set; } = 1;
 
     /// <summary>
     /// The length of the operation
@@ -120,6 +120,12 @@ public sealed partial class RCDPrototype : IPrototype
     /// </summary>
     [DataField, ViewVariables(VVAccess.ReadOnly)]
     public RcdRotation Rotation { get; private set; } = RcdRotation.User;
+
+    /// <summary>
+    /// Determines whether this prototype uses layered placement (true for traditional placement, false for layered). Only applies to RPD.
+    /// </summary>
+    [DataField, ViewVariables(VVAccess.ReadOnly)]
+    public bool HasLayers { get; private set; } = false;
 }
 
 public enum RcdMode : byte

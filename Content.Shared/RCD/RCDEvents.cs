@@ -29,6 +29,19 @@ public sealed class RCDConstructionGhostFlipEvent : EntityEventArgs
 }
 
 [Serializable, NetSerializable]
+public sealed class RPDEyeRotationEvent : EntityEventArgs
+{
+    public readonly NetEntity NetEntity;
+    public float? EyeRotation;
+
+    public RPDEyeRotationEvent(NetEntity netEntity, float? eyeRotation)
+    {
+        NetEntity = netEntity;
+        EyeRotation = eyeRotation;
+    }
+}
+
+[Serializable, NetSerializable]
 public enum RcdUiKey : byte
 {
     Key

@@ -357,24 +357,30 @@
     - PipeStraight
     - PipeBend
     - PipeTJunction
+    - PipeHalf
+    - ManifoldGas
     - OutletInjector
     - ManualValve
     - VolumetricPump
     - PressurePump
     - VentScrubber
     - PressureValve
+    - PressureRegulator
     - DualPortVent
     - VentGas
     - VentPassive
     - MixerGas
     - Radiator
+    - RadiatorBend
     - SignalValve
     - CanisterPort
     - FilterGas
+    - Alarm
+    - Sensor
+    - SensorPipe
     - Deconstruct
   - type: LimitedCharges
     maxCharges: 45
-    charges: 45
   - type: Sprite
     sprite: Objects/Tools/rpd.rsi
 

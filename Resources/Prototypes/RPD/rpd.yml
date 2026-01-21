@@ -4,9 +4,10 @@
   sprite: /Textures/Interface/Radial/RPD/fourway.png
   mode: ConstructObject
   prototype: GasPipeFourway
-  cost: 0.5
-  delay: 0 
+  cost: 1
+  delay: 0
   rotation: User
+  hasLayers: true
   fx: EffectRCDConstruct0
 
 - type: rcd
@@ -15,9 +16,10 @@
   sprite: /Textures/Interface/Radial/RPD/straight.png
   mode: ConstructObject
   prototype: GasPipeStraight
-  cost: 0.5
-  delay: 0 
+  cost: 1
+  delay: 0
   rotation: User
+  hasLayers: true
   fx: EffectRCDConstruct0
 
 - type: rcd
@@ -26,9 +28,10 @@
   sprite: /Textures/Interface/Radial/RPD/bend.png
   mode: ConstructObject
   prototype: GasPipeBend
-  cost: 0.5
-  delay: 0 
+  cost: 1
+  delay: 0
   rotation: User
+  hasLayers: true
   fx: EffectRCDConstruct0
 
 - type: rcd
@@ -37,8 +40,34 @@
   sprite: /Textures/Interface/Radial/RPD/tjunction.png
   mode: ConstructObject
   prototype: GasPipeTJunction
-  cost: 0.5
-  delay: 0 
+  cost: 1
+  delay: 0
+  collisionMask: Impassable
+  rotation: User
+  hasLayers: true
+  fx: EffectRCDConstruct0
+
+- type: rcd
+  id: PipeHalf
+  category: Piping
+  sprite: /Textures/Interface/Radial/RPD/pipe_half.png
+  mode: ConstructObject
+  prototype: GasPipeHalf
+  cost: 1
+  delay: 0
+  collisionMask: Impassable
+  rotation: User
+  hasLayers: true
+  fx: EffectRCDConstruct0
+
+- type: rcd
+  id: ManifoldGas
+  category: Piping
+  sprite: /Textures/Interface/Radial/RPD/manifold.png
+  mode: ConstructObject
+  prototype: GasPipeManifold
+  cost: 2
+  delay: 0
   collisionMask: Impassable
   rotation: User
   fx: EffectRCDConstruct0
@@ -50,9 +79,10 @@
   mode: ConstructObject
   prototype: GasPressurePump
   cost: 1
-  delay: 0 
+  delay: 0
   collisionMask: Impassable
   rotation: User
+  hasLayers: true
   fx: EffectRCDConstruct0
 
 - type: rcd
@@ -62,9 +92,10 @@
   mode: ConstructObject
   prototype: GasVolumePump
   cost: 1
-  delay: 0 
+  delay: 0
   collisionMask: Impassable
   rotation: User
+  hasLayers: true
   fx: EffectRCDConstruct0
 
 - type: rcd
@@ -74,9 +105,10 @@
   mode: ConstructObject
   prototype: GasValve
   cost: 1
-  delay: 0 
+  delay: 0
   collisionMask: Impassable
   rotation: User
+  hasLayers: true
   fx: EffectRCDConstruct0
 
 - type: rcd
@@ -86,9 +118,10 @@
   mode: ConstructObject
   prototype: SignalControlledValve
   cost: 1
-  delay: 0 
+  delay: 0
   collisionMask: Impassable
   rotation: User
+  hasLayers: true
   fx: EffectRCDConstruct0
 
 - type: rcd
@@ -98,9 +131,22 @@
   mode: ConstructObject
   prototype: PressureControlledValve
   cost: 1
-  delay: 0 
+  delay: 0
   collisionMask: Impassable
   rotation: User
+  fx: EffectRCDConstruct0
+
+- type: rcd
+  id: PressureRegulator
+  category: PumpsValves
+  sprite: /Textures/Interface/Radial/RPD/pump_pressure_regulator.png
+  mode: ConstructObject
+  prototype: GasPressureRegulator
+  cost: 1
+  delay: 0
+  collisionMask: Impassable
+  rotation: User
+  hasLayers: true
   fx: EffectRCDConstruct0
 
 
@@ -111,7 +157,7 @@
   mode: ConstructObject
   prototype: GasOutletInjector
   cost: 1
-  delay: 0 
+  delay: 0
   collisionMask: Impassable
   rotation: User
   fx: EffectRCDConstruct0
@@ -123,7 +169,7 @@
   mode: ConstructObject
   prototype: GasVentScrubber
   cost: 1
-  delay: 0 
+  delay: 0
   collisionMask: Impassable
   rotation: User
   fx: EffectRCDConstruct0
@@ -135,7 +181,7 @@
   mode: ConstructObject
   prototype: GasVentPump
   cost: 1
-  delay: 0 
+  delay: 0
   collisionMask: Impassable
   rotation: User
   fx: EffectRCDConstruct0
@@ -147,7 +193,7 @@
   mode: ConstructObject
   prototype: GasDualPortVentPump
   cost: 1
-  delay: 0 
+  delay: 0
   collisionMask: Impassable
   rotation: User
   fx: EffectRCDConstruct0
@@ -159,7 +205,7 @@
   mode: ConstructObject
   prototype: GasPassiveVent
   cost: 1
-  delay: 0 
+  delay: 0
   collisionMask: Impassable
   rotation: User
   fx: EffectRCDConstruct0
@@ -171,7 +217,19 @@
   mode: ConstructObject
   prototype: HeatExchanger
   cost: 1
-  delay: 0 
+  delay: 0
+  collisionMask: Impassable
+  rotation: User
+  fx: EffectRCDConstruct0
+
+- type: rcd
+  id: RadiatorBend
+  category: AtmosphericUtility
+  sprite: /Textures/Interface/Radial/RPD/he_bend.png
+  mode: ConstructObject
+  prototype: HeatExchangerBend
+  cost: 1
+  delay: 0
   collisionMask: Impassable
   rotation: User
   fx: EffectRCDConstruct0
@@ -184,7 +242,7 @@
   prototype: GasMixer
   mirrorPrototype: GasMixerFlipped
   cost: 1
-  delay: 0 
+  delay: 0
   collisionMask: Impassable
   rotation: User
   fx: EffectRCDConstruct0
@@ -197,7 +255,7 @@
   prototype: GasFilter
   mirrorPrototype: GasFilterFlipped
   cost: 1
-  delay: 0 
+  delay: 0
   collisionMask: Impassable
   rotation: User
   fx: EffectRCDConstruct0
@@ -209,7 +267,42 @@
   mode: ConstructObject
   prototype: GasPort
   cost: 1
-  delay: 0 
+  delay: 0
+  collisionMask: Impassable
+  rotation: User
+  fx: EffectRCDConstruct0
+
+- type: rcd
+  id: Alarm
+  category: SensorsMonitors
+  sprite: /Textures/Interface/Radial/RPD/alarm.png
+  mode: ConstructObject
+  prototype: AirAlarm
+  cost: 2
+  delay: 1
+  rotation: User
+  fx: EffectRCDConstruct0
+
+- type: rcd
+  id: Sensor
+  category: SensorsMonitors
+  sprite: /Textures/Interface/Radial/RPD/sensor.png
+  mode: ConstructObject
+  prototype: AirSensor
+  cost: 1
+  delay: 0
+  collisionMask: Impassable
+  rotation: User
+  fx: EffectRCDConstruct0
+
+- type: rcd
+  id: SensorPipe
+  category: SensorsMonitors
+  sprite: /Textures/Interface/Radial/RPD/sensorpipe.png
+  mode: ConstructObject
+  prototype: GasPipeSensor
+  cost: 1
+  delay: 0
   collisionMask: Impassable
   rotation: User
   fx: EffectRCDConstruct0
