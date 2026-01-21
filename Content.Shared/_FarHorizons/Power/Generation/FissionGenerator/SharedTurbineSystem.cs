@@ -36,7 +36,8 @@ public abstract class SharedTurbineSystem : EntitySystem
         SubscribeLocalEvent<TurbineComponent, ExaminedEvent>(OnExamined);
 
         SubscribeLocalEvent<TurbineComponent, InteractUsingEvent>(RepairTurbine);
-        SubscribeLocalEvent<TurbineComponent, RepairedEvent>(OnRepairTurbineFinished);    }
+        SubscribeLocalEvent<TurbineComponent, RepairDoAfterEvent>(OnRepairTurbineDoAfter);
+    }
 
     private void OnExamined(Entity<TurbineComponent> ent, ref ExaminedEvent args)
     {
@@ -172,9 +173,11 @@ public abstract class SharedTurbineSystem : EntitySystem
         }
     }
 
-    protected virtual void OnRepairTurbineFinished(EntityUid uid, TurbineComponent comp, ref RepairedEvent args)
+  protected virtual void OnRepairTurbineDoAfter(EntityUid uid, TurbineComponent comp, RepairDoAfterEvent args)
 {
-    
+    if (args.Cancelled || args.Used == null)
+        return;
+        
     if (comp.Ruined)
     {
         comp.Ruined = false;
@@ -186,12 +189,7 @@ public abstract class SharedTurbineSystem : EntitySystem
         comp.BladeHealth++;
         UpdateHealthIndicators(uid, comp);
     }
-    else if (comp.BladeHealth >= comp.BladeHealthMax)
-    {
-   
-    }
-
-    if (!_entityManager.TryGetComponent<DamageableComponent>(uid, out var damageableComponent))
+        if (!_entityManager.TryGetComponent<DamageableComponent>(uid, out var damageableComponent))
         return;
 
     _damageableSystem.SetAllDamage((uid, damageableComponent), 0);

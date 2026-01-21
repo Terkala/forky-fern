@@ -35,7 +35,7 @@ public sealed class TurbineSystem : SharedTurbineSystem
         SubscribeLocalEvent<TurbineComponent, ItemSlotEjectAttemptEvent>(OnEjectAttempt);
     }
 
-   protected override void OnRepairTurbineFinished(EntityUid uid, TurbineComponent comp, ref RepairedEvent args)
+   protected override void OnRepairTurbineDoAfter(EntityUid uid, TurbineComponent comp, RepairDoAfterEvent args)
 {
 
     

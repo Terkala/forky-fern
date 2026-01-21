@@ -8,7 +8,7 @@
   tier: 1
   cost: 7500
   recipeUnlocks:
-  - NuclearFabricatorMachineCircuitboard
+    - NuclearFabricatorMachineCircuitboard
     - UraniumReactorFuelRod
     - PlasmaReactorFuelRod
     - UraniumGlassReactorFuelRod
@@ -26,8 +26,6 @@
     - SilverGasTurbineStator
   technologyPrerequisites:
   - PowerGeneration
-  radioChannels:
-  - Engineering
  
 - type: technology
   id: NuclearPowerRecycling
@@ -39,7 +37,7 @@
   tier: 2
   cost: 12500
   recipeUnlocks:
-  - NuclearCentrifugeMachineCircuitboard
+    - NuclearCentrifugeMachineCircuitboard
     - PlutoniumReactorFuelRod
     - BananiumReactorFuelRod
     - GoldReactorControlRod
@@ -53,5 +51,3 @@
     - GoldGasTurbineStator
   technologyPrerequisites:
   - NuclearPowerGeneration
-  radioChannels:
-  - Engineering
