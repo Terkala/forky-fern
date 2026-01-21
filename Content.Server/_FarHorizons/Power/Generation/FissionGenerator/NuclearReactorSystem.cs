@@ -309,7 +309,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
                 if (ReactorComp.Melted)
                     MeltedComps++;
 
-                comp.FluxGrid[x, y] = _partSystem.ProcessNeutrons(ReactorComp, comp.FluxGrid[x, y], uid, out var deltaT);
+                comp.FluxGrid[x, y] = _partSystem.ProcessNeutrons(ReactorComp, comp.FluxGrid[x, y], out var deltaT);
                 TempChange += deltaT;
 
                 // Second check so that AvgControlRodInsertion represents the present instead of 1 tick in the past
@@ -367,7 +367,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
             }
         }
 
-        var CasingGas = ProcessCasingGas(comp, args, GasInput);
+        var CasingGas = ProcessCasingGas(comp, GasInput);
         if (CasingGas != null)
             _atmosphereSystem.Merge(outlet.Air, CasingGas);
 
@@ -451,7 +451,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         outlet.Volume = totalGasVolume;
     }
 
-    private GasMixture? ProcessCasingGas(NuclearReactorComponent reactor, AtmosDeviceUpdateEvent args, GasMixture inGas)
+    private GasMixture? ProcessCasingGas(NuclearReactorComponent reactor, GasMixture inGas)
     {
         GasMixture? ProcessedGas = null;
         if (reactor.AirContents != null)
@@ -485,7 +485,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
 
         if (inGas != null && _atmosphereSystem.GetThermalEnergy(inGas) > 0)
         {
-            reactor.AirContents = inGas.RemoveVolume(Math.Min(reactor.ReactorVesselGasVolume * _atmosphereSystem.PumpSpeedup() * args.dt, inGas.Volume));
+            reactor.AirContents = inGas.RemoveVolume(reactor.ReactorVesselGasVolume);
 
             if (reactor.AirContents != null && reactor.AirContents.TotalMoles < 1)
             {
