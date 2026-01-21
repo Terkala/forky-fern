@@ -307,6 +307,8 @@ public sealed class ReactorPartSystem : SharedReactorPartSystem
     /// <exception cref="Exception">Calculations resulted in a sub-zero value.</exception>
     public void ProcessHeat(ReactorPartComponent reactorPart, Entity<NuclearReactorComponent> reactorEnt, List<ReactorPartComponent?> AdjacentComponents, SharedNuclearReactorSystem reactorSystem)
     {
+        var reactor = reactorEnt.Comp;
+
         // Intercomponent calculation
         foreach (var RC in AdjacentComponents)
         {
@@ -323,11 +325,11 @@ public sealed class ReactorPartSystem : SharedReactorPartSystem
             if (RC.Temperature < 0 || reactorPart.Temperature < 0)
                 throw new Exception("ReactorPart-ReactorPart temperature calculation resulted in sub-zero value.");
 
-            // This is where we'd put material-based temperature effects... IF WE HAD ANY
+            ProcessHeatEffects(RC);
+            ProcessHeatEffects(reactorPart);
         }
 
         // Component-Reactor calculation
-        var reactor = reactorEnt.Comp;
         if (reactor != null)
         {
             var DeltaT = reactorPart.Temperature - reactor.Temperature;
@@ -341,12 +343,45 @@ public sealed class ReactorPartSystem : SharedReactorPartSystem
             if (reactor.Temperature < 0 || reactorPart.Temperature < 0)
                 throw new Exception("Reactor-ReactorPart temperature calculation resulted in sub-zero value.");
 
-            // This is where we'd put material-based temperature effects... IF WE HAD ANY
+            ProcessHeatEffects(reactorPart);
         }
         if (reactorPart.Temperature > reactorPart.MeltingPoint && reactorPart.MeltHealth > 0)
             reactorPart.MeltHealth -= _random.Next(10, 50 + 1);
         if (reactorPart.MeltHealth <= 0)
             Melt(reactorPart, reactorEnt, reactorSystem);
+        
+        return;
+
+        // I would really like for these to be defined by the MaterialPrototype, like GasReactionPrototype, but it caused the client and server to fight when I tried
+        // Also, function in a function because I found it funny
+        void ProcessHeatEffects(ReactorPartComponent part)
+        {
+            switch (part.Material)
+            {
+                case "Plasma":
+                    PlasmaTemperatureEffects(part);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        void PlasmaTemperatureEffects(ReactorPartComponent part)
+        {
+            var temperatureThreshold = Atmospherics.T0C + 80;
+            if (part.Temperature <= temperatureThreshold || part.Properties.ActivePlasma <= 0)
+                return;
+
+            var molesPerUnit = 100f; // Arbitrary value for how much gaseous plasma is in each unit of active plasma
+            
+            var payload = new GasMixture();
+            payload.SetMoles(Gas.Plasma, (float)Math.Min(part.Properties.ActivePlasma * molesPerUnit, Math.Log(((part.Temperature - temperatureThreshold) / 100) + 1)));
+            payload.Temperature = part.Temperature;
+            part.Properties.ActivePlasma -= payload.GetMoles(Gas.Plasma) / molesPerUnit;
+
+            reactor.AirContents ??= new GasMixture();
+            _atmosphereSystem.Merge(reactor.AirContents, payload);
+        }
     }
     
     /// <summary>
