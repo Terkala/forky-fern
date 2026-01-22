@@ -50,3 +50,4 @@ Resources/Textures/Objects/Tools/rpd.rsi/icon.png
 Resources/Textures/Objects/Tools/rpd.rsi/inhand-left.png
 Resources/Textures/Objects/Tools/rpd.rsi/inhand-right.png
 Resources/Textures/Objects/Tools/rpd.rsi/meta.json
+changed_files.txt
