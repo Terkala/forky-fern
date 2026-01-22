@@ -105,24 +105,13 @@ public sealed class RCDSystem : EntitySystem
 
     private void OnMapInit(EntityUid uid, RCDComponent component, MapInitEvent args)
     {
-        InitializeRCD(uid, component);
-    }
-
-    private void OnStartup(EntityUid uid, RCDComponent component, ComponentStartup args)
-    {
-        InitializeRCD(uid, component);
-    }
-
-    private void InitializeRCD(EntityUid uid, RCDComponent component)
-    {
-        // On component startup, set the RCD to its first available recipe
+        // On map startup, set the RCD to its first available recipe
         if (component.AvailablePrototypes.Count > 0)
         {
             if (component.IsRpd)
                 component.ProtoId = "PipeStraight";
             else
                 component.ProtoId = component.AvailablePrototypes.ElementAt(0);
-            UpdateCachedPrototype(uid, component);
             Dirty(uid, component);
 
             return;
@@ -130,6 +119,14 @@ public sealed class RCDSystem : EntitySystem
 
         // The RCD has no valid recipes somehow? Get rid of it
         QueueDel(uid);
+    }
+
+    private void OnStartup(EntityUid uid, RCDComponent component, ComponentStartup args)
+    {
+        UpdateCachedPrototype(uid, component);
+        Dirty(uid, component);
+
+        return;
     }
 
     private void OnRCDSystemMessage(EntityUid uid, RCDComponent component, RCDSystemMessage args)
