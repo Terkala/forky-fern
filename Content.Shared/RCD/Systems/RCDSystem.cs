@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2023-2024 chromiumboy <50505512+chromiumboy@users.noreply.github.com>
 // SPDX-FileCopyrightText: 2023 DrSmugleaf <DrSmugleaf@users.noreply.github.com>
 // SPDX-FileCopyrightText: 2023 deltanedas <39013340+deltanedas@users.noreply.github.com>
+// SPDX-FileCopyrightText: 2024 August Eymann <august.eymann@gmail.com>
 // SPDX-FileCopyrightText: 2024-2025 Pieter-Jan Briers <pieterjan.briers+git@gmail.com>
 // SPDX-FileCopyrightText: 2024-2025 Tayrtahn <tayrtahn@gmail.com>
 // SPDX-FileCopyrightText: 2024-2025 TemporalOroboros <TemporalOroboros@gmail.com>
@@ -13,6 +14,9 @@
 // SPDX-FileCopyrightText: 2025 Nemanja <98561806+EmoGarbage404@users.noreply.github.com>
 // SPDX-FileCopyrightText: 2025 gus <august.eymann@gmail.com>
 // SPDX-FileCopyrightText: 2025 J <billsmith116@gmail.com>
+// SPDX-FileCopyrightText: 2026 Steve <marlumpy@gmail.com>
+// SPDX-FileCopyrightText: 2026 taydeo <tay@funkystation.org>
+// SPDX-FileCopyrightText: 2026 taydeo <td12233a@gmail.com>
 // SPDX-FileCopyrightText: 2026 Vasilis The Pikachu <vasilis@pikachu.systems>
 // SPDX-FileCopyrightText: 2026 Velken <8467292+Velken@users.noreply.github.com>
 // SPDX-License-Identifier: MIT
