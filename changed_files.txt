@@ -21,3 +21,4 @@ Resources/Prototypes/Entities/Structures/Windows/reinforced.yml
 Resources/Prototypes/Entities/Structures/Windows/window.yml
 Resources/Prototypes/Entities/Structures/catwalk.yml
 Resources/Prototypes/RCD/rcd.yml
+changed_files.txt
