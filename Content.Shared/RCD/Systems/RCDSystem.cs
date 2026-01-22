@@ -118,7 +118,10 @@ public sealed class RCDSystem : EntitySystem
         // On component startup, set the RCD to its first available recipe
         if (component.AvailablePrototypes.Count > 0)
         {
-            component.ProtoId = component.AvailablePrototypes.ElementAt(0);
+            if (component.IsRpd)
+                component.ProtoId = "PipeStraight";
+            else
+                component.ProtoId = component.AvailablePrototypes.ElementAt(0);
             UpdateCachedPrototype(uid, component);
             Dirty(uid, component);
 
