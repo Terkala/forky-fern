@@ -1,17 +1,5 @@
 # SPDX-FileCopyrightText: 2025 jhrushbe <capnmerry@gmail.com>
 # SPDX-License-Identifier: MIT
-
-- type: entity                                     
-  parent: BaseThiefStealObjective
-  id: BrigmedicBedsheetStealObjective
-  components:
-  - type: NotJobRequirement
-    job: Brigmedic
-  - type: StealCondition
-    stealGroup: BrigmedicBedsheetSteal
-  - type: Objective
-    difficulty: 1
-
 - type: entity
   parent: BaseThiefStealCollectionObjective
   id: ReactorFuelRodStealCollectionObjective
