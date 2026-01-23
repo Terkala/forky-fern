@@ -28,6 +28,8 @@
     - PlasteelGasTurbineBlade
     - BrassGasTurbineBlade
     - SilverGasTurbineStator
+    - NuclearReactorMonitorComputerCircuitboard
+    - GasTurbineMonitorComputerCircuitboard
   technologyPrerequisites:
   - PowerGeneration
  
