@@ -8445,7 +8445,7 @@ entities:
     - type: Transform
       pos: 43.62519,3.6096377
       parent: 1
-- proto: FHAirlockEngineering
+- proto: AirlockEngineering
   entities:
   - uid: 1266
     components:
@@ -8494,7 +8494,7 @@ entities:
     - type: Transform
       pos: 28.5,33.5
       parent: 1
-- proto: FHAirlockEngineeringGlass
+- proto: AirlockEngineeringGlass
   entities:
   - uid: 10
     components:
@@ -11759,7 +11759,7 @@ entities:
       rot: -1.5707963267948966 rad
       pos: 42.5,1.5
       parent: 1
-- proto: ReinforcedWindowSyndie
+- proto: ReinforcedWindow
   entities:
   - uid: 993
     components:
@@ -13437,7 +13437,7 @@ entities:
     - type: Transform
       pos: 5.5446725,27.446445
       parent: 1
-- proto: WallSolidSyndicate
+- proto: WallSolid
   entities:
   - uid: 2
     components:
