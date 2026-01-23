@@ -169,7 +169,6 @@
           type: BloodCultCommuneBoundUserInterface
           requireInputValidation: false
     - type: Body
-      prototype: null
       # No prototype - juggernauts have no organs or limbs, like borgs
 
 - type: entity
