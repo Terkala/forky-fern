@@ -24,12 +24,13 @@ public sealed class DetachedBodyPartSystem : EntitySystem
     {
         base.Initialize();
         
-        // Subscribe to BodyPartDetachingEvent to spawn detached entities
-        // This is safe because BodySystem is the only one raising this event
-        SubscribeLocalEvent<BodyComponent, BodyPartDetachingEvent>(OnBodyPartDetaching);
+        // Subscribe to BodyPartAppearanceHandledEvent instead of BodyPartDetachingEvent
+        // This avoids duplicate subscriptions with BodyPartAppearanceSystem while maintaining
+        // the event-based architecture. The event is raised after appearance is handled.
+        SubscribeLocalEvent<BodyComponent, BodyPartAppearanceHandledEvent>(OnBodyPartAppearanceHandled);
     }
 
-    private void OnBodyPartDetaching(Entity<BodyComponent> ent, ref BodyPartDetachingEvent args)
+    private void OnBodyPartAppearanceHandled(Entity<BodyComponent> ent, ref BodyPartAppearanceHandledEvent args)
     {
         HandleBodyPartDetaching(ent, args.BodyPart);
     }

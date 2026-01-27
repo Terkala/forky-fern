@@ -5,6 +5,7 @@
 using Content.Shared.Actions.Components;
 using Content.Shared.Body;
 using Content.Shared.Body.Components;
+using Content.Shared.Body.Events;
 using Content.Shared.Body.Part;
 using Content.Shared.Inventory;
 using Content.Shared.Mind;
@@ -25,6 +26,10 @@ public sealed class ActionGrantSystem : EntitySystem
         SubscribeLocalEvent<ActionGrantComponent, MapInitEvent>(OnMapInit);
         SubscribeLocalEvent<ActionGrantComponent, ComponentShutdown>(OnShutdown);
         SubscribeLocalEvent<ItemActionGrantComponent, GetItemActionsEvent>(OnItemGet);
+        
+        // Subscribe to head-specific events for species ability management
+        SubscribeLocalEvent<BodyComponent, HeadDetachingEvent>(OnHeadDetaching);
+        SubscribeLocalEvent<BodyComponent, HeadAttachingEvent>(OnHeadAttaching);
     }
 
     private void OnItemGet(Entity<ItemActionGrantComponent> ent, ref GetItemActionsEvent args)
@@ -62,9 +67,19 @@ public sealed class ActionGrantSystem : EntitySystem
         }
     }
 
+    private void OnHeadDetaching(Entity<BodyComponent> ent, ref HeadDetachingEvent args)
+    {
+        RemoveSpeciesAbilitiesOnHeadDetach(ent, args.HeadPart);
+    }
+
+    private void OnHeadAttaching(Entity<BodyComponent> ent, ref HeadAttachingEvent args)
+    {
+        RestoreSpeciesAbilitiesOnHeadAttach(ent, args.HeadPart);
+    }
+
     /// <summary>
     /// Removes species abilities when a head is detached.
-    /// Called by BodySystem when it detects a head is being detached.
+    /// Called via HeadDetachingEvent subscription.
     /// </summary>
     public void RemoveSpeciesAbilitiesOnHeadDetach(Entity<BodyComponent> body, Entity<BodyPartComponent> headPart)
     {
@@ -114,7 +129,7 @@ public sealed class ActionGrantSystem : EntitySystem
 
     /// <summary>
     /// Restores species abilities when a head is reattached.
-    /// Called by BodySystem when it detects a head is being attached.
+    /// Called via HeadAttachingEvent subscription.
     /// </summary>
     public void RestoreSpeciesAbilitiesOnHeadAttach(Entity<BodyComponent> body, Entity<BodyPartComponent> headPart)
     {

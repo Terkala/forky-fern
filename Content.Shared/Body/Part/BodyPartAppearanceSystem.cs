@@ -14,18 +14,24 @@ public sealed class BodyPartAppearanceSystem : EntitySystem
     {
         base.Initialize();
 
-        SubscribeLocalEvent<BodyPartComponent, BodyPartAttachedEvent>(OnBodyPartAttached);
+        // Subscribe to BodySystem coordination events
+        SubscribeLocalEvent<BodyComponent, BodyPartDetachingEvent>(OnBodyPartDetaching);
+        SubscribeLocalEvent<BodyComponent, BodyPartAttachingEvent>(OnBodyPartAttaching);
     }
 
-    private void OnBodyPartAttached(Entity<BodyPartComponent> ent, ref BodyPartAttachedEvent args)
+    private void OnBodyPartDetaching(Entity<BodyComponent> ent, ref BodyPartDetachingEvent args)
     {
-        if (args.Body == EntityUid.Invalid)
-            return;
+        HandleBodyPartDetaching(ent, args.BodyPart);
+        
+        // Raise event after handling appearance to allow other systems to react
+        // This prevents duplicate subscriptions to BodyPartDetachingEvent
+        var handledEv = new BodyPartAppearanceHandledEvent(ent, args.BodyPart);
+        RaiseLocalEvent(ent, ref handledEv);
+    }
 
-        if (TryComp<BodyComponent>(args.Body, out var bodyComp))
-        {
-            HandleBodyPartAttaching((args.Body, bodyComp), ent);
-        }
+    private void OnBodyPartAttaching(Entity<BodyComponent> ent, ref BodyPartAttachingEvent args)
+    {
+        HandleBodyPartAttaching(ent, args.BodyPart);
     }
 
     /// <summary>

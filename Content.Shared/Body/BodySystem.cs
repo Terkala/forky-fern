@@ -1,4 +1,3 @@
-using Content.Shared.Actions;
 using Content.Shared.Body.Events;
 using Content.Shared.Body.Part;
 using Content.Shared.DragDrop;
@@ -9,7 +8,6 @@ namespace Content.Shared.Body;
 public sealed partial class BodySystem : EntitySystem
 {
     [Dependency] private readonly SharedContainerSystem _container = default!;
-    [Dependency] private readonly ActionGrantSystem _actionGrant = default!;
 
     private EntityQuery<BodyComponent> _bodyQuery;
     private EntityQuery<OrganComponent> _organQuery;
@@ -108,39 +106,35 @@ public sealed partial class BodySystem : EntitySystem
 
     private void OnBodyPartRemovedFromBody(Entity<BodyComponent> ent, ref BodyPartRemovedFromBodyEvent args)
     {
-        // Check if a head is being detached and remove species abilities
-        if (TryComp<BodyPartComponent>(args.BodyPart, out var bodyPart))
+        if (!TryComp<BodyPartComponent>(args.BodyPart, out var bodyPart))
+            return;
+
+        // Raise general detachment event for all systems
+        var detachingEv = new BodyPartDetachingEvent(ent, (args.BodyPart, bodyPart));
+        RaiseLocalEvent(ent, ref detachingEv);
+
+        // Raise specialized head detachment event if applicable
+        if (bodyPart.PartType == BodyPartType.Head)
         {
-            if (bodyPart.PartType == BodyPartType.Head)
-            {
-                _actionGrant.RemoveSpeciesAbilitiesOnHeadDetach(ent, (args.BodyPart, bodyPart));
-            }
-            
-            // Handle appearance changes (hide visual layers)
-            var appearanceSystem = EntityManager.System<BodyPartAppearanceSystem>();
-            appearanceSystem.HandleBodyPartDetaching(ent, (args.BodyPart, bodyPart));
-            
-            // Raise event for body part detachment
-            // This handles body parts removed from both root container and parent body parts
-            // DetachedBodyPartSystem (server-only) will subscribe to this event to spawn detached entities
-            var detachingEv = new BodyPartDetachingEvent(ent, (args.BodyPart, bodyPart));
-            RaiseLocalEvent(ent, ref detachingEv);
+            var headEv = new HeadDetachingEvent(ent, (args.BodyPart, bodyPart));
+            RaiseLocalEvent(ent, ref headEv);
         }
     }
 
     private void OnBodyPartAddedToBody(Entity<BodyComponent> ent, ref BodyPartAddedToBodyEvent args)
     {
-        if (TryComp<BodyPartComponent>(args.BodyPart, out var bodyPart))
+        if (!TryComp<BodyPartComponent>(args.BodyPart, out var bodyPart))
+            return;
+
+        // Raise general attachment event for all systems
+        var attachingEv = new BodyPartAttachingEvent(ent, (args.BodyPart, bodyPart));
+        RaiseLocalEvent(ent, ref attachingEv);
+
+        // Raise specialized head attachment event if applicable
+        if (bodyPart.PartType == BodyPartType.Head)
         {
-            // Check if a head is being attached and restore species abilities
-            if (bodyPart.PartType == BodyPartType.Head)
-            {
-                _actionGrant.RestoreSpeciesAbilitiesOnHeadAttach(ent, (args.BodyPart, bodyPart));
-            }
-            
-            // Handle appearance changes (show visual layers)
-            var appearanceSystem = EntityManager.System<BodyPartAppearanceSystem>();
-            appearanceSystem.HandleBodyPartAttaching(ent, (args.BodyPart, bodyPart));
+            var headEv = new HeadAttachingEvent(ent, (args.BodyPart, bodyPart));
+            RaiseLocalEvent(ent, ref headEv);
         }
     }
 
