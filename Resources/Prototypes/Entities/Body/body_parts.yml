@@ -88,3 +88,13 @@
   - type: Physics
     bodyType: Dynamic
   - type: Item
+  - type: Damageable
+    damageContainer: Biological
+  - type: Destructible
+    thresholds:
+    - trigger:
+        !type:DamageTypeTrigger
+        damageType: Blunt
+        damage: 50
+      behaviors:
+      - !type:GibBehavior { }
