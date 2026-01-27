@@ -1,0 +1,90 @@
+- type: entity
+  id: BodyPartBase
+  name: body part
+  abstract: true
+  parent: BaseItem
+  components:
+  - type: BodyPart
+  - type: Sprite
+
+- type: entity
+  parent: BodyPartBase
+  id: BodyPartTorso
+  name: torso
+  components:
+  - type: BodyPart
+    partType: Torso
+    symmetry: None
+  - type: Sprite
+    sprite: Mobs/Species/Human/parts.rsi
+    state: torso_m
+
+- type: entity
+  parent: BodyPartBase
+  id: BodyPartHead
+  name: head
+  components:
+  - type: BodyPart
+    partType: Head
+    symmetry: None
+  - type: Sprite
+    sprite: Mobs/Species/Human/parts.rsi
+    state: head_m
+
+- type: entity
+  parent: BodyPartBase
+  id: BodyPartLeftArm
+  name: left arm
+  components:
+  - type: BodyPart
+    partType: Arm
+    symmetry: Left
+  - type: Sprite
+    sprite: Mobs/Species/Human/parts.rsi
+    state: l_arm
+
+- type: entity
+  parent: BodyPartBase
+  id: BodyPartRightArm
+  name: right arm
+  components:
+  - type: BodyPart
+    partType: Arm
+    symmetry: Right
+  - type: Sprite
+    sprite: Mobs/Species/Human/parts.rsi
+    state: r_arm
+
+- type: entity
+  parent: BodyPartBase
+  id: BodyPartLeftLeg
+  name: left leg
+  components:
+  - type: BodyPart
+    partType: Leg
+    symmetry: Left
+  - type: Sprite
+    sprite: Mobs/Species/Human/parts.rsi
+    state: l_leg
+
+- type: entity
+  parent: BodyPartBase
+  id: BodyPartRightLeg
+  name: right leg
+  components:
+  - type: BodyPart
+    partType: Leg
+    symmetry: Right
+  - type: Sprite
+    sprite: Mobs/Species/Human/parts.rsi
+    state: r_leg
+
+- type: entity
+  id: DetachedBodyPart
+  name: detached body part
+  components:
+  - type: DetachedBodyPart
+  - type: Sprite
+  - type: Physics
+    bodyType: Dynamic
+  - type: Item

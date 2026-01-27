@@ -1,0 +1,146 @@
+<controls:FancyWindow
+    xmlns="https://spacestation14.io"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:Content.Client.UserInterface.Controls"
+    x:Class="Content.Client.Medical.Surgery.SurgeryWindow"
+    Title="{Loc 'surgery-window-title'}"
+    MaxHeight="600"
+    MinHeight="400"
+    MinWidth="175">
+    <BoxContainer Orientation="Vertical" Margin="5">
+        <BoxContainer Orientation="Horizontal" Margin="0 0 0 5">
+            <PanelContainer>
+                <SpriteView Scale="3.0 3.0"
+                            Name="SpriteView"
+                            Access="Public"
+                            SetSize="288 288"/>
+                <PanelContainer
+                    Name="PartView"
+                    Access="Public"
+                    SetSize="171 288"
+                    Margin="54 0 0 0"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Left"
+                    Visible="False">
+                    <PanelContainer
+                        SetSize="45 99"
+                        Margin="12 0 0 0"
+                        HorizontalAlignment="Left">
+                        <TextureButton
+                            Name="RightArmButton"
+                            Access="Public"
+                            MinSize="45 75"
+                            StyleClasses="TargetDollButtonRightArm"
+                            VerticalAlignment="Top">
+                        </TextureButton>
+                        <TextureButton
+                            Name="RightHandButton"
+                            Access="Public"
+                            MinSize="45 45"
+                            VerticalAlignment="Bottom"
+                            StyleClasses="TargetDollButtonRightHand">
+                        </TextureButton>
+                    </PanelContainer>
+                    <PanelContainer
+                        SetSize="129 225"
+                        Margin="0 0 0 0"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center">
+                        <TextureButton
+                            Name="HeadButton"
+                            Access="Public"
+                            MinSize="84 69"
+                            VerticalAlignment="Top"
+                            HorizontalAlignment="Center"
+                            StyleClasses="TargetDollButtonHead">
+                        </TextureButton>
+                        <TextureButton
+                            Name="ChestButton"
+                            Access="Public"
+                            SetSize="84 90"
+                            Margin="0 54 0 0"
+                            VerticalAlignment="Top"
+                            HorizontalAlignment="Center"
+                            StyleClasses="TargetDollButtonChest">
+                        </TextureButton>
+                        <PanelContainer
+                            MinSize="114 105"
+                            VerticalAlignment="Bottom"
+                            HorizontalAlignment="Center">
+                            <PanelContainer
+                                MinSize="60 90"
+                                VerticalAlignment="Bottom"
+                                HorizontalAlignment="Right">
+                                <TextureButton
+                                    Name="LeftLegButton"
+                                    Access="Public"
+                                    MinSize="45 84"
+                                    VerticalAlignment="Top"
+                                    HorizontalAlignment="Left"
+                                    StyleClasses="TargetDollButtonLeftLeg">
+                                </TextureButton>
+                                <TextureButton
+                                    Name="LeftFootButton"
+                                    Access="Public"
+                                    MinSize="60 30"
+                                    VerticalAlignment="Bottom"
+                                    StyleClasses="TargetDollButtonLeftFoot">
+                                </TextureButton>
+                            </PanelContainer>
+                            <PanelContainer
+                                MinSize="60 90"
+                                VerticalAlignment="Bottom"
+                                HorizontalAlignment="Left">
+                                <TextureButton
+                                    Name="RightLegButton"
+                                    Access="Public"
+                                    MinSize="45 84"
+                                    VerticalAlignment="Top"
+                                    HorizontalAlignment="Right"
+                                    StyleClasses="TargetDollButtonRightLeg">
+                                </TextureButton>
+                                <TextureButton
+                                    Name="RightFootButton"
+                                    Access="Public"
+                                    MinSize="60 30"
+                                    VerticalAlignment="Bottom"
+                                    HorizontalAlignment="Center"
+                                    StyleClasses="TargetDollButtonRightFoot">
+                                </TextureButton>
+                            </PanelContainer>
+                        </PanelContainer>
+                    </PanelContainer>
+                    <PanelContainer
+                        SetSize="45 99"
+                        Margin="0 0 12 0"
+                        HorizontalAlignment="Right">
+                        <TextureButton
+                            Name="LeftArmButton"
+                            Access="Public"
+                            MinSize="45 75"
+                            StyleClasses="TargetDollButtonLeftArm"
+                            VerticalAlignment="Top">
+                        </TextureButton>
+                        <TextureButton
+                            Name="LeftHandButton"
+                            Access="Public"
+                            MinSize="45 45"
+                            VerticalAlignment="Bottom"
+                            StyleClasses="TargetDollButtonLeftHand">
+                        </TextureButton>
+                    </PanelContainer>
+                </PanelContainer>
+            </PanelContainer>
+        </BoxContainer>
+        <PanelContainer StyleClasses="LowDivider" Margin="0 5 0 5"/>
+        <Label Text="{Loc 'surgery-window-select-layer'}" Margin="0 0 0 5"/>
+        <BoxContainer Orientation="Horizontal" SeparationOverride="5" HorizontalExpand="True">
+            <Button Name="SkinTabButton" Access="Public" Text="{Loc 'surgery-window-layer-skin'}" HorizontalExpand="True"/>
+            <Button Name="TissueTabButton" Access="Public" Text="{Loc 'surgery-window-layer-tissue'}" HorizontalExpand="True"/>
+            <Button Name="OrganTabButton" Access="Public" Text="{Loc 'surgery-window-layer-organ'}" HorizontalExpand="True"/>
+        </BoxContainer>
+        <PanelContainer StyleClasses="LowDivider" Margin="0 10 0 10"/>
+        <ScrollContainer Name="StepsContainer" Access="Public" VerticalExpand="True" HorizontalExpand="True" Margin="0 0 0 5"/>
+    </BoxContainer>
+</controls:FancyWindow>
+

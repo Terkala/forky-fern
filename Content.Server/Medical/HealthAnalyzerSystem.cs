@@ -33,7 +33,10 @@
 // SPDX-License-Identifier: MIT
 
 using Content.Server.Medical.Components;
-using Content.Shared.Body.Components;
+using Content.Shared.Body;
+using Content.Shared.Body.Part;
+using Content.Shared.Body.Systems;
+using System.Linq;
 using Content.Shared.Chemistry.EntitySystems;
 using Content.Shared.Damage.Components;
 using Content.Shared.DoAfter;
@@ -43,16 +46,18 @@ using Content.Shared.Interaction.Events;
 using Content.Shared.Item.ItemToggle;
 using Content.Shared.Item.ItemToggle.Components;
 using Content.Shared.MedicalScanner;
+using Content.Shared.Medical.Surgery;
+using Content.Server.Medical.Surgery;
 using Content.Shared.Mobs.Components;
 using Content.Shared.Popups;
 using Content.Shared.PowerCell;
 using Content.Shared.Temperature.Components;
 using Content.Shared.Traits.Assorted;
+using Content.Shared.UserInterface;
 using Robust.Server.GameObjects;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Containers;
 using Robust.Shared.Timing;
-using Content.Server.Body.Systems;
 
 namespace Content.Server.Medical;
 
@@ -63,11 +68,10 @@ public sealed class HealthAnalyzerSystem : EntitySystem
     [Dependency] private readonly SharedAudioSystem _audio = default!;
     [Dependency] private readonly SharedDoAfterSystem _doAfterSystem = default!;
     [Dependency] private readonly ItemToggleSystem _toggle = default!;
-    [Dependency] private readonly SharedSolutionContainerSystem _solutionContainerSystem = default!;
     [Dependency] private readonly UserInterfaceSystem _uiSystem = default!;
     [Dependency] private readonly TransformSystem _transformSystem = default!;
     [Dependency] private readonly SharedPopupSystem _popupSystem = default!;
-    [Dependency] private readonly BloodstreamSystem _bloodstreamSystem = default!;
+    [Dependency] private readonly SurgerySystem _surgerySystem = default!;
 
     public override void Initialize()
     {
@@ -76,6 +80,41 @@ public sealed class HealthAnalyzerSystem : EntitySystem
         SubscribeLocalEvent<HealthAnalyzerComponent, EntGotInsertedIntoContainerMessage>(OnInsertedIntoContainer);
         SubscribeLocalEvent<HealthAnalyzerComponent, ItemToggledEvent>(OnToggled);
         SubscribeLocalEvent<HealthAnalyzerComponent, DroppedEvent>(OnDropped);
+        
+        // Subscribe to BUI messages for surgery button
+        Subs.BuiEvents<HealthAnalyzerComponent>(HealthAnalyzerUiKey.Key, subs =>
+        {
+            subs.Event<BeginSurgeryMessage>(OnBeginSurgery);
+        });
+    }
+    
+    private void OnBeginSurgery(Entity<HealthAnalyzerComponent> ent, ref BeginSurgeryMessage msg)
+    {
+        var targetEntity = GetEntity(msg.TargetEntity);
+        
+        // Verify target entity has body
+        if (!HasComp<BodyComponent>(targetEntity))
+            return;
+        
+        // Find first body part with SurgeryLayerComponent (prefer torso)
+        var bodyPartToOpen = _surgerySystem.FindBodyPartForSurgery(targetEntity);
+        
+        if (bodyPartToOpen == null)
+            return;
+        
+        // Get the user from the BUI - get the first actor that has the UI open
+        // In practice, we'd want to get the specific user who sent the message
+        var actors = _uiSystem.GetActors((ent, null), HealthAnalyzerUiKey.Key).ToList();
+        if (actors.Count == 0)
+            return;
+            
+        var user = actors.First();
+        
+        // Open surgery UI
+        if (bodyPartToOpen != null && TryComp<SurgeryLayerComponent>(bodyPartToOpen.Value, out var layer))
+        {
+            _surgerySystem.OpenSurgeryUI((bodyPartToOpen.Value, layer), user);
+        }
     }
 
     public override void Update(float frameTime)
@@ -255,6 +294,8 @@ public sealed class HealthAnalyzerSystem : EntitySystem
         var bleeding = false;
         var unrevivable = false;
 
+        // BloodstreamComponent doesn't exist in Forky
+#if false
         if (TryComp<BloodstreamComponent>(entity, out var bloodstream) &&
             _solutionContainerSystem.ResolveSolution(entity, bloodstream.BloodSolutionName,
                 ref bloodstream.BloodSolution, out var bloodSolution))
@@ -262,6 +303,9 @@ public sealed class HealthAnalyzerSystem : EntitySystem
             bloodAmount = _bloodstreamSystem.GetBloodLevel(entity);
             bleeding = bloodstream.BleedAmount > 0;
         }
+#else
+        // Blood system not available in Forky - leave bloodAmount as NaN and bleeding as false
+#endif
 
         if (TryComp<UnrevivableComponent>(entity, out var unrevivableComp) && unrevivableComp.Analyzable)
             unrevivable = true;

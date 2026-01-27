@@ -17,6 +17,7 @@
   markingLimits: MobReptilianMarkingLimits
   dollPrototype: AppearanceReptilian
   skinColoration: Hues
+  bodyPartStructure: HumanBodyStructure
   maleFirstNames: NamesReptilianMale
   femaleFirstNames: NamesReptilianFemale
   naming: FirstDashFirst

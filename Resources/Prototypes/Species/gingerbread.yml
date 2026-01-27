@@ -13,6 +13,7 @@
   dollPrototype: AppearanceGingerbread
   skinColoration: HumanToned
   defaultSkinTone: "#9a7c5a"
+  bodyPartStructure: HumanBodyStructure
 
 - type: speciesBaseSprites
   id: MobGingerbreadSprites

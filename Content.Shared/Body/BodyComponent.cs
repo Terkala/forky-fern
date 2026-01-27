@@ -17,6 +17,12 @@ public sealed partial class BodyComponent : Component
     /// </summary>
     [ViewVariables]
     public Container? Organs;
+
+    /// <summary>
+    /// Container for root body parts (torso, head) attached directly to the body.
+    /// </summary>
+    [ViewVariables]
+    public Container? RootBodyParts;
 }
 
 /// <summary>

@@ -1,0 +1,212 @@
+using Content.Shared.Body.Part;
+using Content.Shared.FixedPoint;
+using Content.Shared.Medical.Surgery.Operations;
+using Robust.Shared.GameStates;
+using Robust.Shared.Prototypes;
+
+namespace Content.Shared.Medical.Surgery;
+
+/// <summary>
+/// Component that defines a single step in a surgery procedure.
+/// Each step can have conditions, effects, and debilitations.
+/// </summary>
+[RegisterComponent, NetworkedComponent]
+[Prototype("SurgerySteps")]
+public sealed partial class SurgeryStepComponent : Component
+{
+    /// <summary>
+    /// Duration of this step in seconds.
+    /// </summary>
+    [DataField]
+    public float Duration = 2f;
+
+    /// <summary>
+    /// Required tool component types for this step.
+    /// If null, no specific tool is required.
+    /// </summary>
+    [DataField]
+    public ComponentRegistry? Tool;
+
+    /// <summary>
+    /// Components to add to the body part when this step completes.
+    /// </summary>
+    [DataField]
+    public ComponentRegistry? Add;
+
+    /// <summary>
+    /// Components to remove from the body part when this step completes.
+    /// </summary>
+    [DataField]
+    public ComponentRegistry? Remove;
+
+    /// <summary>
+    /// Components to add to the body when this step completes.
+    /// </summary>
+    [DataField]
+    public ComponentRegistry? BodyAdd;
+
+    /// <summary>
+    /// Components to remove from the body when this step completes.
+    /// </summary>
+    [DataField]
+    public ComponentRegistry? BodyRemove;
+
+
+    /// <summary>
+    /// Which surgery layer this step belongs to.
+    /// </summary>
+    [DataField]
+    public SurgeryLayer Layer = SurgeryLayer.Skin;
+
+    /// <summary>
+    /// Body part types this step can be performed on.
+    /// If empty, can be performed on any part.
+    /// </summary>
+    [DataField]
+    public List<BodyPartType> ValidPartTypes = new();
+
+    /// <summary>
+    /// Required surgery layer state before this step can be performed.
+    /// For example, tissue steps require skin to be retracted.
+    /// </summary>
+    [DataField]
+    public SurgeryLayerRequirements? Requirements;
+
+    /// <summary>
+    /// For organ layer steps: the organ slot ID this step targets (e.g., "heart", "lungs", "stomach").
+    /// If specified, this step will only be shown if the body part has this organ slot defined.
+    /// This ensures species-specific surgeries (e.g., heart surgery) don't appear for species
+    /// that don't have that organ slot (e.g., Diona has no heart slot, so heart surgery won't appear).
+    /// If null, the step is generic and applies to all organs that exist on the body part.
+    /// </summary>
+    [DataField]
+    public string? TargetOrganSlot;
+
+    /// <summary>
+    /// Optional reference to a surgery operation prototype.
+    /// If set, this step will use operation-based tool validation with primary and secondary methods.
+    /// If null, the step uses the legacy Tool field for backward compatibility.
+    /// </summary>
+    [DataField]
+    public ProtoId<SurgeryOperationPrototype>? OperationId;
+
+    /// <summary>
+    /// Which sequence this step belongs to (e.g., "RetractSkinSequence").
+    /// Used for bidirectional operations.
+    /// </summary>
+    [DataField]
+    public string? SequenceId;
+
+    /// <summary>
+    /// Position of this step within its sequence (0-based).
+    /// Used to determine next available step in forward or reverse direction.
+    /// </summary>
+    [DataField]
+    public int SequenceIndex = -1;
+
+    /// <summary>
+    /// Whether this step can be reversed by a paired reverse step.
+    /// </summary>
+    [DataField]
+    public bool IsReversible = false;
+
+    /// <summary>
+    /// For implant steps: which implant slot/container this targets.
+    /// </summary>
+    [DataField]
+    public string? TargetImplantSlot;
+
+    /// <summary>
+    /// Whether this step requires a skilled technician to perform properly.
+    /// If true and performed by a non-skilled technician, applies an unskilled technician penalty.
+    /// Used for cybernetics maintenance steps like adjusting bolts and replacing wiring.
+    /// </summary>
+    [DataField]
+    public bool RequiresSkilledTechnician = false;
+
+    /// <summary>
+    /// Integrity penalty to apply when this step completes.
+    /// Only applied if this is the final step in a sequence (or if not part of a sequence).
+    /// </summary>
+    [DataField]
+    public FixedPoint2? ApplyPenalty;
+
+    /// <summary>
+    /// ID of the surgery step that applied the penalty to remove when this step completes.
+    /// The penalty amount is looked up from the referenced step's ApplyPenalty value.
+    /// This ensures the penalty value is only defined in one place and can't get out of sync.
+    /// Only removed if this is the final step in a sequence (or if not part of a sequence).
+    /// </summary>
+    [DataField]
+    public EntProtoId? RemovePenaltyStepId;
+
+    /// <summary>
+    /// Layer state changes that occur when this step completes.
+    /// Only applied if this is the final step in a sequence (or if not part of a sequence).
+    /// </summary>
+    [DataField]
+    public SurgeryLayerStateChanges? LayerStateChanges;
+
+    /// <summary>
+    /// Whether this step triggers the unsanitary conditions penalty check.
+    /// Typically true for steps that go below skin level for the first time.
+    /// </summary>
+    [DataField]
+    public bool TriggersUnsanitaryPenalty = false;
+}
+
+/// <summary>
+/// Requirements for a surgery step based on layer state.
+/// </summary>
+[DataRecord]
+public sealed partial record SurgeryLayerRequirements
+{
+    /// <summary>
+    /// Whether skin must be retracted before this step can be performed.
+    /// </summary>
+    [DataField]
+    public bool RequiresSkinRetracted = false;
+
+    /// <summary>
+    /// Whether tissue must be retracted before this step can be performed.
+    /// </summary>
+    [DataField]
+    public bool RequiresTissueRetracted = false;
+
+    /// <summary>
+    /// Whether bones must be sawed before this step can be performed.
+    /// </summary>
+    [DataField]
+    public bool RequiresBonesSawed = false;
+}
+
+/// <summary>
+/// Layer state changes that occur when a surgery step completes.
+/// </summary>
+[DataRecord]
+public sealed partial record SurgeryLayerStateChanges
+{
+    /// <summary>
+    /// Whether to set skin retracted state (true = retracted, false = not retracted, null = no change).
+    /// </summary>
+    [DataField]
+    public bool? SetSkinRetracted;
+
+    /// <summary>
+    /// Whether to set tissue retracted state (true = retracted, false = not retracted, null = no change).
+    /// </summary>
+    [DataField]
+    public bool? SetTissueRetracted;
+
+    /// <summary>
+    /// Whether to set bones sawed state (true = sawed, false = not sawed, null = no change).
+    /// </summary>
+    [DataField]
+    public bool? SetBonesSawed;
+
+    /// <summary>
+    /// Whether to set bones smashed state (true = smashed, false = not smashed, null = no change).
+    /// </summary>
+    [DataField]
+    public bool? SetBonesSmashed;
+}

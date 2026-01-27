@@ -49,3 +49,17 @@ public struct HealthAnalyzerUiState
         Unrevivable = unrevivable;
     }
 }
+
+/// <summary>
+/// Message sent from client to server when user clicks "Begin Surgery" button.
+/// </summary>
+[Serializable, NetSerializable]
+public sealed class BeginSurgeryMessage : BoundUserInterfaceMessage
+{
+    public NetEntity TargetEntity;
+
+    public BeginSurgeryMessage(NetEntity targetEntity)
+    {
+        TargetEntity = targetEntity;
+    }
+}

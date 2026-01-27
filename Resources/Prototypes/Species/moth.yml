@@ -16,6 +16,7 @@
   markingLimits: MobMothMarkingLimits
   dollPrototype: AppearanceMoth
   skinColoration: Hues
+  bodyPartStructure: HumanBodyStructure
   maleFirstNames: NamesMothFirstMale
   femaleFirstNames: NamesMothFirstFemale
   lastNames: NamesMothLast

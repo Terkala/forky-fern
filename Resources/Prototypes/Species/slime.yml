@@ -19,6 +19,7 @@
   markingLimits: MobSlimeMarkingLimits
   dollPrototype: AppearanceSlimePerson
   skinColoration: Hues
+  bodyPartStructure: SlimePersonBodyStructure
 
 - type: speciesBaseSprites
   id: MobSlimeSprites

@@ -1,0 +1,27 @@
+# Body part slot definitions
+# Slots define where body parts can be attached on parent body parts
+
+- type: bodyPartSlot
+  id: head
+  partType: Head
+  symmetry: None
+
+- type: bodyPartSlot
+  id: left_arm
+  partType: Arm
+  symmetry: Left
+
+- type: bodyPartSlot
+  id: right_arm
+  partType: Arm
+  symmetry: Right
+
+- type: bodyPartSlot
+  id: left_leg
+  partType: Leg
+  symmetry: Left
+
+- type: bodyPartSlot
+  id: right_leg
+  partType: Leg
+  symmetry: Right

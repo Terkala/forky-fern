@@ -17,6 +17,7 @@
   markingLimits: MobDionaMarkingLimits
   dollPrototype: AppearanceDiona
   skinColoration: Hues
+  bodyPartStructure: HumanBodyStructure
   maleFirstNames: NamesDionaFirst
   femaleFirstNames: NamesDionaFirst
   lastNames: NamesDionaLast

@@ -17,6 +17,7 @@
   markingLimits: MobArachnidMarkingLimits
   dollPrototype: AppearanceArachnid
   skinColoration: Hues
+  bodyPartStructure: HumanBodyStructure
   maleFirstNames: NamesArachnidFirst
   femaleFirstNames: NamesArachnidFirst
   lastNames: NamesArachnidLast

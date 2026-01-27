@@ -12,3 +12,4 @@
   markingLimits: MobHumanMarkingLimits
   dollPrototype: AppearanceDwarf
   skinColoration: HumanToned
+  bodyPartStructure: HumanBodyStructure

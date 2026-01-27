@@ -37,6 +37,11 @@ namespace Content.Client.HealthAnalyzer.UI
             _window = this.CreateWindow<HealthAnalyzerWindow>();
 
             _window.Title = EntMan.GetComponent<MetaDataComponent>(Owner).EntityName;
+            
+            _window.OnBeginSurgeryClicked += (targetEntity) =>
+            {
+                SendMessage(new BeginSurgeryMessage(targetEntity));
+            };
         }
 
         protected override void ReceiveMessage(BoundUserInterfaceMessage message)
@@ -44,10 +49,16 @@ namespace Content.Client.HealthAnalyzer.UI
             if (_window == null)
                 return;
 
-            if (message is not HealthAnalyzerScannedUserMessage cast)
+            if (message is HealthAnalyzerScannedUserMessage cast)
+            {
+                _window.Populate(cast);
                 return;
-
-            _window.Populate(cast);
+            }
+        }
+        
+        public void SendBeginSurgeryMessage(NetEntity targetEntity)
+        {
+            SendMessage(new BeginSurgeryMessage(targetEntity));
         }
     }
 }

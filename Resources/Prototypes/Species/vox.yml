@@ -20,6 +20,7 @@
   dollPrototype: AppearanceVox
   skinColoration: VoxFeathers
   defaultSkinTone: "#6c741d"
+  bodyPartStructure: HumanBodyStructure
   maleFirstNames: NamesVox
   femaleFirstNames: NamesVox
   naming: First

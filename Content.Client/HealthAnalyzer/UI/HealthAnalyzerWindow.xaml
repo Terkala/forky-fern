@@ -12,4 +12,10 @@
         <ui:HealthAnalyzerControl
             Name="HealthAnalyzer"/>
     </ScrollContainer>
+    <Button
+        Name="BeginSurgeryButton"
+        Access="Public"
+        Text="Begin Surgery"
+        Visible="False"
+        Margin="5"/>
 </controls:FancyWindow>

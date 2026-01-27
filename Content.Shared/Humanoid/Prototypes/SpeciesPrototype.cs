@@ -16,6 +16,7 @@
 // SPDX-FileCopyrightText: 2025 slarticodefast <161409025+slarticodefast@users.noreply.github.com>
 // SPDX-License-Identifier: MIT
 
+using Content.Shared.Body.Part;
 using Content.Shared.Dataset;
 using Content.Shared.Humanoid.Markings;
 using Robust.Shared.Prototypes;
@@ -100,6 +101,13 @@ public sealed partial class SpeciesPrototype : IPrototype
     /// </summary>
     [DataField(required: true)]
     public ProtoId<SkinColorationPrototype> SkinColoration { get; private set; }
+
+    /// <summary>
+    /// Body part structure prototype that defines which body parts this species has.
+    /// If null, body parts are not automatically initialized (for backwards compatibility).
+    /// </summary>
+    [DataField]
+    public ProtoId<BodyPartStructurePrototype>? BodyPartStructure { get; private set; }
 
     [DataField]
     public ProtoId<LocalizedDatasetPrototype> MaleFirstNames { get; private set; } = "NamesFirstMale";

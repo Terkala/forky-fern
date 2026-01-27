@@ -13,6 +13,7 @@
   markingLimits: MobVulpkaninMarkingLimits
   dollPrototype: AppearanceVulpkanin
   skinColoration: VulpkaninColors
+  bodyPartStructure: HumanBodyStructure
   maleFirstNames: names_vulpkanin_male
   femaleFirstNames: names_vulpkanin_female
   lastNames: names_vulpkanin_last

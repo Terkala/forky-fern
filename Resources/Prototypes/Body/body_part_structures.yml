@@ -1,0 +1,80 @@
+# Body part structure definitions
+# Defines which body parts are created for each species and how they're attached
+
+- type: bodyPartStructure
+  id: HumanBodyStructure
+  parts:
+    # Torso is the root part (structural core)
+    - prototype: BodyPartTorso
+      parentPrototype: null
+      slotId: null
+    
+    # Head attaches to torso
+    - prototype: BodyPartHead
+      parentPrototype: null
+      slotId: head
+    
+    # Arms attach to torso
+    - prototype: BodyPartLeftArm
+      parentPrototype: BodyPartTorso
+      slotId: left_arm
+    
+    - prototype: BodyPartRightArm
+      parentPrototype: BodyPartTorso
+      slotId: right_arm
+    
+    # Legs attach to torso
+    - prototype: BodyPartLeftLeg
+      parentPrototype: BodyPartTorso
+      slotId: left_leg
+    
+    - prototype: BodyPartRightLeg
+      parentPrototype: BodyPartTorso
+      slotId: right_leg
+  
+  organPlacementRules:
+    # Brain goes to head
+    - organCategory: Brain
+      targetPartType: Head
+    # All other organs go to torso
+    - organCategory: null
+      targetPartType: Torso
+
+- type: bodyPartStructure
+  id: SlimePersonBodyStructure
+  parts:
+    # Torso is the root part (structural core)
+    - prototype: BodyPartTorso
+      parentPrototype: null
+      slotId: null
+    
+    # Head attaches to torso
+    - prototype: BodyPartHead
+      parentPrototype: null
+      slotId: head
+    
+    # Arms attach to torso
+    - prototype: BodyPartLeftArm
+      parentPrototype: BodyPartTorso
+      slotId: left_arm
+    
+    - prototype: BodyPartRightArm
+      parentPrototype: BodyPartTorso
+      slotId: right_arm
+    
+    # Legs attach to torso
+    - prototype: BodyPartLeftLeg
+      parentPrototype: BodyPartTorso
+      slotId: left_leg
+    
+    - prototype: BodyPartRightLeg
+      parentPrototype: BodyPartTorso
+      slotId: right_leg
+  
+  organPlacementRules:
+    # Slime Core (brain) goes to torso - slime brains are inside their core
+    - organCategory: Brain
+      targetPartType: Torso
+    # All other organs go to torso
+    - organCategory: null
+      targetPartType: Torso
