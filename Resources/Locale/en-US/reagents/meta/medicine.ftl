@@ -156,3 +156,9 @@ reagent-desc-haloperidol = Removes most stimulating and hallucinogenic drugs. Re
 
 reagent-name-warfarin = warfarin
 reagent-desc-warfarin = Commonly used as an anticoagulant medication. Causes blood to have difficulty forming clots. Can cause internal bleeding when overdosed.
+
+reagent-name-immunosuppressant = Immunosuppressant
+reagent-desc-immunosuppressant = Suppresses bio-rejection by temporarily increasing the body's tolerance for foreign implants. Overdose causes toxin damage.
+
+reagent-name-immunosuppressant-plus = Advanced Immunosuppressant
+reagent-desc-immunosuppressant-plus = A more potent immunosuppressant that provides greater bio-rejection suppression with reduced side effects.

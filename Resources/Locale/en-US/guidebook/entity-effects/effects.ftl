@@ -518,3 +518,5 @@ entity-effect-guidebook-plant-mutate-chemicals =
         [1] Mutates
         *[other] mutate
     } a plant to produce {$name}
+
+entity-effect-guidebook-immunosuppressant = Provides {NATURALFIXED($bonus, 2)} temporary integrity per unit, suppressing bio-rejection damage
