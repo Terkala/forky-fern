@@ -77,4 +77,11 @@ public sealed partial class IntegrityComponent : Component
     /// </summary>
     [ViewVariables, DataField(customTypeSerializer: typeof(TimeOffsetSerializer))]
     public TimeSpan NextServiceTimeExpirationTime = TimeSpan.Zero;
+
+    /// <summary>
+    /// The next time that bio-rejection will be updated.
+    /// Used to control update frequency and handle pausing/unpausing.
+    /// </summary>
+    [ViewVariables, DataField(customTypeSerializer: typeof(TimeOffsetSerializer))]
+    public TimeSpan NextUpdate = TimeSpan.Zero;
 }

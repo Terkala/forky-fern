@@ -23,3 +23,20 @@ health-analyzer-window-scan-mode-active = Active
 health-analyzer-window-scan-mode-inactive = Inactive
 
 health-analyzer-popup-scan-target = {CAPITALIZE(THE($user))} is trying to scan you!
+
+health-analyzer-mode-health = Health
+health-analyzer-mode-integrity = Integrity
+health-analyzer-mode-surgery = Surgery
+
+health-analyzer-integrity-header = Integrity {$used}/{$max}
+health-analyzer-integrity-header-bonus = Integrity {$used}/{$max} (+{$bonus} temporary)
+health-analyzer-integrity-breakdown-title = Integrity Usage Breakdown:
+health-analyzer-integrity-component = -{$cost} {$name}
+health-analyzer-integrity-surgery-penalty = -{$cost} Surgery Penalty ({$partName})
+health-analyzer-integrity-biorejection = Bio-Rejection Damage: {$damage}
+health-analyzer-integrity-overlimit = [color=red]WARNING: Integrity over limit! Bio-rejection accumulating.[/color]
+health-analyzer-integrity-none = No integrity usage detected.
+
+health-analyzer-component-type-organ = Organ
+health-analyzer-component-type-limb = Limb
+health-analyzer-component-type-cybernetic = Cybernetic

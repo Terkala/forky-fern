@@ -4,6 +4,11 @@
     xmlns:ui="clr-namespace:Content.Client.HealthAnalyzer.UI"
     MaxHeight="525"
     MinWidth="300">
+    <BoxContainer Orientation="Horizontal" SeparationOverride="5" HorizontalExpand="True" Margin="5 5 5 0">
+        <Button Name="HealthModeButton" Access="Public" Text="{Loc 'health-analyzer-mode-health'}" HorizontalExpand="True"/>
+        <Button Name="IntegrityModeButton" Access="Public" Text="{Loc 'health-analyzer-mode-integrity'}" HorizontalExpand="True"/>
+        <Button Name="SurgeryModeButton" Access="Public" Text="{Loc 'health-analyzer-mode-surgery'}" HorizontalExpand="True"/>
+    </BoxContainer>
     <ScrollContainer
         Margin="5 5 5 5"
         ReturnMeasure="True"

@@ -48,6 +48,7 @@ using Content.Shared.Item.ItemToggle.Components;
 using Content.Shared.MedicalScanner;
 using Content.Shared.Medical.Surgery;
 using Content.Server.Medical.Surgery;
+using Content.Shared.Medical.Integrity;
 using Content.Shared.Mobs.Components;
 using Content.Shared.Popups;
 using Content.Shared.PowerCell;
@@ -72,6 +73,7 @@ public sealed class HealthAnalyzerSystem : EntitySystem
     [Dependency] private readonly TransformSystem _transformSystem = default!;
     [Dependency] private readonly SharedPopupSystem _popupSystem = default!;
     [Dependency] private readonly SurgerySystem _surgerySystem = default!;
+    [Dependency] private readonly SharedBodyPartSystem _bodyPartSystem = default!;
 
     public override void Initialize()
     {
@@ -310,13 +312,89 @@ public sealed class HealthAnalyzerSystem : EntitySystem
         if (TryComp<UnrevivableComponent>(entity, out var unrevivableComp) && unrevivableComp.Analyzable)
             unrevivable = true;
 
+        // Collect integrity data if available
+        int? maxIntegrity = null;
+        FixedPoint2? usedIntegrity = null;
+        FixedPoint2? temporaryIntegrityBonus = null;
+        FixedPoint2? currentBioRejection = null;
+        FixedPoint2? surgeryPenalty = null;
+        List<IntegrityBreakdownEntry>? integrityBreakdown = null;
+
+        if (TryComp<IntegrityComponent>(entity, out var integrity))
+        {
+            maxIntegrity = integrity.MaxIntegrity;
+            usedIntegrity = integrity.UsedIntegrity;
+            temporaryIntegrityBonus = integrity.TemporaryIntegrityBonus;
+            currentBioRejection = integrity.CurrentBioRejection;
+            surgeryPenalty = integrity.CachedSurgeryPenalty;
+            integrityBreakdown = GetIntegrityBreakdown(entity);
+        }
+
         return new HealthAnalyzerUiState(
             GetNetEntity(entity),
             bodyTemperature,
             bloodAmount,
             null,
             bleeding,
-            unrevivable
+            unrevivable,
+            maxIntegrity,
+            usedIntegrity,
+            temporaryIntegrityBonus,
+            currentBioRejection,
+            surgeryPenalty,
+            integrityBreakdown
         );
+    }
+
+    /// <summary>
+    /// Collects integrity breakdown data from all body parts.
+    /// </summary>
+    private List<IntegrityBreakdownEntry> GetIntegrityBreakdown(EntityUid target)
+    {
+        var breakdown = new List<IntegrityBreakdownEntry>();
+
+        if (!TryComp<BodyComponent>(target, out var body))
+            return breakdown;
+
+        // Iterate all body parts
+        foreach (var (partId, part) in _bodyPartSystem.GetBodyChildren(target, body))
+        {
+            // Check for applied integrity cost
+            if (TryComp<AppliedIntegrityCostComponent>(partId, out var appliedCost) && appliedCost.AppliedCost > 0)
+            {
+                var partName = MetaData(partId).EntityName;
+                string componentType;
+
+                // Determine component type
+                // Check cybernetic first since cybernetics may also have BodyPartComponent
+                if (HasComp<CyberneticIntegrityComponent>(partId))
+                {
+                    componentType = "cybernetic";
+                }
+                else if (HasComp<OrganComponent>(partId))
+                {
+                    componentType = "organ";
+                }
+                else if (HasComp<BodyPartComponent>(partId))
+                {
+                    componentType = "limb";
+                }
+                else
+                {
+                    componentType = "unknown";
+                }
+
+                breakdown.Add(new IntegrityBreakdownEntry(partName, appliedCost.AppliedCost, componentType));
+            }
+
+            // Check for surgery penalty
+            if (TryComp<SurgeryPenaltyComponent>(partId, out var penalty) && penalty.CurrentPenalty > 0)
+            {
+                var partName = MetaData(partId).EntityName;
+                breakdown.Add(new IntegrityBreakdownEntry(partName, penalty.CurrentPenalty, "surgery_penalty"));
+            }
+        }
+
+        return breakdown;
     }
 }

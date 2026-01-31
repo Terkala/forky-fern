@@ -45,7 +45,7 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
         _cache = dependencies.Resolve<IResourceCache>();
     }
 
-    public void Populate(HealthAnalyzerUiState state)
+    public void Populate(HealthAnalyzerUiState state, HealthAnalyzerMode mode = HealthAnalyzerMode.Health)
     {
         var target = _entityManager.GetEntity(state.TargetEntity);
 
@@ -53,10 +53,38 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
             || !_entityManager.TryGetComponent<DamageableComponent>(target, out var damageable))
         {
             NoPatientDataText.Visible = true;
+            PatientDataContainer.Visible = false;
+            GroupsContainer.Visible = false;
+            IntegrityContainer.Visible = false;
+            AlertsDivider.Visible = false;
+            AlertsContainer.Visible = false;
             return;
         }
 
         NoPatientDataText.Visible = false;
+
+        // Route to appropriate display method based on mode
+        switch (mode)
+        {
+            case HealthAnalyzerMode.Health:
+                PopulateHealthMode(state, target.Value, damageable);
+                break;
+            case HealthAnalyzerMode.Integrity:
+                PopulateIntegrityMode(state);
+                break;
+            case HealthAnalyzerMode.Surgery:
+                // Surgery mode shows same as Health mode for now
+                PopulateHealthMode(state, target.Value, damageable);
+                break;
+        }
+    }
+
+    private void PopulateHealthMode(HealthAnalyzerUiState state, EntityUid target, DamageableComponent damageable)
+    {
+        // Show health mode containers, hide integrity container
+        PatientDataContainer.Visible = true;
+        GroupsContainer.Visible = true;
+        IntegrityContainer.Visible = false;
 
         // Scan Mode
 
@@ -141,6 +169,114 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
         IReadOnlyDictionary<string, FixedPoint2> damagePerType = damageable.Damage.DamageDict;
 
         DrawDiagnosticGroups(damageSortedGroups, damagePerType);
+    }
+
+    private void PopulateIntegrityMode(HealthAnalyzerUiState state)
+    {
+        // Show integrity container, hide health mode containers
+        PatientDataContainer.Visible = false;
+        GroupsContainer.Visible = false;
+        IntegrityContainer.Visible = true;
+        AlertsDivider.Visible = false;
+        AlertsContainer.Visible = false;
+
+        // Check if integrity data is available
+        if (!state.MaxIntegrity.HasValue || !state.UsedIntegrity.HasValue)
+        {
+            IntegrityHeaderLabel.Text = Loc.GetString("health-analyzer-integrity-none");
+            IntegrityBreakdownContainer.RemoveAllChildren();
+            return;
+        }
+
+        var maxIntegrity = state.MaxIntegrity.Value;
+        var usedIntegrity = state.UsedIntegrity.Value;
+        var temporaryBonus = state.TemporaryIntegrityBonus ?? FixedPoint2.Zero;
+        var effectiveMax = FixedPoint2.New(maxIntegrity) + temporaryBonus;
+
+        // Set header text
+        if (temporaryBonus > 0)
+        {
+            IntegrityHeaderLabel.Text = Loc.GetString("health-analyzer-integrity-header-bonus",
+                ("used", usedIntegrity),
+                ("max", effectiveMax),
+                ("bonus", temporaryBonus));
+        }
+        else
+        {
+            IntegrityHeaderLabel.Text = Loc.GetString("health-analyzer-integrity-header",
+                ("used", usedIntegrity),
+                ("max", FixedPoint2.New(maxIntegrity)));
+        }
+
+        // Clear and populate breakdown
+        IntegrityBreakdownContainer.RemoveAllChildren();
+
+        if (state.IntegrityBreakdown != null && state.IntegrityBreakdown.Count > 0)
+        {
+            foreach (var entry in state.IntegrityBreakdown)
+            {
+                var label = new Label();
+                var color = entry.ComponentType switch
+                {
+                    "organ" => Color.White,
+                    "limb" => Color.Cyan,
+                    "cybernetic" => Color.Yellow,
+                    "surgery_penalty" => Color.Red,
+                    _ => Color.White
+                };
+
+                label.FontColorOverride = color;
+
+                if (entry.ComponentType == "surgery_penalty")
+                {
+                    label.Text = Loc.GetString("health-analyzer-integrity-surgery-penalty",
+                        ("cost", entry.IntegrityCost),
+                        ("partName", entry.ComponentName));
+                }
+                else
+                {
+                    label.Text = Loc.GetString("health-analyzer-integrity-component",
+                        ("cost", entry.IntegrityCost),
+                        ("name", entry.ComponentName));
+                }
+
+                IntegrityBreakdownContainer.AddChild(label);
+            }
+        }
+        else
+        {
+            var noUsageLabel = new Label
+            {
+                Text = Loc.GetString("health-analyzer-integrity-none")
+            };
+            IntegrityBreakdownContainer.AddChild(noUsageLabel);
+        }
+
+        // Show bio-rejection if present
+        if (state.CurrentBioRejection.HasValue && state.CurrentBioRejection.Value > 0)
+        {
+            var bioRejectionText = Loc.GetString("health-analyzer-integrity-biorejection",
+                ("damage", state.CurrentBioRejection.Value));
+            var bioRejectionLabel = new RichTextLabel
+            {
+                Text = $"[color=red]{bioRejectionText}[/color]",
+                Margin = new Thickness(0, 4),
+                MaxWidth = 300
+            };
+            IntegrityBreakdownContainer.AddChild(bioRejectionLabel);
+        }
+
+        // Show warning if over limit
+        if (usedIntegrity > effectiveMax)
+        {
+            var warningLabel = new RichTextLabel
+            {
+                Text = Loc.GetString("health-analyzer-integrity-overlimit"),
+                Margin = new Thickness(0, 4),
+                MaxWidth = 300
+            };
+            IntegrityBreakdownContainer.AddChild(warningLabel);
+        }
     }
 
     private static string GetStatus(MobState mobState)

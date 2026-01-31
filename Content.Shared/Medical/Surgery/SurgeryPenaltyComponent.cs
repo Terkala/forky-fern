@@ -4,6 +4,7 @@
 
 using Content.Shared.FixedPoint;
 using Robust.Shared.GameStates;
+using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom;
 
 namespace Content.Shared.Medical.Surgery;
 
@@ -28,4 +29,18 @@ public sealed partial class SurgeryPenaltyComponent : Component
     /// </summary>
     [ViewVariables, AutoNetworkedField]
     public FixedPoint2 CurrentPenalty = FixedPoint2.Zero;
+
+    /// <summary>
+    /// Whether this component needs surgery penalty updates.
+    /// Set to false when current == target to skip processing.
+    /// </summary>
+    [ViewVariables]
+    public bool NeedsUpdate = true;
+
+    /// <summary>
+    /// The next time that surgery penalty will be updated.
+    /// Used to control update frequency and handle pausing/unpausing.
+    /// </summary>
+    [ViewVariables, DataField(customTypeSerializer: typeof(TimeOffsetSerializer))]
+    public TimeSpan NextUpdate = TimeSpan.Zero;
 }

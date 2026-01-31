@@ -6,6 +6,7 @@
 // SPDX-FileCopyrightText: 2026 Fruitsalad <949631+Fruitsalad@users.noreply.github.com>
 // SPDX-License-Identifier: MIT
 
+using Content.Shared.FixedPoint;
 using Robust.Shared.Serialization;
 
 namespace Content.Shared.MedicalScanner;
@@ -36,10 +37,16 @@ public struct HealthAnalyzerUiState
     public bool? ScanMode;
     public bool? Bleeding;
     public bool? Unrevivable;
+    public int? MaxIntegrity;
+    public FixedPoint2? UsedIntegrity;
+    public FixedPoint2? TemporaryIntegrityBonus;
+    public FixedPoint2? CurrentBioRejection;
+    public FixedPoint2? SurgeryPenalty;
+    public List<IntegrityBreakdownEntry>? IntegrityBreakdown;
 
     public HealthAnalyzerUiState() {}
 
-    public HealthAnalyzerUiState(NetEntity? targetEntity, float temperature, float bloodLevel, bool? scanMode, bool? bleeding, bool? unrevivable)
+    public HealthAnalyzerUiState(NetEntity? targetEntity, float temperature, float bloodLevel, bool? scanMode, bool? bleeding, bool? unrevivable, int? maxIntegrity = null, FixedPoint2? usedIntegrity = null, FixedPoint2? temporaryIntegrityBonus = null, FixedPoint2? currentBioRejection = null, FixedPoint2? surgeryPenalty = null, List<IntegrityBreakdownEntry>? integrityBreakdown = null)
     {
         TargetEntity = targetEntity;
         Temperature = temperature;
@@ -47,6 +54,30 @@ public struct HealthAnalyzerUiState
         ScanMode = scanMode;
         Bleeding = bleeding;
         Unrevivable = unrevivable;
+        MaxIntegrity = maxIntegrity;
+        UsedIntegrity = usedIntegrity;
+        TemporaryIntegrityBonus = temporaryIntegrityBonus;
+        CurrentBioRejection = currentBioRejection;
+        SurgeryPenalty = surgeryPenalty;
+        IntegrityBreakdown = integrityBreakdown;
+    }
+}
+
+/// <summary>
+/// Represents a single entry in the integrity breakdown, showing which component uses integrity.
+/// </summary>
+[Serializable, NetSerializable]
+public struct IntegrityBreakdownEntry
+{
+    public string ComponentName;
+    public FixedPoint2 IntegrityCost;
+    public string ComponentType;
+
+    public IntegrityBreakdownEntry(string componentName, FixedPoint2 integrityCost, string componentType)
+    {
+        ComponentName = componentName;
+        IntegrityCost = integrityCost;
+        ComponentType = componentType;
     }
 }
 

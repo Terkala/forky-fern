@@ -30,10 +30,19 @@ using Robust.Client.UserInterface.Controls;
 
 namespace Content.Client.HealthAnalyzer.UI;
 
+public enum HealthAnalyzerMode
+{
+    Health,
+    Integrity,
+    Surgery
+}
+
 [GenerateTypedNameReferences]
 public sealed partial class HealthAnalyzerWindow : FancyWindow
 {
     private NetEntity? _currentTargetEntity;
+    private HealthAnalyzerMode _currentMode = HealthAnalyzerMode.Health;
+    private HealthAnalyzerUiState? _currentState;
     public event Action<NetEntity>? OnBeginSurgeryClicked;
 
     public HealthAnalyzerWindow()
@@ -41,17 +50,51 @@ public sealed partial class HealthAnalyzerWindow : FancyWindow
         RobustXamlLoader.Load(this);
         
         BeginSurgeryButton.OnPressed += OnBeginSurgeryButtonPressed;
+        
+        // Subscribe to mode button presses
+        HealthModeButton.OnPressed += _ => SetMode(HealthAnalyzerMode.Health);
+        IntegrityModeButton.OnPressed += _ => SetMode(HealthAnalyzerMode.Integrity);
+        SurgeryModeButton.OnPressed += _ => SetMode(HealthAnalyzerMode.Surgery);
+        
+        // Set initial mode
+        SetMode(HealthAnalyzerMode.Health);
     }
 
     public void Populate(HealthAnalyzerScannedUserMessage msg)
     {
-        HealthAnalyzer.Populate(msg.State);
+        _currentState = msg.State;
+        HealthAnalyzer.Populate(msg.State, _currentMode);
         
         // Store current target entity
         _currentTargetEntity = msg.State.TargetEntity;
         
-        // Show surgery button if target entity is valid
-        SetSurgeryButtonVisible(msg.State.TargetEntity != null);
+        // Update surgery button visibility based on mode
+        UpdateSurgeryButtonVisibility();
+    }
+    
+    private void SetMode(HealthAnalyzerMode mode)
+    {
+        _currentMode = mode;
+        
+        // Update button pressed states
+        HealthModeButton.Pressed = mode == HealthAnalyzerMode.Health;
+        IntegrityModeButton.Pressed = mode == HealthAnalyzerMode.Integrity;
+        SurgeryModeButton.Pressed = mode == HealthAnalyzerMode.Surgery;
+        
+        // Update UI visibility
+        if (_currentState.HasValue)
+        {
+            HealthAnalyzer.Populate(_currentState.Value, mode);
+        }
+        
+        // Update surgery button visibility
+        UpdateSurgeryButtonVisibility();
+    }
+    
+    private void UpdateSurgeryButtonVisibility()
+    {
+        // Show surgery button only in Surgery mode and when target entity is valid
+        BeginSurgeryButton.Visible = _currentMode == HealthAnalyzerMode.Surgery && _currentTargetEntity != null;
     }
     
     private void OnBeginSurgeryButtonPressed(BaseButton.ButtonEventArgs args)
@@ -64,6 +107,10 @@ public sealed partial class HealthAnalyzerWindow : FancyWindow
     
     public void SetSurgeryButtonVisible(bool visible)
     {
-        BeginSurgeryButton.Visible = visible;
+        // Only update if we're in Surgery mode
+        if (_currentMode == HealthAnalyzerMode.Surgery)
+        {
+            BeginSurgeryButton.Visible = visible;
+        }
     }
 }

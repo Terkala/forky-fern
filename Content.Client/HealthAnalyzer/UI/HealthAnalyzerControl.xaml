@@ -50,4 +50,10 @@
         Orientation="Vertical">
     </BoxContainer>
 
+    <BoxContainer Name="IntegrityContainer" Visible="False" Orientation="Vertical" Margin="0 5">
+        <Label Name="IntegrityHeaderLabel" StyleClasses="LabelKeyText"/>
+        <PanelContainer StyleClasses="LowDivider" Margin="0 5"/>
+        <BoxContainer Name="IntegrityBreakdownContainer" Orientation="Vertical"/>
+    </BoxContainer>
+
 </BoxContainer>

@@ -98,3 +98,8 @@
   armorCoefficientPrice: 1
   armorFlatPrice: 1
 
+- type: damageType
+  id: BioRejection
+  name: damage-type-biorejection
+  armorCoefficientPrice: 5
+  armorFlatPrice: 50

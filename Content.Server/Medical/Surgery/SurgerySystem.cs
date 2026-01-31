@@ -2488,10 +2488,18 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
     private void ApplySurgeryPenalty(EntityUid bodyPart, FixedPoint2 amount)
     {
         // Get or create penalty component
+        var wasNew = !HasComp<SurgeryPenaltyComponent>(bodyPart);
         var penalty = EnsureComp<SurgeryPenaltyComponent>(bodyPart);
+        
+        // Initialize NextUpdate if this is a new component
+        if (wasNew)
+        {
+            penalty.NextUpdate = _timing.CurTime + TimeSpan.FromSeconds(0.1);
+        }
         
         // Add to target penalty (accumulates as surgery progresses)
         penalty.TargetPenalty += amount;
+        penalty.NeedsUpdate = true;
         Dirty(bodyPart, penalty);
 
         // Update cached surgery penalty and recalculate bio-rejection for the body
@@ -2517,6 +2525,12 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
         if (!TryComp<SurgeryPenaltyComponent>(bodyPart, out var penalty))
             return;
 
+        // Initialize NextUpdate if not already set
+        if (penalty.NextUpdate == TimeSpan.Zero)
+        {
+            penalty.NextUpdate = _timing.CurTime + TimeSpan.FromSeconds(0.1);
+        }
+
         if (amount.HasValue)
         {
             // Remove specific amount (e.g., just skin or tissue penalty)
@@ -2528,6 +2542,7 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
             penalty.TargetPenalty = FixedPoint2.Zero;
         }
         
+        penalty.NeedsUpdate = true;
         Dirty(bodyPart, penalty);
 
         // Update cached surgery penalty and recalculate bio-rejection for the body
