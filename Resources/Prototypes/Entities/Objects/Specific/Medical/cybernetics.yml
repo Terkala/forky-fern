@@ -1,0 +1,64 @@
+- type: entity
+  id: CyberLimbBase
+  abstract: true
+  parent: BodyPartBase
+  components:
+  - type: CyberLimb
+  - type: CyberneticIntegrity
+    baseIntegrityCost: 2
+  - type: WiresPanel
+    open: false
+  - type: Storage
+    grid:
+    - 0,0,2,3  # 2x3 grid
+    maxItemSize: Small
+  - type: Item
+    size: Normal
+
+- type: entity
+  parent: CyberLimbBase
+  id: CyberLimbLeftArm
+  name: cybernetic left arm
+  components:
+  - type: BodyPart
+    partType: Arm
+    symmetry: Left
+  - type: Sprite
+    sprite: Mobs/Species/Human/parts.rsi
+    state: l_arm
+
+- type: entity
+  parent: CyberLimbBase
+  id: CyberLimbRightArm
+  name: cybernetic right arm
+  components:
+  - type: BodyPart
+    partType: Arm
+    symmetry: Right
+  - type: Sprite
+    sprite: Mobs/Species/Human/parts.rsi
+    state: r_arm
+
+- type: entity
+  parent: CyberLimbBase
+  id: CyberLimbLeftLeg
+  name: cybernetic left leg
+  components:
+  - type: BodyPart
+    partType: Leg
+    symmetry: Left
+  - type: Sprite
+    sprite: Mobs/Species/Human/parts.rsi
+    state: l_leg
+
+- type: entity
+  parent: CyberLimbBase
+  id: CyberLimbRightLeg
+  name: cybernetic right leg
+  components:
+  - type: BodyPart
+    partType: Leg
+    symmetry: Right
+  - type: Sprite
+    sprite: Mobs/Species/Human/parts.rsi
+    state: r_leg

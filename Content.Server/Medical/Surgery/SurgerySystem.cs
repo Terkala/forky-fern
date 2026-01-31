@@ -1471,7 +1471,7 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
     /// <summary>
     /// Generates dynamic surgery steps based on current state, implants, organs, and hand items.
     /// </summary>
-    private (List<NetEntity> SkinSteps, List<NetEntity> TissueSteps, List<NetEntity> OrganSteps) GenerateDynamicSteps(
+    internal (List<NetEntity> SkinSteps, List<NetEntity> TissueSteps, List<NetEntity> OrganSteps) GenerateDynamicSteps(
         EntityUid selectedPart,
         SurgeryLayerComponent selectedLayer,
         EntityUid? evalUser)
@@ -3379,6 +3379,96 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
         }
         
         return null;
+    }
+
+    /// <summary>
+    /// Gets surgery steps for a body part, used by health analyzer to display available operations.
+    /// </summary>
+    public (List<NetEntity> Steps, Dictionary<NetEntity, SurgeryStepOperationInfo> StepOperationInfo, SurgeryLayer CurrentLayer, TargetBodyPart? SelectedBodyPart) GetSurgeryStepsForBodyPart(EntityUid bodyPart, EntityUid? user = null)
+    {
+        if (!TryComp<SurgeryLayerComponent>(bodyPart, out var layer))
+        {
+            return (new List<NetEntity>(), new Dictionary<NetEntity, SurgeryStepOperationInfo>(), SurgeryLayer.Skin, null);
+        }
+
+        // Generate dynamic steps
+        var (skinSteps, tissueSteps, organSteps) = GenerateDynamicSteps(bodyPart, layer, user);
+
+        // Combine all steps (prioritize current layer)
+        var allSteps = new List<NetEntity>();
+        SurgeryLayer currentLayer = SurgeryLayer.Skin;
+        
+        // Determine current layer based on state
+        if (layer.TissueRetracted && (layer.BonesSawed || layer.BonesSmashed))
+        {
+            currentLayer = SurgeryLayer.Organ;
+            allSteps.AddRange(organSteps);
+            allSteps.AddRange(tissueSteps);
+            allSteps.AddRange(skinSteps);
+        }
+        else if (layer.SkinRetracted)
+        {
+            currentLayer = SurgeryLayer.Tissue;
+            allSteps.AddRange(tissueSteps);
+            allSteps.AddRange(skinSteps);
+        }
+        else
+        {
+            currentLayer = SurgeryLayer.Skin;
+            allSteps.AddRange(skinSteps);
+        }
+
+        // Evaluate operation availability
+        var stepOperationInfo = new Dictionary<NetEntity, SurgeryStepOperationInfo>();
+        
+        if (user != null)
+        {
+            foreach (var stepNetEntity in allSteps)
+            {
+                var stepEntity = GetEntity(stepNetEntity);
+                if (!TryComp<SurgeryStepComponent>(stepEntity, out var stepComp))
+                    continue;
+
+                if (stepComp.OperationId != null &&
+                    _prototypes.TryIndex(stepComp.OperationId, out var operation))
+                {
+                    bool hasPrimary = HasPrimaryToolsForOperation(user.Value, operation);
+                    bool hasSecondary = operation.SecondaryMethod != null && HasSecondaryMethodForOperation(user.Value, operation);
+                    bool isRepair = operation.RepairOperationFor != null;
+                    bool isRepairAvailable = false;
+                    
+                    if (isRepair && operation.RepairOperationFor != null)
+                    {
+                        isRepairAvailable = HasImprovisedComponentForOperation(bodyPart, operation.RepairOperationFor.Value);
+                        if (!isRepairAvailable)
+                        {
+                            hasPrimary = false;
+                        }
+                    }
+                    else
+                    {
+                        isRepairAvailable = true;
+                    }
+
+                    stepOperationInfo[stepNetEntity] = new SurgeryStepOperationInfo(
+                        hasPrimary,
+                        hasSecondary,
+                        isRepair,
+                        operation.Name,
+                        isRepairAvailable
+                    );
+                }
+            }
+        }
+
+        // Get target body part enum
+        TargetBodyPart? selectedBodyPart = null;
+        if (TryComp<BodyPartComponent>(bodyPart, out var part))
+        {
+            selectedBodyPart = _bodyPartQuery.GetTargetBodyPart(part);
+        }
+
+        return (allSteps, stepOperationInfo, currentLayer, selectedBodyPart);
     }
 
     /// <summary>

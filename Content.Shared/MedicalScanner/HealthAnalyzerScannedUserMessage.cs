@@ -7,6 +7,7 @@
 // SPDX-License-Identifier: MIT
 
 using Content.Shared.FixedPoint;
+using Content.Shared.Medical.Surgery;
 using Robust.Shared.Serialization;
 
 namespace Content.Shared.MedicalScanner;
@@ -43,10 +44,16 @@ public struct HealthAnalyzerUiState
     public FixedPoint2? CurrentBioRejection;
     public FixedPoint2? SurgeryPenalty;
     public List<IntegrityBreakdownEntry>? IntegrityBreakdown;
+    
+    // Surgery mode data
+    public List<NetEntity>? SurgerySteps;
+    public Dictionary<NetEntity, SurgeryStepOperationInfo>? SurgeryStepOperationInfo;
+    public SurgeryLayer? CurrentSurgeryLayer;
+    public TargetBodyPart? SelectedSurgeryBodyPart;
 
     public HealthAnalyzerUiState() {}
 
-    public HealthAnalyzerUiState(NetEntity? targetEntity, float temperature, float bloodLevel, bool? scanMode, bool? bleeding, bool? unrevivable, int? maxIntegrity = null, FixedPoint2? usedIntegrity = null, FixedPoint2? temporaryIntegrityBonus = null, FixedPoint2? currentBioRejection = null, FixedPoint2? surgeryPenalty = null, List<IntegrityBreakdownEntry>? integrityBreakdown = null)
+    public HealthAnalyzerUiState(NetEntity? targetEntity, float temperature, float bloodLevel, bool? scanMode, bool? bleeding, bool? unrevivable, int? maxIntegrity = null, FixedPoint2? usedIntegrity = null, FixedPoint2? temporaryIntegrityBonus = null, FixedPoint2? currentBioRejection = null, FixedPoint2? surgeryPenalty = null, List<IntegrityBreakdownEntry>? integrityBreakdown = null, List<NetEntity>? surgerySteps = null, Dictionary<NetEntity, SurgeryStepOperationInfo>? surgeryStepOperationInfo = null, SurgeryLayer? currentSurgeryLayer = null, TargetBodyPart? selectedSurgeryBodyPart = null)
     {
         TargetEntity = targetEntity;
         Temperature = temperature;
@@ -60,6 +67,10 @@ public struct HealthAnalyzerUiState
         CurrentBioRejection = currentBioRejection;
         SurgeryPenalty = surgeryPenalty;
         IntegrityBreakdown = integrityBreakdown;
+        SurgerySteps = surgerySteps;
+        SurgeryStepOperationInfo = surgeryStepOperationInfo;
+        CurrentSurgeryLayer = currentSurgeryLayer;
+        SelectedSurgeryBodyPart = selectedSurgeryBodyPart;
     }
 }
 
@@ -92,5 +103,27 @@ public sealed class BeginSurgeryMessage : BoundUserInterfaceMessage
     public BeginSurgeryMessage(NetEntity targetEntity)
     {
         TargetEntity = targetEntity;
+    }
+}
+
+/// <summary>
+/// Message sent from client to server when user attempts a surgery operation from health analyzer.
+/// </summary>
+[Serializable, NetSerializable]
+public sealed class AttemptSurgeryMessage : BoundUserInterfaceMessage
+{
+    public NetEntity Step;
+    public NetEntity TargetEntity;
+    public SurgeryLayer Layer;
+    public TargetBodyPart? SelectedBodyPart;
+    public bool IsImprovised;
+
+    public AttemptSurgeryMessage(NetEntity step, NetEntity targetEntity, SurgeryLayer layer, TargetBodyPart? selectedBodyPart = null, bool isImprovised = false)
+    {
+        Step = step;
+        TargetEntity = targetEntity;
+        Layer = layer;
+        SelectedBodyPart = selectedBodyPart;
+        IsImprovised = isImprovised;
     }
 }

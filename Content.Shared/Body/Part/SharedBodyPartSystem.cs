@@ -1,5 +1,8 @@
 using Content.Shared.Body.Components;
 using Content.Shared.Containers;
+using Content.Shared.Medical.Cybernetics;
+using Content.Shared.Storage;
+using Content.Shared.Wires;
 using Robust.Shared.Containers;
 
 namespace Content.Shared.Body.Part;
@@ -24,6 +27,8 @@ public abstract class SharedBodyPartSystem : EntitySystem
         SubscribeLocalEvent<BodyPartComponent, ComponentShutdown>(OnBodyPartShutdown);
         SubscribeLocalEvent<BodyPartComponent, EntInsertedIntoContainerMessage>(OnBodyPartInserted);
         SubscribeLocalEvent<BodyPartComponent, EntRemovedFromContainerMessage>(OnBodyPartRemoved);
+
+        SubscribeLocalEvent<CyberLimbComponent, ComponentInit>(OnCyberLimbInit);
     }
 
     private void OnBodyPartInit(Entity<BodyPartComponent> ent, ref ComponentInit args)
@@ -168,5 +173,29 @@ public abstract class SharedBodyPartSystem : EntitySystem
             return null;
 
         return (partComp.Parent.Value, partComp.SlotId);
+    }
+
+    /// <summary>
+    /// Initializes cyber-limb storage container and wires panel.
+    /// </summary>
+    private void OnCyberLimbInit(Entity<CyberLimbComponent> ent, ref ComponentInit args)
+    {
+        // Set StorageContainer to the StorageComponent's container (uses StorageComponent.ContainerId)
+        // StorageComponent initializes its container in its own OnComponentInit, but initialization order
+        // is not guaranteed, so we ensure the container exists and then reference StorageComponent's container if available
+        if (TryComp<StorageComponent>(ent, out var storage) && storage.Container != null)
+        {
+            // StorageComponent already initialized, use its container
+            ent.Comp.StorageContainer = storage.Container;
+        }
+        else
+        {
+            // StorageComponent not initialized yet, ensure the container with StorageComponent.ContainerId
+            // StorageComponent will use the same container when it initializes
+            ent.Comp.StorageContainer = ContainerSystem.EnsureContainer<Container>(ent, StorageComponent.ContainerId);
+        }
+
+        // Initialize WiresPanelComponent if not present (should be in prototype, but ensure it exists)
+        EnsureComp<WiresPanelComponent>(ent);
     }
 }

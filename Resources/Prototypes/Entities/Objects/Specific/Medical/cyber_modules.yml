@@ -1,0 +1,59 @@
+- type: entity
+  id: CyberModuleBase
+  abstract: true
+  parent: BaseItem
+  components:
+  - type: Item
+    size: Tiny
+  - type: Sprite
+    sprite: Objects/Specific/Medical/cyber_modules.rsi
+
+- type: entity
+  id: CyberModuleBatterySmall
+  parent: CyberModuleBase
+  name: small battery module
+  components:
+  - type: BatteryModule
+    capacityContribution: 5000
+  - type: Sprite
+    state: battery_small
+
+- type: entity
+  id: CyberModuleBatteryMedium
+  parent: CyberModuleBase
+  name: medium battery module
+  components:
+  - type: BatteryModule
+    capacityContribution: 10000
+  - type: Sprite
+    state: battery_medium
+
+- type: entity
+  id: CyberModuleMatterBin
+  parent: CyberModuleBase
+  name: matter bin module
+  components:
+  - type: MatterBinModule
+    serviceTimeContribution: 600
+  - type: Sprite
+    state: matter_bin
+
+- type: entity
+  id: CyberModuleManipulator
+  parent: CyberModuleBase
+  name: manipulator module
+  components:
+  - type: ManipulatorModule
+    efficiencyBonus: 0.10
+  - type: Sprite
+    state: manipulator
+
+- type: entity
+  id: CyberModuleCapacitor
+  parent: CyberModuleBase
+  name: capacitor module
+  components:
+  - type: CapacitorModule
+    serviceTimeMultiplier: 0.10
+  - type: Sprite
+    state: capacitor

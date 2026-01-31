@@ -74,6 +74,7 @@ public sealed class HealthAnalyzerSystem : EntitySystem
     [Dependency] private readonly SharedPopupSystem _popupSystem = default!;
     [Dependency] private readonly SurgerySystem _surgerySystem = default!;
     [Dependency] private readonly SharedBodyPartSystem _bodyPartSystem = default!;
+    [Dependency] private readonly BodyPartQuerySystem _bodyPartQuery = default!;
 
     public override void Initialize()
     {
@@ -83,10 +84,11 @@ public sealed class HealthAnalyzerSystem : EntitySystem
         SubscribeLocalEvent<HealthAnalyzerComponent, ItemToggledEvent>(OnToggled);
         SubscribeLocalEvent<HealthAnalyzerComponent, DroppedEvent>(OnDropped);
         
-        // Subscribe to BUI messages for surgery button
+        // Subscribe to BUI messages for surgery button and surgery attempts
         Subs.BuiEvents<HealthAnalyzerComponent>(HealthAnalyzerUiKey.Key, subs =>
         {
             subs.Event<BeginSurgeryMessage>(OnBeginSurgery);
+            subs.Event<AttemptSurgeryMessage>(OnAttemptSurgery);
         });
     }
     
@@ -117,6 +119,69 @@ public sealed class HealthAnalyzerSystem : EntitySystem
         {
             _surgerySystem.OpenSurgeryUI((bodyPartToOpen.Value, layer), user);
         }
+    }
+
+    private void OnAttemptSurgery(Entity<HealthAnalyzerComponent> ent, ref AttemptSurgeryMessage msg)
+    {
+        var targetEntity = GetEntity(msg.TargetEntity);
+        var stepEntity = GetEntity(msg.Step);
+        
+        // Verify target entity has body
+        if (!HasComp<BodyComponent>(targetEntity))
+            return;
+        
+        // Find body part for surgery
+        EntityUid? bodyPart = null;
+        if (msg.SelectedBodyPart.HasValue)
+        {
+            // Find the specific body part
+            var (targetType, targetSymmetry) = _bodyPartQuery.ConvertTargetBodyPart(msg.SelectedBodyPart.Value);
+            var bodyParts = _bodyPartSystem.GetBodyChildrenOfType(targetEntity, targetType, symmetry: targetSymmetry);
+            var foundPart = bodyParts.FirstOrDefault();
+            if (foundPart.Id != default)
+            {
+                bodyPart = foundPart.Id;
+            }
+        }
+        
+        // Fallback to default body part
+        if (bodyPart == null)
+        {
+            bodyPart = _surgerySystem.FindBodyPartForSurgery(targetEntity);
+        }
+        
+        if (bodyPart == null || !TryComp<SurgeryLayerComponent>(bodyPart.Value, out var layer))
+            return;
+        
+        // Get the user from the BUI
+        var actors = _uiSystem.GetActors((ent, null), HealthAnalyzerUiKey.Key).ToList();
+        if (actors.Count == 0)
+            return;
+            
+        var user = actors.First();
+        
+        // If method was selected (improvised), store it first
+        // SurgerySystem will check this when the step is executed
+        if (msg.IsImprovised)
+        {
+            // We need to access SurgerySystem's internal dictionary
+            // Since it's private, we'll need to send the method selection message separately
+            // But first, let's send the step selected message
+            var methodSelectedMsg = new SurgeryOperationMethodSelectedMessage(msg.Step, true);
+            RaiseLocalEvent((bodyPart.Value, layer), methodSelectedMsg);
+        }
+        
+        // Send surgery step selected message to SurgerySystem
+        // This will trigger the surgery doafter
+        var stepSelectedMsg = new SurgeryStepSelectedMessage(
+            msg.Step,
+            msg.Layer,
+            GetNetEntity(user),
+            msg.SelectedBodyPart
+        );
+        
+        // Raise the step selected event on the body part
+        RaiseLocalEvent((bodyPart.Value, layer), stepSelectedMsg);
     }
 
     public override void Update(float frameTime)
@@ -330,6 +395,30 @@ public sealed class HealthAnalyzerSystem : EntitySystem
             integrityBreakdown = GetIntegrityBreakdown(entity);
         }
 
+        // Get surgery steps if entity has a body
+        List<NetEntity>? surgerySteps = null;
+        Dictionary<NetEntity, SurgeryStepOperationInfo>? surgeryStepOperationInfo = null;
+        SurgeryLayer? currentSurgeryLayer = null;
+        TargetBodyPart? selectedSurgeryBodyPart = null;
+
+        if (HasComp<BodyComponent>(entity))
+        {
+            var bodyPart = _surgerySystem.FindBodyPartForSurgery(entity);
+            if (bodyPart != null)
+            {
+                // Get user from health analyzer UI if available (for operation availability evaluation)
+                EntityUid? evalUser = null;
+                // Note: We can't easily get the user here since we don't have the analyzer entity
+                // Operation availability will be evaluated on the client side or when user attempts surgery
+                
+                var (steps, stepInfo, layer, bodyPartEnum) = _surgerySystem.GetSurgeryStepsForBodyPart(bodyPart.Value, evalUser);
+                surgerySteps = steps;
+                surgeryStepOperationInfo = stepInfo;
+                currentSurgeryLayer = layer;
+                selectedSurgeryBodyPart = bodyPartEnum;
+            }
+        }
+
         return new HealthAnalyzerUiState(
             GetNetEntity(entity),
             bodyTemperature,
@@ -342,7 +431,11 @@ public sealed class HealthAnalyzerSystem : EntitySystem
             temporaryIntegrityBonus,
             currentBioRejection,
             surgeryPenalty,
-            integrityBreakdown
+            integrityBreakdown,
+            surgerySteps,
+            surgeryStepOperationInfo,
+            currentSurgeryLayer,
+            selectedSurgeryBodyPart
         );
     }
 

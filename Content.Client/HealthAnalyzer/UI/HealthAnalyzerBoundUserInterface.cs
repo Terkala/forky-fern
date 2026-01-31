@@ -34,13 +34,18 @@ namespace Content.Client.HealthAnalyzer.UI
         {
             base.Open();
 
-            _window = this.CreateWindow<HealthAnalyzerWindow>();
+            _window = this.CreateWindow<HealthAnalyzerWindow>(EntMan);
 
             _window.Title = EntMan.GetComponent<MetaDataComponent>(Owner).EntityName;
             
             _window.OnBeginSurgeryClicked += (targetEntity) =>
             {
                 SendMessage(new BeginSurgeryMessage(targetEntity));
+            };
+            
+            _window.OnAttemptSurgery += (step, targetEntity, layer, selectedBodyPart, isImprovised) =>
+            {
+                SendMessage(new AttemptSurgeryMessage(step, targetEntity, layer, selectedBodyPart, isImprovised));
             };
         }
 

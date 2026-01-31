@@ -19,6 +19,7 @@ using Robust.Shared.Graphics.RSI;
 using Robust.Shared.Utility;
 using Robust.Shared.Input;
 using Robust.Shared.Maths;
+using Robust.Shared.Log;
 using System.Numerics;
 using System.Linq;
 using System;
@@ -38,6 +39,9 @@ public sealed partial class SurgeryWindow : Content.Client.UserInterface.Control
     private readonly SpriteSystem _spriteSystem;
     private readonly BodySystem _bodySystem;
     private readonly IClickMapManager _clickMapManager;
+#if DEBUG
+    private readonly ISawmill _sawmill;
+#endif
     private readonly Dictionary<TargetBodyPart, TextureButton> _bodyPartControls;
     internal TargetBodyPart? _selectedBodyPart; // Internal so SurgeryBui can access it
     private TargetBodyPart? _pendingSelection; // Track selection we just sent to server
@@ -82,6 +86,9 @@ public sealed partial class SurgeryWindow : Content.Client.UserInterface.Control
         _spriteSystem = _entMan.System<SpriteSystem>();
         _bodySystem = _entMan.System<BodySystem>();
         _clickMapManager = IoCManager.Resolve<IClickMapManager>();
+#if DEBUG
+        _sawmill = IoCManager.Resolve<ILogManager>().GetSawmill("surgery.click");
+#endif
 
         // Map buttons to TargetBodyPart - sprite is standing up, so buttons map directly to body parts
         // Note: Buttons are now hidden but kept for backward compatibility
@@ -142,6 +149,9 @@ public sealed partial class SurgeryWindow : Content.Client.UserInterface.Control
         // Get click position relative to SpriteView control
         // args.RelativePosition is relative to control's top-left in UI pixel coordinates
         var clickPosUI = args.RelativePosition;
+#if DEBUG
+        _sawmill.Debug($"SpriteView click: UI position = {clickPosUI}");
+#endif
         
         // Get all transformation values from SpriteView instance
         var spriteViewScale = SpriteView.Scale;
@@ -195,14 +205,12 @@ public sealed partial class SurgeryWindow : Content.Client.UserInterface.Control
         var totalScale = spriteViewScale * spriteViewUIScale * stretch;
         var clickInWorldPixels = clickRelativeToCenter / totalScale;
         
-        // Step 5: Rotate coordinates 90 degrees counter-clockwise to match sprite orientation
-        // The sprite is displayed rotated 90 degrees clockwise (laying down), so we need to
-        // rotate the click coordinates counter-clockwise to align with sprite-local coordinates
-        // 90 degrees counter-clockwise rotation: (x, y) -> (y, -x)
-        var clickRotated = new Vector2(clickInWorldPixels.Y, -clickInWorldPixels.X);
-        
-        // Step 6: Convert from world pixels to meters (sprite-local coordinates are in meters)
-        var clickInMeters = clickRotated / EyeManager.PixelsPerMeter;
+        // Step 5: Convert from world pixels to meters (sprite-local coordinates are in meters)
+        // No rotation needed - the sprite is set to Direction.South (standing up), so coordinates are already aligned
+        var clickInMeters = clickInWorldPixels / EyeManager.PixelsPerMeter;
+#if DEBUG
+        _sawmill.Debug($"SpriteView click: transformed to sprite-local coordinates = {clickInMeters} meters");
+#endif
         
         // First, check if the click is within the sprite's bounds
         // Note: sprite bounds are in sprite-local coordinates, which are unrotated
@@ -249,7 +257,16 @@ public sealed partial class SurgeryWindow : Content.Client.UserInterface.Control
         {
             // Pick the layer with the highest index (topmost, rendered last)
             var topmostHit = hitLayers.OrderByDescending(x => x.layerIndex).First();
+#if DEBUG
+            _sawmill.Debug($"SpriteView click: hit body part = {topmostHit.bodyPart} (layer index {topmostHit.layerIndex})");
+#endif
             SetActiveBodyPart(topmostHit.bodyPart);
+        }
+        else
+        {
+#if DEBUG
+            _sawmill.Debug("SpriteView click: no body part hit at this location");
+#endif
         }
         
         // No body part was hit at this click location - don't change selection
