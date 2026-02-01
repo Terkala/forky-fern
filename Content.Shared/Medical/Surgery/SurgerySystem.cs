@@ -10,6 +10,7 @@ using Content.Shared.Medical.Biosynthetic;
 using Content.Shared.Tag;
 using Content.Shared.Popups;
 using Content.Shared.Prototypes;
+using Content.Shared.Humanoid;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Random;
@@ -149,6 +150,15 @@ public abstract partial class SharedSurgerySystem : EntitySystem
     protected bool HasMedicalSkill(EntityUid uid)
     {
         return HasComp<MedicalSurgerySkillComponent>(uid);
+    }
+
+    /// <summary>
+    /// Checks if a body belongs to a slime species using HumanoidAppearanceComponent.
+    /// </summary>
+    protected bool IsSlimeSpecies(EntityUid body)
+    {
+        return TryComp<HumanoidAppearanceComponent>(body, out var appearance) &&
+               appearance.Species == "SlimePerson";
     }
 
 }

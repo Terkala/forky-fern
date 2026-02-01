@@ -25,3 +25,13 @@ surgery-skilled-technician-fixed = You've corrected the unskilled technician wor
 
 # Unsanitary conditions messages
 surgery-unsanitary-conditions-treated = You've treated the unsanitary conditions, resetting the patient to the current room cleanliness level.
+
+# Bone surgery messages
+surgery-crude-bone-smashing = You brutally smash through the bones with {$tool}. This will require extensive repair.
+surgery-crude-bone-smashing-speed = The crude bone smashing is {$speed ->
+    [slow] painfully slow
+    [average] proceeding at average speed
+    [fast] surprisingly quick
+   }.
+surgery-repair-smashed-bones-progress = You continue reconstructing the shattered bones. ({$step}/5)
+surgery-repair-smashed-bones-complete = You've successfully repaired the smashed bones, restoring structural integrity.

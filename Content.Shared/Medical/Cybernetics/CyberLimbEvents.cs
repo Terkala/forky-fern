@@ -1,3 +1,6 @@
+using Content.Shared.Body.Components;
+using Content.Shared.Body.Part;
+
 namespace Content.Shared.Medical.Cybernetics;
 
 /// <summary>
@@ -17,3 +20,17 @@ public readonly record struct CyberLimbModuleRemovedEvent(EntityUid Module, Enti
 /// </summary>
 [ByRefEvent]
 public readonly record struct CyberLimbPanelChangedEvent(EntityUid CyberLimb, bool PanelOpen);
+
+/// <summary>
+/// Event raised when a cyber-limb is attached to a body.
+/// Raised by BodySystem when it detects a cyber-limb is being attached.
+/// </summary>
+[ByRefEvent]
+public readonly record struct CyberLimbAttachedEvent(Entity<BodyComponent> Body, Entity<BodyPartComponent> CyberLimb);
+
+/// <summary>
+/// Event raised when a cyber-limb is detached from a body.
+/// Raised by BodySystem when it detects a cyber-limb is being detached.
+/// </summary>
+[ByRefEvent]
+public readonly record struct CyberLimbDetachedEvent(Entity<BodyComponent> Body, Entity<BodyPartComponent> CyberLimb);

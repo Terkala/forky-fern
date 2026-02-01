@@ -3,6 +3,8 @@ using Content.Server.Body.Part;
 using Content.Shared.Body; // BodyComponent and OrganComponent are in this namespace
 using Content.Shared.Body.Part;
 using Content.Shared.Body.Systems;
+using Content.Shared.Body.Organ;
+using Content.Shared.Humanoid;
 using Content.Shared.Medical.Surgery;
 using SSSharedSurgerySystem = Content.Shared.Medical.Surgery.SharedSurgerySystem;
 using Content.Shared.Medical;
@@ -1000,15 +1002,16 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
     /// </summary>
     private bool HasImprovisedComponentForOperation(EntityUid bodyPart, ProtoId<SurgeryOperationPrototype> operationId)
     {
-#if false
-        if (!ImprovisedComponentMap.TryGetValue(operationId, out var componentType))
-            return false;
+        // Check for SawBones operation - return true if bones are smashed
+        if (operationId == "SawBones")
+        {
+            if (TryComp<SurgeryLayerComponent>(bodyPart, out var layer))
+            {
+                return layer.BonesSmashed;
+            }
+        }
         
-        return HasComp(bodyPart, componentType);
-#else
-        // Improvised components don't exist in Forky
         return false;
-#endif
     }
 
     /// <summary>
@@ -1063,57 +1066,25 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
     /// This ensures complete cleanup: both the tracking component and the penalty are removed.
     /// Multiple improvised surgeries on the same body part are tracked separately by component type.
     /// </summary>
-    private void HandleRepairOperation(EntityUid bodyPart, SurgeryOperationPrototype repairOperation)
+    private void HandleRepairOperation(EntityUid bodyPart, SurgeryOperationPrototype repairOperation, SurgeryStepComponent step)
     {
-#if false
-        if (repairOperation.RepairOperationFor == null)
+        if (repairOperation.RepairOperationFor == null || repairOperation.RepairIntegrityCost == null)
             return;
 
-        // Find and remove the improvised component
-        // The component stores the penalty amount, so removing it will remove the penalty
-        if (!ImprovisedComponentMap.TryGetValue(repairOperation.RepairOperationFor.Value, out var componentType))
+        // Check if this repair is for SawBones and bones are actually smashed
+        if (repairOperation.RepairOperationFor.Value == "SawBones")
         {
-            // No mapping found - this operation type doesn't have an improvised component
-            // This is expected for operations without secondary methods
-            return;
+            // Only remove penalty on the final repair step (sequenceIndex == 4)
+            if (step.SequenceId == "RepairBonesSequence" && step.SequenceIndex == 4)
+            {
+                if (TryComp<SurgeryLayerComponent>(bodyPart, out var layer) && layer.BonesSmashed)
+                {
+                    // Remove the full +16 penalty that was added by the improvised surgery
+                    RemoveSurgeryPenalty(bodyPart, repairOperation.RepairIntegrityCost.Value);
+                    // Layer state change is handled by step's LayerStateChanges in YAML
+                }
+            }
         }
-        
-        // Use EntityManager.TryGetComponent with Type since we have a dynamic Type variable
-        if (!EntityManager.TryGetComponent(bodyPart, componentType, out var improvisedCompRaw))
-        {
-            // No improvised component found - either already repaired or never performed improvised
-            // This is expected and not an error
-            return;
-        }
-        if (improvisedCompRaw is not ImprovisedSurgeryComponent typedComp)
-        {
-            // Component type mismatch - this should not happen
-            return;
-        }
-
-        // Get the penalty amount from the component before removing it
-        var penaltyAmount = typedComp.IntegrityCost;
-
-        // Remove the improvised component first
-        // This ensures we track what was removed for cleanup verification
-        RemComp(bodyPart, componentType);
-
-        // Verify component was removed
-        if (HasComp(bodyPart, componentType))
-        {
-            // Component removal failed - this should not happen
-            Log.Error($"Failed to remove improvised component {componentType.Name} from body part {ToPrettyString(bodyPart)}");
-        }
-
-        // Remove the penalty that was added by this improvised surgery
-        if (penaltyAmount > FixedPoint2.Zero)
-        {
-            RemoveSurgeryPenalty(bodyPart, penaltyAmount);
-        }
-#else
-        // Improvised components don't exist in Forky
-        return;
-#endif
     }
 
     private void ExecuteStep(EntityUid bodyPart, EntityUid stepEntity, SurgeryStepComponent step, EntityUid? user = null)
@@ -1121,6 +1092,7 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
         // Handle operation-based steps
         bool isImprovised = false;
         float speedModifier = 1.0f;
+        SurgeryOperationEvaluationResult? evalResult = null;
         
         if (step.OperationId != null && user != null && 
             _prototypes.TryIndex(step.OperationId, out var operation))
@@ -1128,8 +1100,23 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
             // Check if this is a repair operation
             if (operation.RepairOperationFor != null)
             {
-                // Repair operation - remove integrity cost and improvised component
-                HandleRepairOperation(bodyPart, operation);
+                // Repair operation - remove integrity cost and improvised component (only on final step)
+                HandleRepairOperation(bodyPart, operation, step);
+                
+                // Show repair progress/completion popups
+                if (operation.ID == "RepairSmashedBones" && step.SequenceId == "RepairBonesSequence" && user != null)
+                {
+                    if (step.SequenceIndex >= 0 && step.SequenceIndex < 4)
+                    {
+                        // Steps 1-4: show progress
+                        _popup.PopupEntity(Loc.GetString("surgery-repair-smashed-bones-progress", ("step", step.SequenceIndex + 1)), bodyPart, user.Value);
+                    }
+                    else if (step.SequenceIndex == 4)
+                    {
+                        // Step 5: show completion
+                        _popup.PopupEntity(Loc.GetString("surgery-repair-smashed-bones-complete"), bodyPart, user.Value);
+                    }
+                }
             }
             else
             {
@@ -1159,7 +1146,6 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
                     
                     // Get speed modifier from evaluator
                     var evaluator = EntityManager.System<SurgeryOperationEvaluatorSystem>();
-                    SurgeryOperationEvaluationResult evalResult;
                     
                     if (operation.SecondaryMethod.Type == "MultiEvaluator" && operation.SecondaryMethod.Evaluators != null)
                     {
@@ -1173,9 +1159,91 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
                             operation.SecondaryMethod.Tools);
                     }
                     
-                    if (evalResult.IsValid)
+                    if (evalResult.Value.IsValid)
                     {
-                        speedModifier = evalResult.SpeedModifier;
+                        speedModifier = evalResult.Value.SpeedModifier;
+                    }
+                }
+                
+                // Special handling for OpenMaintenancePanel - check for High Precision Screwdriver
+                if (operation.ID == "OpenMaintenancePanel" && user != null)
+                {
+                    // Check if user has High Precision Screwdriver in hands
+                    bool hasHighPrecisionScrewdriver = false;
+                    if (TryComp<HandsComponent>(user.Value, out var hands))
+                    {
+                        foreach (var heldItem in _hands.EnumerateHeld((user.Value, hands)))
+                        {
+                            if (Tags.HasTag(heldItem, new ProtoId<TagPrototype>("HighPrecisionTool")))
+                            {
+                                hasHighPrecisionScrewdriver = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // If not using High Precision Screwdriver, apply permanent penalty
+                    if (!hasHighPrecisionScrewdriver && !isImprovised)
+                    {
+                        // Only apply if using primary tool (not improvised)
+                        // Check if we're using primary tools
+                        if (usingPrimary)
+                        {
+                            var nonPrecisionPenalty = EnsureComp<NonPrecisionToolPenaltyComponent>(bodyPart);
+                            if (nonPrecisionPenalty.PermanentPenalty == FixedPoint2.Zero)
+                            {
+                                nonPrecisionPenalty.PermanentPenalty = FixedPoint2.New(2);
+                                Dirty(bodyPart, nonPrecisionPenalty);
+                                
+                                // Recalculate bio-rejection to include permanent penalty
+                                if (TryComp<BodyPartComponent>(bodyPart, out var part) && part.Body != null)
+                                {
+                                    if (TryComp<IntegrityComponent>(part.Body.Value, out var integrity))
+                                    {
+                                        _integrity.RecalculateTargetBioRejection(part.Body.Value, integrity);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Special handling for bone operations
+                if (operation.ID == "SawBones" && TryComp<SurgeryLayerComponent>(bodyPart, out var layer))
+                {
+                    if (isImprovised)
+                    {
+                        // Secondary method (blunt damage) - apply double penalty and set BonesSmashed
+                        ApplySurgeryPenalty(bodyPart, FixedPoint2.New(16));
+                        layer.BonesSmashed = true;
+                        layer.BonesSawed = false;
+                        Dirty(bodyPart, layer);
+                        
+                        // Show popup with tool name and speed category
+                        if (evalResult.HasValue && evalResult.Value.IsValid && user != null)
+                        {
+                            var toolName = MetaData(evalResult.Value.UsedTool).EntityName;
+                            _popup.PopupEntity(Loc.GetString("surgery-crude-bone-smashing", ("tool", toolName)), bodyPart, user.Value);
+                            
+                            // Calculate speed category
+                            string speedCategory;
+                            if (speedModifier < 0.8f)
+                                speedCategory = "slow";
+                            else if (speedModifier > 1.2f)
+                                speedCategory = "fast";
+                            else
+                                speedCategory = "average";
+                            
+                            _popup.PopupEntity(Loc.GetString("surgery-crude-bone-smashing-speed", ("speed", speedCategory)), bodyPart, user.Value);
+                        }
+                    }
+                    else
+                    {
+                        // Primary method (proper bone saw) - apply normal penalty and set BonesSawed
+                        ApplySurgeryPenalty(bodyPart, step.ApplyPenalty ?? FixedPoint2.New(8));
+                        layer.BonesSawed = true;
+                        layer.BonesSmashed = false;
+                        Dirty(bodyPart, layer);
                     }
                 }
                 
@@ -1340,27 +1408,63 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
             // Apply penalties and layer state changes if defined and step should apply them
             if (shouldApplyChanges)
             {
-                // Apply penalties from YAML
+                // Apply penalties from YAML (skip for SawBones as it's handled specially)
                 if (step.ApplyPenalty.HasValue && step.ApplyPenalty.Value > FixedPoint2.Zero)
                 {
-                    ApplySurgeryPenalty(bodyPart, step.ApplyPenalty.Value);
+                    // Skip penalty application for SawBones operations - handled in special case above
+                    bool isSawBonesOperation = step.OperationId != null && 
+                        _prototypes.TryIndex(step.OperationId, out var op) && 
+                        op.ID == "SawBones";
+                    
+                    if (!isSawBonesOperation)
+                    {
+                        ApplySurgeryPenalty(bodyPart, step.ApplyPenalty.Value);
+                    }
                 }
                 
                 // Remove penalties from YAML - look up penalty amount from referenced step
+                // Skip for RepairSmashedBones final step as it's handled in HandleRepairOperation
                 if (step.RemovePenaltyStepId != null)
                 {
-                    var penaltyAmount = GetPenaltyAmountFromStep(step.RemovePenaltyStepId.Value);
-                    if (penaltyAmount.HasValue && penaltyAmount.Value > FixedPoint2.Zero)
+                    bool isRepairBonesFinalStep = step.OperationId != null && 
+                        _prototypes.TryIndex(step.OperationId, out var op) && 
+                        op.ID == "RepairSmashedBones" &&
+                        step.SequenceId == "RepairBonesSequence" &&
+                        step.SequenceIndex == 4;
+                    
+                    if (!isRepairBonesFinalStep)
                     {
-                        RemoveSurgeryPenalty(bodyPart, penaltyAmount.Value);
+                        var penaltyAmount = GetPenaltyAmountFromStep(step.RemovePenaltyStepId.Value);
+                        if (penaltyAmount.HasValue && penaltyAmount.Value > FixedPoint2.Zero)
+                        {
+                            RemoveSurgeryPenalty(bodyPart, penaltyAmount.Value);
+                        }
+                        
+                        // Special handling for SealMaintenancePanelStep - also remove opening panel penalty
+                        if (stepMeta.EntityPrototype?.ID == "SealMaintenancePanelStep")
+                        {
+                            var openingPenaltyAmount = GetPenaltyAmountFromStep(new EntProtoId("OpenMaintenancePanelStep"));
+                            if (openingPenaltyAmount.HasValue && openingPenaltyAmount.Value > FixedPoint2.Zero)
+                            {
+                                RemoveSurgeryPenalty(bodyPart, openingPenaltyAmount.Value);
+                            }
+                        }
                     }
                 }
                 
                 // Apply layer state changes from YAML (generic - no hardcoded field names)
+                // Skip for SawBones as it's handled specially above
                 if (step.LayerStateChanges != null)
                 {
-                    ApplyLayerStateChanges(layer, step.LayerStateChanges);
-                    Dirty(bodyPart, layer);
+                    bool isSawBonesOperation = step.OperationId != null && 
+                        _prototypes.TryIndex(step.OperationId, out var op) && 
+                        op.ID == "SawBones";
+                    
+                    if (!isSawBonesOperation)
+                    {
+                        ApplyLayerStateChanges(layer, step.LayerStateChanges);
+                        Dirty(bodyPart, layer);
+                    }
                 }
                 
                 // Handle unsanitary conditions penalty
@@ -1752,6 +1856,30 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
                     var meta = MetaData(addStep);
                     _metaData.SetEntityName(addStep, $"Add Organ Implant {name}", meta);
                     organSteps.Add(GetNetEntity(addStep));
+                }
+            }
+        }
+        
+        // Add repair operations if bones are smashed
+        if (selectedLayer.BonesSmashed)
+        {
+            var repairProgress = progress.SequenceProgress.GetValueOrDefault("RepairBonesSequence", -1);
+            
+            // Get all repair steps and filter by sequence progress
+            var repairStepIds = new[] { "RepairBones1", "RepairBones2", "RepairBones3", "RepairBones4", "RepairBones5" };
+            foreach (var stepId in repairStepIds)
+            {
+                if (TrySpawnStep(stepId, out var repairStep) && IsStepValidForPart(repairStep, selectedLayer))
+                {
+                    if (TryComp<SurgeryStepComponent>(repairStep, out var stepComp))
+                    {
+                        // Only show the next step in the sequence
+                        if (stepComp.SequenceIndex > repairProgress)
+                        {
+                            organSteps.Add(GetNetEntity(repairStep));
+                            break; // Only show the next available step
+                        }
+                    }
                 }
             }
         }
@@ -2248,24 +2376,28 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
         }
         
         // Slimes cannot have limbs or organs implanted (except core removal/replacement)
-        if (IsSlimeBody(body))
+        if (IsSlimeSpecies(body))
         {
             // Only allow core organ replacement, not limb implantation
             if (HasComp<BodyPartComponent>(item))
             {
                 // Slimes regenerate limbs automatically, cannot implant new ones
+                if (user != null)
+                    _popup.PopupEntity(Loc.GetString("slime-surgery-no-limb-implant"), body, user.Value, PopupType.Medium);
                 return false;
             }
             
-            // For organs, only allow core
+            // For organs, only allow core organ (identified by SlimeCoreOrganComponent)
             if (HasComp<OrganComponent>(item))
             {
-                if (!TryComp<OrganComponent>(item, out var organ))
+                if (!HasComp<Content.Shared.Body.Organ.SlimeCoreOrganComponent>(item))
                 {
+                    // Not a core organ - block installation
+                    if (user != null)
+                        _popup.PopupEntity(Loc.GetString("slime-surgery-only-core"), body, user.Value, PopupType.Medium);
                     return false;
                 }
-                // In Forky, organs don't have SlotId - we can't check for "core" organ
-                // Accept any organ for now
+                // Core organ - allow installation
             }
         }
 
@@ -2831,16 +2963,14 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
         var stepId = stepMeta.EntityPrototype?.ID ?? "";
         var stepName = stepMeta.EntityName ?? "";
 
-        // CyberneticsComponent and CyberneticsUpkeepComponent don't exist in Forky - commented out
-        // // Check if this is a cyber part
-        // if (!HasComp<CyberneticsComponent>(bodyPart))
-        //     return;
-
-        // // Ensure upkeep component exists
-        // var upkeep = EnsureComp<CyberneticsUpkeepComponent>(bodyPart);
-
-        // CyberneticsUpkeepComponent and CyberLimbStorageComponent don't exist in Forky - entire function body commented out
-        return;
+        // Check if this is the OpenMaintenancePanel step
+        if (stepId == "OpenMaintenancePanelStep" || stepName.Contains("Open Maintenance Panel"))
+        {
+            // Check if user has High Precision Screwdriver
+            // We need to get the user from the step execution context
+            // Since we don't have direct access, we'll check when the step completes
+            // For now, we'll handle this in ExecuteStep where we have user access
+        }
         // // Handle different maintenance steps
         // if (stepId.Contains("OpenCyberneticsPanel") || stepName.Contains("Open Maintenance Panel"))
         // {

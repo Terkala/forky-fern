@@ -1,3 +1,4 @@
+using Content.Shared.Chemistry.Reagent;
 using Content.Shared.EntityEffects;
 using Content.Shared.FixedPoint;
 using Content.Shared.Medical.Integrity;
@@ -56,8 +57,8 @@ public sealed partial class ImmunosuppressantMetabolismEffectSystem : EntityEffe
 /// <summary>
 /// Effect data for immunosuppressant metabolism.
 /// </summary>
-/// <inheritdoc cref="EntityEffect"/>
-public sealed partial class ImmunosuppressantMetabolism : EntityEffect
+/// <inheritdoc cref="EntityEffectBase{T}"/>
+public sealed partial class ImmunosuppressantMetabolism : EntityEffectBase<ImmunosuppressantMetabolism>
 {
     /// <summary>
     /// Integrity bonus per unit of reagent (e.g., 0.5 for basic, 1.0 for advanced).
@@ -78,8 +79,4 @@ public sealed partial class ImmunosuppressantMetabolism : EntityEffect
             ("bonus", IntegrityPerUnit));
     }
 
-    public override void RaiseEvent(EntityUid target, IEntityEffectRaiser raiser, float scale, EntityUid? user)
-    {
-        raiser.RaiseEffectEvent(target, this, scale, user);
-    }
 }

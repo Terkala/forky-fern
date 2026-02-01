@@ -15,11 +15,13 @@
         VerticalExpand="True">
 
         <ui:HealthAnalyzerControl
-            Name="HealthAnalyzer"/>
+            Name="HealthAnalyzerControl"
+            Access="Public"/>
     </ScrollContainer>
-    <VBoxContainer
+    <BoxContainer
         Name="SurgeryPanel"
         Access="Public"
+        Orientation="Vertical"
         Visible="False"
         Margin="5"
         VerticalExpand="False">
@@ -28,9 +30,9 @@
             VerticalExpand="True"
             MinHeight="150"
             MaxHeight="200">
-            <VBoxContainer Name="SurgeryStepsContainer"/>
+            <BoxContainer Name="SurgeryStepsContainer" Access="Public" Orientation="Vertical"/>
         </ScrollContainer>
-    </VBoxContainer>
+    </BoxContainer>
     <Button
         Name="BeginSurgeryButton"
         Access="Public"

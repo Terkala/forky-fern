@@ -1,0 +1,75 @@
+# SPDX-FileCopyrightText: 2025
+# SPDX-License-Identifier: MIT
+
+- type: surgeryOperation
+  id: SawBones
+  name: Saw Bones
+  primaryTools:
+    - Tool: {}
+    # Saw, SawElectric, SawAdvanced all have Tool component with Sawing quality
+  secondaryMethod:
+    type: Bashing
+    evaluator: CheckBluntDamage
+    integrityCost: 16
+
+- type: surgeryOperation
+  id: RepairSmashedBones
+  name: Repair Smashed Bones
+  primaryTools:
+    - Tool: {}
+    # Drill has Tool component
+  repairOperationFor: SawBones
+  repairIntegrityCost: 16
+
+- type: surgeryOperation
+  id: ExposeMaintenanceScrews
+  name: Expose Maintenance Screws
+  primaryTools:
+    - Tool: {}
+    # Welder has Tool component with Welding quality and Heat damage when activated
+  # No secondary method - requires proper tool
+
+- type: surgeryOperation
+  id: OpenMaintenancePanel
+  name: Open Maintenance Panel
+  primaryTools:
+    - Tool: {}
+    # Screwdriver has Tool component with Screwing quality
+  secondaryMethod:
+    type: ToolList
+    evaluator: CheckToolList
+    tools:
+      - Tool: {}
+    integrityCost: 2
+
+- type: surgeryOperation
+  id: AdjustMaintenanceBolts
+  name: Adjust Maintenance Bolts
+  primaryTools:
+    - Tool: {}
+    # Wrench has Tool component with Anchoring quality
+  # No secondary method - requires proper tool
+
+- type: surgeryOperation
+  id: ReplaceMaintenanceWiring
+  name: Replace Maintenance Wiring
+  primaryTools:
+    - Tool: {}
+    # Wire/Cable has Tool component
+  # No secondary method - requires proper tool
+
+- type: surgeryOperation
+  id: CloseMaintenancePanel
+  name: Close Maintenance Panel
+  primaryTools:
+    - Tool: {}
+    # Screwdriver has Tool component with Screwing quality
+  # No secondary method - requires proper tool
+
+- type: surgeryOperation
+  id: SealMaintenancePanel
+  name: Seal Maintenance Panel
+  primaryTools:
+    - Tool: {}
+    # Welder has Tool component with Welding quality and Heat damage when activated
+  # No secondary method - requires proper tool

@@ -1631,7 +1631,7 @@
       effects:
       - !type:ImmunosuppressantMetabolism
         IntegrityPerUnit: 0.5
-        ReagentId: Immunosuppressant
+        reagentId: Immunosuppressant
       - !type:HealthChange
         conditions:
         - !type:ReagentCondition
@@ -1667,7 +1667,7 @@
       effects:
       - !type:ImmunosuppressantMetabolism
         IntegrityPerUnit: 1.0
-        ReagentId: ImmunosuppressantPlus
+        reagentId: ImmunosuppressantPlus
       - !type:HealthChange
         conditions:
         - !type:ReagentCondition

@@ -9,6 +9,7 @@ using Content.Shared.FixedPoint;
 using Content.Shared.Medical.Cybernetics;
 using Content.Shared.Medical.Integrity;
 using Content.Shared.Medical.Surgery;
+using Content.Shared.Medical.Surgery.Components;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Timing;
 
@@ -221,6 +222,12 @@ public sealed class IntegritySystem : SharedIntegritySystem
             if (TryComp<SurgeryPenaltyComponent>(partId, out var penalty))
             {
                 totalPenalty += penalty.CurrentPenalty;
+            }
+
+            // Check for non-precision tool penalties (permanent)
+            if (TryComp<NonPrecisionToolPenaltyComponent>(partId, out var nonPrecisionPenalty))
+            {
+                totalPenalty += nonPrecisionPenalty.PermanentPenalty;
             }
 
             // Check for cyber-limb panel penalties

@@ -50,7 +50,7 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
         var target = _entityManager.GetEntity(state.TargetEntity);
 
         if (target == null
-            || !_entityManager.TryGetComponent<DamageableComponent>(target, out var damageable))
+            || !_entityManager.TryGetComponent<DamageableComponent>(target.Value, out var damageable))
         {
             NoPatientDataText.Visible = true;
             PatientDataContainer.Visible = false;
@@ -62,19 +62,20 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
         }
 
         NoPatientDataText.Visible = false;
+        var targetEntity = target.Value;
 
         // Route to appropriate display method based on mode
         switch (mode)
         {
             case HealthAnalyzerMode.Health:
-                PopulateHealthMode(state, target.Value, damageable);
+                PopulateHealthMode(state, targetEntity, damageable);
                 break;
             case HealthAnalyzerMode.Integrity:
                 PopulateIntegrityMode(state);
                 break;
             case HealthAnalyzerMode.Surgery:
                 // Surgery mode shows same as Health mode for now
-                PopulateHealthMode(state, target.Value, damageable);
+                PopulateHealthMode(state, targetEntity, damageable);
                 break;
         }
     }
@@ -98,19 +99,19 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
 
         // Patient Information
 
-        SpriteView.SetEntity(target.Value);
+        SpriteView.SetEntity(target);
         SpriteView.Visible = state.ScanMode.HasValue && state.ScanMode.Value;
         NoDataTex.Visible = !SpriteView.Visible;
 
         var name = new FormattedMessage();
         name.PushColor(Color.White);
-        name.AddText(_entityManager.HasComponent<MetaDataComponent>(target.Value)
-            ? Identity.Name(target.Value, _entityManager)
+        name.AddText(_entityManager.HasComponent<MetaDataComponent>(target)
+            ? Identity.Name(target, _entityManager)
             : Loc.GetString("health-analyzer-window-entity-unknown-text"));
         NameLabel.SetMessage(name);
 
         SpeciesLabel.Text =
-            _entityManager.TryGetComponent<HumanoidAppearanceComponent>(target.Value,
+            _entityManager.TryGetComponent<HumanoidAppearanceComponent>(target,
                 out var humanoidAppearanceComponent)
                 ? Loc.GetString(_prototypes.Index<SpeciesPrototype>(humanoidAppearanceComponent.Species).Name)
                 : Loc.GetString("health-analyzer-window-entity-unknown-species-text");
@@ -126,7 +127,7 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
             : Loc.GetString("health-analyzer-window-entity-unknown-value-text");
 
         StatusLabel.Text =
-            _entityManager.TryGetComponent<MobStateComponent>(target.Value, out var mobStateComponent)
+            _entityManager.TryGetComponent<MobStateComponent>(target, out var mobStateComponent)
                 ? GetStatus(mobStateComponent.CurrentState)
                 : Loc.GetString("health-analyzer-window-entity-unknown-text");
 

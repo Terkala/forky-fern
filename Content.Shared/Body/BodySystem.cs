@@ -1,6 +1,7 @@
 using Content.Shared.Body.Events;
 using Content.Shared.Body.Part;
 using Content.Shared.DragDrop;
+using Content.Shared.Medical.Cybernetics;
 using Robust.Shared.Containers;
 
 namespace Content.Shared.Body;
@@ -119,6 +120,13 @@ public sealed partial class BodySystem : EntitySystem
             var headEv = new HeadDetachingEvent(ent, (args.BodyPart, bodyPart));
             RaiseLocalEvent(ent, ref headEv);
         }
+
+        // Raise specialized cyber-limb detachment event if applicable
+        if (HasComp<CyberLimbComponent>(args.BodyPart))
+        {
+            var cyberLimbEv = new CyberLimbDetachedEvent(ent, (args.BodyPart, bodyPart));
+            RaiseLocalEvent(ent, ref cyberLimbEv);
+        }
     }
 
     private void OnBodyPartAddedToBody(Entity<BodyComponent> ent, ref BodyPartAddedToBodyEvent args)
@@ -135,6 +143,13 @@ public sealed partial class BodySystem : EntitySystem
         {
             var headEv = new HeadAttachingEvent(ent, (args.BodyPart, bodyPart));
             RaiseLocalEvent(ent, ref headEv);
+        }
+
+        // Raise specialized cyber-limb attachment event if applicable
+        if (HasComp<CyberLimbComponent>(args.BodyPart))
+        {
+            var cyberLimbEv = new CyberLimbAttachedEvent(ent, (args.BodyPart, bodyPart));
+            RaiseLocalEvent(ent, ref cyberLimbEv);
         }
     }
 

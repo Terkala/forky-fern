@@ -208,6 +208,7 @@
   id: OrganSlimePersonCore
   name: sentient slime core
   components:
+  - type: SlimeCoreOrgan
   - type: SolutionContainerManager
     solutions:
       stomach:

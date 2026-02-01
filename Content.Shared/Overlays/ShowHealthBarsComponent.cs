@@ -21,6 +21,7 @@ public sealed partial class ShowHealthBarsComponent : Component
 {
     /// <summary>
     /// Displays health bars of the damage containers.
+    /// "Biological" is used for organic entities, "Silicon" is used for cyber-limb inspection.
     /// </summary>
     [DataField]
     [AutoNetworkedField]

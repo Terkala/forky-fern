@@ -7,6 +7,7 @@
 // SPDX-License-Identifier: MIT
 
 using Content.Shared.FixedPoint;
+using Content.Shared.Medical;
 using Content.Shared.Medical.Surgery;
 using Robust.Shared.Serialization;
 

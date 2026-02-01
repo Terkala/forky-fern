@@ -1,0 +1,146 @@
+# SPDX-FileCopyrightText: 2025
+# SPDX-License-Identifier: MIT
+
+- type: SurgerySteps
+  id: SawBonesStep
+  operationId: SawBones
+  layer: Organ
+  duration: 8
+  requirements:
+    requiresTissueRetracted: true
+  applyPenalty: 8
+
+- type: SurgerySteps
+  id: RepairBones1
+  operationId: RepairSmashedBones
+  sequenceId: RepairBonesSequence
+  sequenceIndex: 0
+  layer: Organ
+  duration: 10
+  requirements:
+    requiresTissueRetracted: true
+
+- type: SurgerySteps
+  id: RepairBones2
+  operationId: RepairSmashedBones
+  sequenceId: RepairBonesSequence
+  sequenceIndex: 1
+  layer: Organ
+  duration: 12
+  requirements:
+    requiresTissueRetracted: true
+
+- type: SurgerySteps
+  id: RepairBones3
+  operationId: RepairSmashedBones
+  sequenceId: RepairBonesSequence
+  sequenceIndex: 2
+  layer: Organ
+  duration: 15
+  requirements:
+    requiresTissueRetracted: true
+
+- type: SurgerySteps
+  id: RepairBones4
+  operationId: RepairSmashedBones
+  sequenceId: RepairBonesSequence
+  sequenceIndex: 3
+  layer: Organ
+  duration: 12
+  requirements:
+    requiresTissueRetracted: true
+
+- type: SurgerySteps
+  id: RepairBones5
+  operationId: RepairSmashedBones
+  sequenceId: RepairBonesSequence
+  sequenceIndex: 4
+  layer: Organ
+  duration: 10
+  requirements:
+    requiresTissueRetracted: true
+  layerStateChanges:
+    setBonesSmashed: false
+
+- type: SurgerySteps
+  id: ExposeMaintenanceScrewsStep
+  operationId: ExposeMaintenanceScrews
+  sequenceId: CyberLimbMaintenanceSequence
+  sequenceIndex: 0
+  layer: Skin
+  duration: 5
+  validPartTypes:
+    - Arm
+    - Leg
+  applyPenalty: 1
+  add:
+    MaintenanceScrewsExposedComponent: {}
+
+- type: SurgerySteps
+  id: OpenMaintenancePanelStep
+  operationId: OpenMaintenancePanel
+  sequenceId: CyberLimbMaintenanceSequence
+  sequenceIndex: 1
+  layer: Skin
+  duration: 3
+  validPartTypes:
+    - Arm
+    - Leg
+  applyPenalty: 1
+  add:
+    MaintenancePanelOpenComponent: {}
+
+- type: SurgerySteps
+  id: AdjustMaintenanceBoltsStep
+  operationId: AdjustMaintenanceBolts
+  sequenceId: CyberLimbMaintenanceSequence
+  sequenceIndex: 2
+  layer: Tissue
+  duration: 8
+  validPartTypes:
+    - Arm
+    - Leg
+  requiresSkilledTechnician: true
+  requirements:
+    requiresSkinRetracted: false
+
+- type: SurgerySteps
+  id: ReplaceMaintenanceWiringStep
+  operationId: ReplaceMaintenanceWiring
+  sequenceId: CyberLimbMaintenanceSequence
+  sequenceIndex: 3
+  layer: Tissue
+  duration: 12
+  validPartTypes:
+    - Arm
+    - Leg
+  requiresSkilledTechnician: true
+  add:
+    ServiceTimeResetComponent: {}
+
+- type: SurgerySteps
+  id: CloseMaintenancePanelStep
+  operationId: CloseMaintenancePanel
+  sequenceId: CyberLimbMaintenanceSequence
+  sequenceIndex: 4
+  layer: Skin
+  duration: 3
+  validPartTypes:
+    - Arm
+    - Leg
+  remove:
+    MaintenancePanelOpenComponent: {}
+
+- type: SurgerySteps
+  id: SealMaintenancePanelStep
+  operationId: SealMaintenancePanel
+  sequenceId: CyberLimbMaintenanceSequence
+  sequenceIndex: 5
+  layer: Skin
+  duration: 5
+  validPartTypes:
+    - Arm
+    - Leg
+  removePenaltyStepId: ExposeMaintenanceScrewsStep
+  remove:
+    MaintenanceScrewsExposedComponent: {}

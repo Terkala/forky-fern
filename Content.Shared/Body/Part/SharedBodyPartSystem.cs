@@ -1,5 +1,6 @@
 using Content.Shared.Body.Components;
 using Content.Shared.Containers;
+using Content.Shared.Humanoid;
 using Content.Shared.Medical.Cybernetics;
 using Content.Shared.Storage;
 using Content.Shared.Wires;
@@ -57,6 +58,43 @@ public abstract class SharedBodyPartSystem : EntitySystem
         // What the body part was inserted into
         var parent = args.Container.Owner;
         
+        // Slime-specific check: Prevent manual attachment of limbs (arms/legs) to slime bodies
+        // Allow regeneration to proceed by checking for RegeneratingLimbComponent
+        if (HasComp<BodyComponent>(parent))
+        {
+            var body = parent;
+            // Check if body is a slime
+            if (TryComp<HumanoidAppearanceComponent>(body, out var appearance) && 
+                appearance.Species == "SlimePerson")
+            {
+                // For slimes, only allow attachment of regenerating limbs or non-limb parts (head/torso)
+                if ((ent.Comp.PartType == BodyPartType.Arm || ent.Comp.PartType == BodyPartType.Leg) &&
+                    !HasComp<RegeneratingLimbComponent>(ent))
+                {
+                    // Manual limb attachment to slime body is not allowed - slimes regenerate limbs naturally
+                    // Prevent the attachment by not setting Body/Parent and not raising events
+                    return;
+                }
+            }
+        }
+        else if (TryComp<BodyPartComponent>(parent, out var parentPart) && parentPart.Body != null)
+        {
+            var body = parentPart.Body.Value;
+            // Check if body is a slime
+            if (TryComp<HumanoidAppearanceComponent>(body, out var appearance) && 
+                appearance.Species == "SlimePerson")
+            {
+                // For slimes, only allow attachment of regenerating limbs or non-limb parts (head/torso)
+                if ((ent.Comp.PartType == BodyPartType.Arm || ent.Comp.PartType == BodyPartType.Leg) &&
+                    !HasComp<RegeneratingLimbComponent>(ent))
+                {
+                    // Manual limb attachment to slime body is not allowed - slimes regenerate limbs naturally
+                    // Prevent the attachment by not setting Body/Parent and not raising events
+                    return;
+                }
+            }
+        }
+        
         // Is it the torso?
         if (HasComp<BodyComponent>(parent))
         {
@@ -93,8 +131,24 @@ public abstract class SharedBodyPartSystem : EntitySystem
             return;
         }
 
-        // Body part was removed from a torso or another body part
+        // Slime-specific check: Prevent manual detachment of limbs (arms/legs) from slime bodies
+        // Allow natural detachment (e.g., from damage) and regeneration system operations
         var oldBody = ent.Comp.Body;
+        if (oldBody != null)
+        {
+            // Check if body is a slime
+            if (TryComp<HumanoidAppearanceComponent>(oldBody.Value, out var appearance) && 
+                appearance.Species == "SlimePerson")
+            {
+                // For slimes, only allow detachment of non-limb parts (head/torso) or if it's not a manual operation
+                // Manual detachment is prevented - slimes regenerate limbs naturally, so manual removal should be blocked
+                // However, we allow natural detachment (e.g., from damage) which will trigger regeneration
+                // The regeneration system will handle reattachment, so we proceed with the detachment
+                // but note that manual surgical removal should be blocked at the surgery level
+            }
+        }
+
+        // Body part was removed from a torso or another body part
         var oldParent = ent.Comp.Parent;
 
         ent.Comp.Body = null;

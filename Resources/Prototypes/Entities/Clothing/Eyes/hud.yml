@@ -49,7 +49,18 @@
   - type: ShowHealthIcons
 
 - type: entity
-  parent: ClothingEyesBase
+  id: ShowDiagnosticHud
+  abstract: true
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: ShowHealthBars
+    damageContainers:
+    - Biological
+    - Silicon
+    - Inorganic
+
+- type: entity
+  parent: [ClothingEyesBase, ShowDiagnosticHud]
   id: ClothingEyesHudDiagnostic
   name: diagnostic hud
   description: A heads-up display capable of analyzing the integrity and status of robotics and exosuits. Made out of see-borg-ium.
@@ -58,10 +69,6 @@
     sprite: Clothing/Eyes/Hud/diag.rsi
   - type: Clothing
     sprite: Clothing/Eyes/Hud/diag.rsi
-  - type: ShowHealthBars
-    damageContainers:
-    - Inorganic
-    - Silicon
   - type: ShowAccessReaderSettings
 
 - type: entity

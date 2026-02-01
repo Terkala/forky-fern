@@ -323,3 +323,44 @@
   components:
   - type: Sprite
     sprite: Mobs/Species/Human/organs.rsi
+
+# Slime-specific organ prototypes
+- type: entity
+  parent: OrganBase
+  id: OrganSlimePersonMetabolizer
+  abstract: true
+  components:
+  - type: Metabolizer
+    metabolizerTypes: [ Slime ]
+
+- type: entity
+  parent: OrganBase
+  id: OrganSlimePersonInternal
+  abstract: true
+  components:
+  - type: Sprite
+    sprite: Mobs/Species/Slime/organs.rsi
+
+- type: entity
+  parent: [ OrganBaseBrain, OrganSlimePersonInternal, OrganSlimePersonMetabolizer ]
+  id: OrganSlimePersonCore
+  name: sentient slime core
+  components:
+  - type: SlimeCoreOrgan
+  - type: SolutionContainerManager
+    solutions:
+      stomach:
+        maxVol: 50.0
+  - type: Stomach
+  - type: Metabolizer
+    maxReagents: 6
+    metabolizerTypes: [ Slime ]
+    removeEmpty: true
+    groups:
+    - id: Food
+    - id: Drink
+    - id: Medicine
+    - id: Poison
+    - id: Narcotic
+    - id: Alcohol
+      rateModifier: 2.5

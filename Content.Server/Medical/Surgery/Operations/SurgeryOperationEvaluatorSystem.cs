@@ -3,6 +3,10 @@ using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Medical.Surgery.Operations;
 using Content.Shared.Weapons.Melee;
 using Content.Shared.FixedPoint;
+using Content.Shared.Humanoid;
+using Content.Shared.Body;
+using Content.Shared.Body.Part;
+using Content.Shared.Body.Organ;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Containers;
 using Robust.Shared.Prototypes;
@@ -232,5 +236,37 @@ public sealed class SurgeryOperationEvaluatorSystem : EntitySystem
         }
 
         return SurgeryOperationEvaluationResult.Invalid();
+    }
+
+    /// <summary>
+    /// Validates species restrictions for surgery operations.
+    /// For slimes: Blocks all organ install operations except core, blocks all limb install operations.
+    /// </summary>
+    /// <param name="body">The body entity being operated on</param>
+    /// <param name="item">The item being installed (organ or limb)</param>
+    /// <returns>Invalid result with message if operation should be blocked, null if allowed</returns>
+    public SurgeryOperationEvaluationResult? ValidateSpeciesRestrictions(EntityUid body, EntityUid item)
+    {
+        // Check if body is a slime
+        if (!TryComp<HumanoidAppearanceComponent>(body, out var appearance) || appearance.Species != "SlimePerson")
+            return null; // Not a slime, no restrictions
+
+        // Check if item is a body part (limb)
+        if (HasComp<BodyPartComponent>(item))
+        {
+            return SurgeryOperationEvaluationResult.Invalid("Slimes regenerate limbs naturally and cannot accept implants.");
+        }
+
+        // Check if item is an organ
+        if (HasComp<OrganComponent>(item))
+        {
+            // Only allow core organ (identified by SlimeCoreOrganComponent)
+            if (!HasComp<SlimeCoreOrganComponent>(item))
+            {
+                return SurgeryOperationEvaluationResult.Invalid("Slimes can only have their core organ removed or replaced.");
+            }
+        }
+
+        return null; // Operation allowed
     }
 }

@@ -1,0 +1,76 @@
+- type: entity
+  id: BaseCyberModule
+  abstract: true
+  parent: CyberModuleBase
+
+- type: entity
+  id: CyberJawsOfLife
+  parent: BaseCyberModule
+  name: cyber jaws of life module
+  components:
+  - type: JawsOfLifeModule
+    activationCooldown: 2
+    pryingSpeed: 1.5
+    pryPowered: true
+  - type: Sprite
+    state: module_jaws
+
+- type: entity
+  id: CyberScrewdriver
+  parent: BaseCyberModule
+  name: cyber screwdriver module
+  components:
+  - type: SpecialModule
+    moduleType: Tool
+    toolQuality: Screwing
+    activationCooldown: 2
+  - type: Sprite
+    state: module_screwdriver
+
+- type: entity
+  id: CyberCrowbar
+  parent: BaseCyberModule
+  name: cyber crowbar module
+  components:
+  - type: SpecialModule
+    moduleType: Tool
+    toolQuality: Prying
+    activationCooldown: 2
+  - type: Sprite
+    state: module_crowbar
+
+- type: entity
+  id: CyberWrench
+  parent: BaseCyberModule
+  name: cyber wrench module
+  components:
+  - type: SpecialModule
+    moduleType: Tool
+    toolQuality: Anchoring
+    activationCooldown: 2
+  - type: Sprite
+    state: module_wrench
+
+- type: entity
+  id: CyberBioBattery
+  parent: BaseCyberModule
+  name: cyber bio-battery module
+  components:
+  - type: BioBatteryModule
+    hungerDrainRate: 5.0
+    chargeRate: 200.0
+    minimumHungerThreshold: Peckish
+  - type: Sprite
+    state: module_bio_battery
+
+- type: entity
+  id: CyberSpeedModule
+  parent: BaseCyberModule
+  name: cyber speed module
+  components:
+  - type: SpeedModule
+    walkSpeedMultiplier: 1.1
+    sprintSpeedMultiplier: 1.15
+    standUpSpeedMultiplier: 0.8
+  - type: Sprite
+    state: module_speed

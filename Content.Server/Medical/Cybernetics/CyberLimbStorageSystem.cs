@@ -1,5 +1,8 @@
+using Content.Server.Stack;
+using Content.Shared.Body.Part;
 using Content.Shared.Medical.Cybernetics;
 using Content.Shared.Medical.Cybernetics.Modules;
+using Content.Shared.Popups;
 using Content.Shared.Storage;
 using Content.Shared.Stacks;
 using Robust.Shared.Containers;
@@ -9,17 +12,54 @@ namespace Content.Server.Medical.Cybernetics;
 /// <summary>
 /// Server-side system that handles cyber-limb module installation/removal and stack splitting.
 /// </summary>
-public sealed class CyberLimbStorageSystem : Shared.Cybernetics.CyberLimbStorageSystem
+public sealed class CyberLimbStorageSystem : Content.Shared.Medical.Cybernetics.CyberLimbStorageSystem
 {
     [Dependency] private readonly SharedContainerSystem _container = default!;
-    [Dependency] private readonly SharedStackSystem _stack = default!;
+    [Dependency] private readonly StackSystem _stack = default!;
+    [Dependency] private readonly SharedPopupSystem _popup = default!;
 
     public override void Initialize()
     {
         base.Initialize();
 
+        SubscribeLocalEvent<CyberLimbComponent, ContainerIsInsertingAttemptEvent>(OnInsertAttempt);
         SubscribeLocalEvent<CyberLimbComponent, EntInsertedIntoContainerMessage>(OnModuleInserted);
         SubscribeLocalEvent<CyberLimbComponent, EntRemovedFromContainerMessage>(OnModuleRemoved);
+    }
+
+    /// <summary>
+    /// Validates module installation restrictions (tools only in arms, utilities only in legs).
+    /// </summary>
+    private void OnInsertAttempt(Entity<CyberLimbComponent> ent, ref ContainerIsInsertingAttemptEvent args)
+    {
+        if (args.Container.ID != StorageComponent.ContainerId)
+            return;
+
+        var module = args.EntityUid;
+
+        // Check if it's a special module
+        if (!TryComp<SpecialModuleComponent>(module, out var specialModule))
+            return;
+
+        // Get body part type
+        if (!TryComp<BodyPartComponent>(ent, out var bodyPart))
+            return;
+
+        // Tool modules can only be installed in arms
+        if (specialModule.ModuleType == SpecialModuleType.Tool && bodyPart.PartType != BodyPartType.Arm)
+        {
+            args.Cancel();
+            _popup.PopupEntity(Loc.GetString("cyber-module-wrong-limb", ("limbType", "arms")), ent);
+            return;
+        }
+
+        // Legs cannot have tool modules (but can have utility and bio-battery modules)
+        if (bodyPart.PartType == BodyPartType.Leg && specialModule.ModuleType == SpecialModuleType.Tool)
+        {
+            args.Cancel();
+            _popup.PopupEntity(Loc.GetString("cyber-module-wrong-limb", ("limbType", "legs")), ent);
+            return;
+        }
     }
 
     /// <summary>
@@ -86,6 +126,7 @@ public sealed class CyberLimbStorageSystem : Shared.Cybernetics.CyberLimbStorage
         return HasComp<BatteryModuleComponent>(uid)
                || HasComp<MatterBinModuleComponent>(uid)
                || HasComp<ManipulatorModuleComponent>(uid)
-               || HasComp<CapacitorModuleComponent>(uid);
+               || HasComp<CapacitorModuleComponent>(uid)
+               || HasComp<SpecialModuleComponent>(uid);
     }
 }

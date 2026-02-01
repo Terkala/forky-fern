@@ -40,11 +40,13 @@ using System.Linq;
 using Content.Shared.Chemistry.EntitySystems;
 using Content.Shared.Damage.Components;
 using Content.Shared.DoAfter;
+using Content.Shared.FixedPoint;
 using Content.Shared.IdentityManagement;
 using Content.Shared.Interaction;
 using Content.Shared.Interaction.Events;
 using Content.Shared.Item.ItemToggle;
 using Content.Shared.Item.ItemToggle.Components;
+using Content.Shared.Medical;
 using Content.Shared.MedicalScanner;
 using Content.Shared.Medical.Surgery;
 using Content.Server.Medical.Surgery;
@@ -168,7 +170,7 @@ public sealed class HealthAnalyzerSystem : EntitySystem
             // Since it's private, we'll need to send the method selection message separately
             // But first, let's send the step selected message
             var methodSelectedMsg = new SurgeryOperationMethodSelectedMessage(msg.Step, true);
-            RaiseLocalEvent((bodyPart.Value, layer), methodSelectedMsg);
+            RaiseLocalEvent(bodyPart.Value, methodSelectedMsg);
         }
         
         // Send surgery step selected message to SurgerySystem
@@ -181,7 +183,7 @@ public sealed class HealthAnalyzerSystem : EntitySystem
         );
         
         // Raise the step selected event on the body part
-        RaiseLocalEvent((bodyPart.Value, layer), stepSelectedMsg);
+        RaiseLocalEvent(bodyPart.Value, stepSelectedMsg);
     }
 
     public override void Update(float frameTime)

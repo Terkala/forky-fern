@@ -158,6 +158,28 @@
     price: 30
 
 - type: entity
+  name: high precision screwdriver
+  parent: Screwdriver
+  id: ScrewdriverHighPrecision
+  description: An advanced screwdriver with micro-adjustable torque settings. Essential for delicate cybernetic maintenance to avoid permanent tissue damage.
+  components:
+  - type: Sprite
+    sprite: Objects/Tools/screwdriver.rsi
+    state: screwdriver
+  - type: Item
+    heldPrefix: precision
+  - type: Tool
+    qualities:
+      - Screwing
+    speedModifier: 0.8
+  - type: Tag
+    tags:
+      - Screwdriver
+      - HighPrecisionTool
+  - type: StaticPrice
+    price: 150
+
+- type: entity
   name: wrench
   parent: BaseItem
   id: Wrench

@@ -38,4 +38,10 @@ public sealed partial class CyberLimbStatsComponent : Component
     /// </summary>
     [DataField, AutoNetworkedField]
     public TimeSpan LastUpdate;
+
+    /// <summary>
+    /// Count of special modules (tool, utility, bio-battery) installed across all cyber-limbs.
+    /// </summary>
+    [DataField, AutoNetworkedField]
+    public int SpecialModuleCount;
 }
