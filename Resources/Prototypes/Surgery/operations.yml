@@ -1,6 +1,3 @@
-# SPDX-FileCopyrightText: 2025
-# SPDX-License-Identifier: MIT
-
 - type: surgeryOperation
   id: SawBones
   name: Saw Bones
@@ -73,3 +70,23 @@
     - Tool: {}
     # Welder has Tool component with Welding quality and Heat damage when activated
   # No secondary method - requires proper tool
+
+- type: surgeryOperation
+  id: IonDamagedCyberLimb
+  name: Ion Damaged Cyber-Limb
+  primaryTools:
+    - Tool: {}
+    # This is a marker operation representing ion storm damage state
+    # It is not performed directly - ion storms add IonDamagedComponent instead
+    # This operation exists only to be referenced by RepairIonDamagedCyberLimb
+  # No secondary method - this operation is never performed
+
+- type: surgeryOperation
+  id: RepairIonDamagedCyberLimb
+  name: Repair Ion Damaged Cyber-Limb
+  primaryTools:
+    - Tool: {}
+    # Multitool has Tool component with Pulsing quality
+  # No secondary method - requires proper tool
+  repairOperationFor: IonDamagedCyberLimb
+  repairIntegrityCost: 0

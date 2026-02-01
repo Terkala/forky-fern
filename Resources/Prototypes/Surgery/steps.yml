@@ -1,6 +1,3 @@
-# SPDX-FileCopyrightText: 2025
-# SPDX-License-Identifier: MIT
-
 - type: SurgerySteps
   id: SawBonesStep
   operationId: SawBones
@@ -142,5 +139,95 @@
     - Arm
     - Leg
   removePenaltyStepId: ExposeMaintenanceScrewsStep
+  remove:
+    MaintenanceScrewsExposedComponent: {}
+
+- type: SurgerySteps
+  id: RepairIonDamagedCyberLimbStep1
+  operationId: RepairIonDamagedCyberLimb
+  sequenceId: RepairIonDamagedCyberLimbSequence
+  sequenceIndex: 0
+  layer: Skin
+  duration: 5
+  validPartTypes:
+    - Arm
+    - Leg
+  applyPenalty: 1
+  add:
+    MaintenanceScrewsExposedComponent: {}
+
+- type: SurgerySteps
+  id: RepairIonDamagedCyberLimbStep2
+  operationId: RepairIonDamagedCyberLimb
+  sequenceId: RepairIonDamagedCyberLimbSequence
+  sequenceIndex: 1
+  layer: Skin
+  duration: 3
+  validPartTypes:
+    - Arm
+    - Leg
+  applyPenalty: 1
+  add:
+    MaintenancePanelOpenComponent: {}
+
+- type: SurgerySteps
+  id: DiagnoseIonDamageStep
+  operationId: RepairIonDamagedCyberLimb
+  sequenceId: RepairIonDamagedCyberLimbSequence
+  sequenceIndex: 2
+  layer: Tissue
+  duration: 3
+  validPartTypes:
+    - Arm
+    - Leg
+  requirements:
+    requiresSkinRetracted: false
+  tool:
+    Tool: {}
+    # Multitool has Tool component with Pulsing quality
+
+- type: SurgerySteps
+  id: RepairIonCircuitsStep
+  operationId: RepairIonDamagedCyberLimb
+  sequenceId: RepairIonDamagedCyberLimbSequence
+  sequenceIndex: 3
+  layer: Tissue
+  duration: 5
+  validPartTypes:
+    - Arm
+    - Leg
+  requiresSkilledTechnician: true
+  requirements:
+    requiresSkinRetracted: false
+  tool:
+    Tool: {}
+    # Wire/Cable has Tool component
+  add:
+    IonDamageRepairedComponent: {}
+
+- type: SurgerySteps
+  id: RepairIonDamagedCyberLimbStep5
+  operationId: RepairIonDamagedCyberLimb
+  sequenceId: RepairIonDamagedCyberLimbSequence
+  sequenceIndex: 4
+  layer: Skin
+  duration: 3
+  validPartTypes:
+    - Arm
+    - Leg
+  remove:
+    MaintenancePanelOpenComponent: {}
+
+- type: SurgerySteps
+  id: RepairIonDamagedCyberLimbStep6
+  operationId: RepairIonDamagedCyberLimb
+  sequenceId: RepairIonDamagedCyberLimbSequence
+  sequenceIndex: 5
+  layer: Skin
+  duration: 5
+  validPartTypes:
+    - Arm
+    - Leg
+  removePenaltyStepId: RepairIonDamagedCyberLimbStep1
   remove:
     MaintenanceScrewsExposedComponent: {}

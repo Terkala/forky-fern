@@ -10,15 +10,20 @@
 
 using Content.Server.Silicons.Laws;
 using Content.Server.StationEvents.Components;
+using Content.Shared.Body;
 using Content.Shared.GameTicking.Components;
+using Content.Shared.Medical.Cybernetics;
+using Content.Shared.Medical.Integrity;
 using Content.Shared.Silicons.Laws.Components;
 using Content.Shared.Station.Components;
+using Robust.Shared.Random;
 
 namespace Content.Server.StationEvents.Events;
 
 public sealed class IonStormRule : StationEventSystem<IonStormRuleComponent>
 {
     [Dependency] private readonly IonStormSystem _ionStorm = default!;
+    [Dependency] private readonly IRobustRandom _random = default!;
 
     protected override void Started(EntityUid uid, IonStormRuleComponent comp, GameRuleComponent gameRule, GameRuleStartedEvent args)
     {
@@ -35,6 +40,22 @@ public sealed class IonStormRule : StationEventSystem<IonStormRuleComponent>
                 continue;
 
             _ionStorm.IonStormTarget((ent, lawBound, target));
+        }
+
+        // Query for entities with cyber-limbs on the station
+        var cyberLimbQuery = EntityQueryEnumerator<IntegrityComponent, CyberLimbStatsComponent, BodyComponent, TransformComponent>();
+        while (cyberLimbQuery.MoveNext(out var ent, out var integrity, out var stats, out var body, out var xform))
+        {
+            // only affect cyber-limb users on the station
+            if (CompOrNull<StationMemberComponent>(xform.GridUid)?.Station != chosenStation)
+                continue;
+
+            // 30% chance to affect this entity
+            if (!_random.Prob(0.3f))
+                continue;
+
+            var ev = new IonDamageCyberLimbsEvent(ent);
+            RaiseLocalEvent(ent, ref ev);
         }
     }
 }

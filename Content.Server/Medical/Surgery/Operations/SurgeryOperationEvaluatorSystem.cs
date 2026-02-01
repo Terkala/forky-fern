@@ -254,7 +254,7 @@ public sealed class SurgeryOperationEvaluatorSystem : EntitySystem
         // Check if item is a body part (limb)
         if (HasComp<BodyPartComponent>(item))
         {
-            return SurgeryOperationEvaluationResult.Invalid("Slimes regenerate limbs naturally and cannot accept implants.");
+            return SurgeryOperationEvaluationResult.Invalid();
         }
 
         // Check if item is an organ
@@ -263,7 +263,7 @@ public sealed class SurgeryOperationEvaluatorSystem : EntitySystem
             // Only allow core organ (identified by SlimeCoreOrganComponent)
             if (!HasComp<SlimeCoreOrganComponent>(item))
             {
-                return SurgeryOperationEvaluationResult.Invalid("Slimes can only have their core organ removed or replaced.");
+                return SurgeryOperationEvaluationResult.Invalid();
             }
         }
 

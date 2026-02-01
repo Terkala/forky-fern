@@ -41,6 +41,7 @@ using Content.Shared.Medical.Surgery.Components;
 using Content.Shared.Medical.Surgery.Operations;
 using Content.Shared.Medical.Surgery.Prototypes;
 using Content.Server.Medical.Surgery.Operations;
+using Content.Shared.Medical.Cybernetics;
 using Content.Shared.Implants.Components;
 using Content.Shared.UserInterface;
 using Content.Shared.Prototypes;
@@ -1011,6 +1012,12 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
             }
         }
         
+        // Check for IonDamagedCyberLimb operation (repair target) - return true if IonDamagedComponent exists
+        if (operationId == "IonDamagedCyberLimb")
+        {
+            return HasComp<IonDamagedComponent>(bodyPart);
+        }
+        
         return false;
     }
 
@@ -1159,9 +1166,9 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
                             operation.SecondaryMethod.Tools);
                     }
                     
-                    if (evalResult.Value.IsValid)
+                    if (evalResult != null && evalResult.IsValid)
                     {
-                        speedModifier = evalResult.Value.SpeedModifier;
+                        speedModifier = evalResult.SpeedModifier;
                     }
                 }
                 
@@ -1209,20 +1216,20 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
                 }
                 
                 // Special handling for bone operations
-                if (operation.ID == "SawBones" && TryComp<SurgeryLayerComponent>(bodyPart, out var layer))
+                if (operation.ID == "SawBones" && TryComp<SurgeryLayerComponent>(bodyPart, out var boneLayer))
                 {
                     if (isImprovised)
                     {
                         // Secondary method (blunt damage) - apply double penalty and set BonesSmashed
                         ApplySurgeryPenalty(bodyPart, FixedPoint2.New(16));
-                        layer.BonesSmashed = true;
-                        layer.BonesSawed = false;
-                        Dirty(bodyPart, layer);
+                        boneLayer.BonesSmashed = true;
+                        boneLayer.BonesSawed = false;
+                        Dirty(bodyPart, boneLayer);
                         
                         // Show popup with tool name and speed category
-                        if (evalResult.HasValue && evalResult.Value.IsValid && user != null)
+                        if (evalResult != null && evalResult.IsValid && evalResult.ToolEntity != null && user != null)
                         {
-                            var toolName = MetaData(evalResult.Value.UsedTool).EntityName;
+                            var toolName = MetaData(evalResult.ToolEntity.Value).EntityName;
                             _popup.PopupEntity(Loc.GetString("surgery-crude-bone-smashing", ("tool", toolName)), bodyPart, user.Value);
                             
                             // Calculate speed category
@@ -1241,9 +1248,9 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
                     {
                         // Primary method (proper bone saw) - apply normal penalty and set BonesSawed
                         ApplySurgeryPenalty(bodyPart, step.ApplyPenalty ?? FixedPoint2.New(8));
-                        layer.BonesSawed = true;
-                        layer.BonesSmashed = false;
-                        Dirty(bodyPart, layer);
+                        boneLayer.BonesSawed = true;
+                        boneLayer.BonesSmashed = false;
+                        Dirty(bodyPart, boneLayer);
                     }
                 }
                 

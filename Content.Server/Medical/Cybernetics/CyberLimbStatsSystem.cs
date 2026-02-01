@@ -153,4 +153,15 @@ public sealed class CyberLimbStatsSystem : Content.Shared.Medical.Cybernetics.Cy
         _integritySystem.RecalculateTargetBioRejection(body, integrity);
         Dirty(body, integrity);
     }
+
+    /// <summary>
+    /// Triggers integrity recalculation when ion damage is repaired.
+    /// </summary>
+    protected override void TriggerIntegrityRecalculation(EntityUid body)
+    {
+        if (TryComp<IntegrityComponent>(body, out var integrity))
+        {
+            _integritySystem.RecalculateTargetBioRejection(body, integrity);
+        }
+    }
 }

@@ -35,6 +35,7 @@ public abstract class CyberLimbStatsSystem : EntitySystem
         SubscribeLocalEvent<CyberLimbComponent, CyberLimbModuleRemovedEvent>(OnModuleRemoved);
         SubscribeLocalEvent<IntegrityComponent, IntegrityUsageChangedEvent>(OnIntegrityUsageChanged);
         SubscribeLocalEvent<ServiceTimeResetComponent, ComponentAdd>(OnServiceTimeReset);
+        SubscribeLocalEvent<IonDamageRepairedComponent, ComponentAdd>(OnIonDamageRepaired);
     }
 
     /// <summary>
@@ -110,7 +111,9 @@ public abstract class CyberLimbStatsSystem : EntitySystem
     /// Recalculates aggregate stats for all cyber-limbs on a body.
     /// Sums battery capacity, service time, counts manipulators, and calculates efficiency.
     /// </summary>
-    public void RecalculateStats(EntityUid body)
+    /// <param name="body">The body entity to recalculate stats for.</param>
+    /// <param name="preserveExpiredServiceTime">If true, prevents refilling service time when it's zero (e.g., after ion storm expiration).</param>
+    public void RecalculateStats(EntityUid body, bool preserveExpiredServiceTime = false)
     {
         if (!TryComp<BodyComponent>(body, out var bodyComp))
             return;
@@ -212,7 +215,8 @@ public abstract class CyberLimbStatsSystem : EntitySystem
         }
         // If ServiceTimeRemaining is zero or uninitialized, set it to the new maximum
         // This handles the case where the component is first created
-        else if (stats.ServiceTimeRemaining == TimeSpan.Zero && totalServiceTimeSeconds > 0)
+        // However, if preserveExpiredServiceTime is true, don't refill when zero (e.g., after ion storm expiration)
+        else if (stats.ServiceTimeRemaining == TimeSpan.Zero && totalServiceTimeSeconds > 0 && !preserveExpiredServiceTime)
         {
             stats.ServiceTimeRemaining = newMaxServiceTime;
         }
@@ -311,6 +315,62 @@ public abstract class CyberLimbStatsSystem : EntitySystem
     /// Called when service time is reset or expires.
     /// </summary>
     protected virtual void UpdateServiceTimeExpiration(EntityUid body)
+    {
+        // Override in server implementation if needed
+    }
+
+    /// <summary>
+    /// Handles ion damage repair when wiring is replaced during maintenance.
+    /// Removes IonDamagedComponent from all cyber-limbs on the body.
+    /// </summary>
+    private void OnIonDamageRepaired(EntityUid uid, IonDamageRepairedComponent component, ComponentAdd args)
+    {
+        // Get the body that this body part belongs to
+        if (!TryComp<BodyPartComponent>(uid, out var bodyPart) || bodyPart.Body == null)
+        {
+            // Remove the marker component if we can't process it
+            RemComp<IonDamageRepairedComponent>(uid);
+            return;
+        }
+
+        var body = bodyPart.Body.Value;
+
+        // Get the body component
+        if (!TryComp<BodyComponent>(body, out var bodyComp))
+        {
+            RemComp<IonDamageRepairedComponent>(uid);
+            return;
+        }
+
+        // Iterate through all body parts and remove IonDamagedComponent from cyber-limbs
+        bool anyRepaired = false;
+        foreach (var (partId, _) in _bodyPartSystem.GetBodyChildren(body, bodyComp))
+        {
+            if (!HasComp<CyberLimbComponent>(partId))
+                continue;
+
+            if (HasComp<IonDamagedComponent>(partId))
+            {
+                RemComp<IonDamagedComponent>(partId);
+                anyRepaired = true;
+            }
+        }
+
+        // Trigger integrity recalculation if any damage was repaired
+        if (anyRepaired)
+        {
+            TriggerIntegrityRecalculation(body);
+        }
+
+        // Remove the marker component
+        RemComp<IonDamageRepairedComponent>(uid);
+    }
+
+    /// <summary>
+    /// Triggers integrity recalculation on the body.
+    /// Override in server implementation to call SharedIntegritySystem.
+    /// </summary>
+    protected virtual void TriggerIntegrityRecalculation(EntityUid body)
     {
         // Override in server implementation if needed
     }

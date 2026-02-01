@@ -1,3 +1,4 @@
+using Content.Shared.Body;
 using Content.Shared.Body.Components;
 using Content.Shared.Body.Part;
 
@@ -34,3 +35,10 @@ public readonly record struct CyberLimbAttachedEvent(Entity<BodyComponent> Body,
 /// </summary>
 [ByRefEvent]
 public readonly record struct CyberLimbDetachedEvent(Entity<BodyComponent> Body, Entity<BodyPartComponent> CyberLimb);
+
+/// <summary>
+/// Event raised when an ion storm affects entities with cyber-limbs.
+/// Raised by IonStormRule when an ion storm occurs.
+/// </summary>
+[ByRefEvent]
+public readonly record struct IonDamageCyberLimbsEvent(EntityUid Body);

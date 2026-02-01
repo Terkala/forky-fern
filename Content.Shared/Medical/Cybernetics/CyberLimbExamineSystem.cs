@@ -55,11 +55,15 @@ public abstract class CyberLimbExamineSystem : EntitySystem
         if (!hasCyberLimbs)
             return;
 
+        // Capture values for lambda (cannot capture ref parameters)
+        var examiner = args.User;
+        var target = ent;
+
         var verb = new ExamineVerb
         {
             Act = () =>
             {
-                FormatAndSendExamineMessage(args.User, ent);
+                FormatAndSendExamineMessage(examiner, target);
             },
             Text = Loc.GetString("cyber-limb-examine-verb-text"),
             Category = VerbCategory.Examine,

@@ -243,6 +243,12 @@ public sealed class IntegritySystem : SharedIntegritySystem
                     totalPenalty += FixedPoint2.New(1);
                 }
             }
+
+            // Check for ion damage penalties
+            if (TryComp<IonDamagedComponent>(partId, out var ionDamage))
+            {
+                totalPenalty += ionDamage.BioRejectionPenalty;
+            }
         }
 
         return totalPenalty;
