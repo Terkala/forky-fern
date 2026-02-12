@@ -34,8 +34,9 @@ public abstract class SharedIntegritySystem : EntitySystem
         var baseTargetBioRejection = overLimit * integrity.BioRejectionPerPoint;
         
         // Get surgery penalty contribution (added directly to bio-rejection)
-        // Uses cached value for performance
-        var surgeryPenalty = GetTotalSurgeryPenalty(uid);
+        var ev = new GetTotalSurgeryPenaltyEvent();
+        RaiseLocalEvent(uid, ref ev);
+        var surgeryPenalty = ev.TotalPenalty;
         
         // Target bio-rejection = base + surgery penalty
         integrity.TargetBioRejection = baseTargetBioRejection + surgeryPenalty;
@@ -48,14 +49,6 @@ public abstract class SharedIntegritySystem : EntitySystem
         
         Dirty(uid, integrity);
     }
-
-    /// <summary>
-    /// Gets the total surgery penalty from all body parts (as bio-rejection damage).
-    /// This method is abstract because it requires server-side components (BodyComponent, SurgeryPenaltyComponent)
-    /// to query body parts, which are not available in the shared system.
-    /// The server implementation iterates through all body parts and sums their penalties.
-    /// </summary>
-    protected abstract FixedPoint2 GetTotalSurgeryPenalty(EntityUid body);
 
     /// <summary>
     /// Adds integrity usage and recalculates target bio-rejection.

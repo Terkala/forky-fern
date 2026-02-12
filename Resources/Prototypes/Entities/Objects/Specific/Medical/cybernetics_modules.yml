@@ -13,7 +13,8 @@
     pryingSpeed: 1.5
     pryPowered: true
   - type: Sprite
-    state: module_jaws
+    sprite: Objects/Tools/jaws_of_life.rsi
+    state: jaws_pry
 
 - type: entity
   id: CyberScrewdriver
@@ -25,7 +26,8 @@
     toolQuality: Screwing
     activationCooldown: 2
   - type: Sprite
-    state: module_screwdriver
+    sprite: Objects/Tools/screwdriver.rsi
+    state: screwdriver
 
 - type: entity
   id: CyberCrowbar
@@ -37,7 +39,8 @@
     toolQuality: Prying
     activationCooldown: 2
   - type: Sprite
-    state: module_crowbar
+    sprite: Objects/Tools/crowbar.rsi
+    state: icon
 
 - type: entity
   id: CyberWrench
@@ -49,7 +52,8 @@
     toolQuality: Anchoring
     activationCooldown: 2
   - type: Sprite
-    state: module_wrench
+    sprite: Objects/Tools/wrench.rsi
+    state: icon
 
 - type: entity
   id: CyberBioBattery
@@ -61,7 +65,8 @@
     chargeRate: 200.0
     minimumHungerThreshold: Peckish
   - type: Sprite
-    state: module_bio_battery
+    sprite: Objects/Power/power_cells.rsi
+    state: small
 
 - type: entity
   id: CyberSpeedModule
@@ -73,4 +78,5 @@
     sprintSpeedMultiplier: 1.15
     standUpSpeedMultiplier: 0.8
   - type: Sprite
-    state: module_speed
+    sprite: Objects/Power/power_cells.rsi
+    state: high

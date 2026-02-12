@@ -205,56 +205,6 @@ public sealed class IntegritySystem : SharedIntegritySystem
     }
 
     /// <summary>
-    /// Gets the total surgery penalty from all body parts (as bio-rejection damage).
-    /// Iterates through all body parts and sums their CurrentPenalty values.
-    /// Also adds cyber-limb panel penalties: +1 for exposed panel, +2 total for open panel.
-    /// </summary>
-    protected override FixedPoint2 GetTotalSurgeryPenalty(EntityUid body)
-    {
-        if (!TryComp<BodyComponent>(body, out var bodyComp))
-            return FixedPoint2.Zero;
-
-        FixedPoint2 totalPenalty = FixedPoint2.Zero;
-
-        // Iterate through all body parts and sum their surgery penalties
-        foreach (var (partId, _) in _bodyPartSystem.GetBodyChildren(body, bodyComp))
-        {
-            if (TryComp<SurgeryPenaltyComponent>(partId, out var penalty))
-            {
-                totalPenalty += penalty.CurrentPenalty;
-            }
-
-            // Check for non-precision tool penalties (permanent)
-            if (TryComp<NonPrecisionToolPenaltyComponent>(partId, out var nonPrecisionPenalty))
-            {
-                totalPenalty += nonPrecisionPenalty.PermanentPenalty;
-            }
-
-            // Check for cyber-limb panel penalties
-            if (TryComp<CyberLimbComponent>(partId, out var cyberLimb))
-            {
-                // +1 penalty for exposed panel, +2 total for open panel
-                if (cyberLimb.PanelOpen)
-                {
-                    totalPenalty += FixedPoint2.New(2);
-                }
-                else if (cyberLimb.PanelExposed)
-                {
-                    totalPenalty += FixedPoint2.New(1);
-                }
-            }
-
-            // Check for ion damage penalties
-            if (TryComp<IonDamagedComponent>(partId, out var ionDamage))
-            {
-                totalPenalty += ionDamage.BioRejectionPenalty;
-            }
-        }
-
-        return totalPenalty;
-    }
-
-    /// <summary>
     /// Handles cyber-limb panel state changes and recalculates bio-rejection penalties.
     /// </summary>
     private void OnCyberLimbPanelChanged(Entity<CyberLimbComponent> ent, ref CyberLimbPanelChangedEvent args)

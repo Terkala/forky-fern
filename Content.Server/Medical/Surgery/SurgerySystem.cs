@@ -648,6 +648,24 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
         if (!CanPerformStep(ent, stepEntity, step, user))
             return;
 
+        // Validate user has the requested tool in hand (proper or improvised) before starting DoAfter
+        if (step.OperationId != null && _prototypes.TryIndex(step.OperationId, out var operation) && operation.RepairOperationFor == null)
+        {
+            if (_stepMethodSelection.TryGetValue(stepEntity, out var useImprovised))
+            {
+                if (useImprovised)
+                {
+                    if (operation.SecondaryMethod == null || !HasSecondaryMethodForOperation(user.Value, operation))
+                        return;
+                }
+                else
+                {
+                    if (!HasPrimaryToolsForOperation(user.Value, operation))
+                        return;
+                }
+            }
+        }
+
         // Start doafter for the surgery step
         StartSurgeryDoAfter(ent, stepEntity, step, user.Value);
     }

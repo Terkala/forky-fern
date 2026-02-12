@@ -1,233 +1,267 @@
-- type: SurgerySteps
+- type: entity
   id: SawBonesStep
-  operationId: SawBones
-  layer: Organ
-  duration: 8
-  requirements:
-    requiresTissueRetracted: true
-  applyPenalty: 8
+  components:
+  - type: SurgeryStep
+    operationId: SawBones
+    layer: Organ
+    duration: 8
+    requirements:
+      requiresTissueRetracted: true
+    applyPenalty: 8
 
-- type: SurgerySteps
+- type: entity
   id: RepairBones1
-  operationId: RepairSmashedBones
-  sequenceId: RepairBonesSequence
-  sequenceIndex: 0
-  layer: Organ
-  duration: 10
-  requirements:
-    requiresTissueRetracted: true
+  components:
+  - type: SurgeryStep
+    operationId: RepairSmashedBones
+    sequenceId: RepairBonesSequence
+    sequenceIndex: 0
+    layer: Organ
+    duration: 10
+    requirements:
+      requiresTissueRetracted: true
 
-- type: SurgerySteps
+- type: entity
   id: RepairBones2
-  operationId: RepairSmashedBones
-  sequenceId: RepairBonesSequence
-  sequenceIndex: 1
-  layer: Organ
-  duration: 12
-  requirements:
-    requiresTissueRetracted: true
+  components:
+  - type: SurgeryStep
+    operationId: RepairSmashedBones
+    sequenceId: RepairBonesSequence
+    sequenceIndex: 1
+    layer: Organ
+    duration: 12
+    requirements:
+      requiresTissueRetracted: true
 
-- type: SurgerySteps
+- type: entity
   id: RepairBones3
-  operationId: RepairSmashedBones
-  sequenceId: RepairBonesSequence
-  sequenceIndex: 2
-  layer: Organ
-  duration: 15
-  requirements:
-    requiresTissueRetracted: true
+  components:
+  - type: SurgeryStep
+    operationId: RepairSmashedBones
+    sequenceId: RepairBonesSequence
+    sequenceIndex: 2
+    layer: Organ
+    duration: 15
+    requirements:
+      requiresTissueRetracted: true
 
-- type: SurgerySteps
+- type: entity
   id: RepairBones4
-  operationId: RepairSmashedBones
-  sequenceId: RepairBonesSequence
-  sequenceIndex: 3
-  layer: Organ
-  duration: 12
-  requirements:
-    requiresTissueRetracted: true
+  components:
+  - type: SurgeryStep
+    operationId: RepairSmashedBones
+    sequenceId: RepairBonesSequence
+    sequenceIndex: 3
+    layer: Organ
+    duration: 12
+    requirements:
+      requiresTissueRetracted: true
 
-- type: SurgerySteps
+- type: entity
   id: RepairBones5
-  operationId: RepairSmashedBones
-  sequenceId: RepairBonesSequence
-  sequenceIndex: 4
-  layer: Organ
-  duration: 10
-  requirements:
-    requiresTissueRetracted: true
-  layerStateChanges:
-    setBonesSmashed: false
+  components:
+  - type: SurgeryStep
+    operationId: RepairSmashedBones
+    sequenceId: RepairBonesSequence
+    sequenceIndex: 4
+    layer: Organ
+    duration: 10
+    requirements:
+      requiresTissueRetracted: true
+    layerStateChanges:
+      setBonesSmashed: false
 
-- type: SurgerySteps
+- type: entity
   id: ExposeMaintenanceScrewsStep
-  operationId: ExposeMaintenanceScrews
-  sequenceId: CyberLimbMaintenanceSequence
-  sequenceIndex: 0
-  layer: Skin
-  duration: 5
-  validPartTypes:
+  components:
+  - type: SurgeryStep
+    operationId: ExposeMaintenanceScrews
+    sequenceId: CyberLimbMaintenanceSequence
+    sequenceIndex: 0
+    layer: Skin
+    duration: 5
+    validPartTypes:
     - Arm
     - Leg
-  applyPenalty: 1
-  add:
-    MaintenanceScrewsExposedComponent: {}
+    applyPenalty: 1
+    add:
+    - type: MaintenanceScrewsExposed
 
-- type: SurgerySteps
+- type: entity
   id: OpenMaintenancePanelStep
-  operationId: OpenMaintenancePanel
-  sequenceId: CyberLimbMaintenanceSequence
-  sequenceIndex: 1
-  layer: Skin
-  duration: 3
-  validPartTypes:
+  components:
+  - type: SurgeryStep
+    operationId: OpenMaintenancePanel
+    sequenceId: CyberLimbMaintenanceSequence
+    sequenceIndex: 1
+    layer: Skin
+    duration: 3
+    validPartTypes:
     - Arm
     - Leg
-  applyPenalty: 1
-  add:
-    MaintenancePanelOpenComponent: {}
+    applyPenalty: 1
+    add:
+    - type: MaintenancePanelOpen
 
-- type: SurgerySteps
+- type: entity
   id: AdjustMaintenanceBoltsStep
-  operationId: AdjustMaintenanceBolts
-  sequenceId: CyberLimbMaintenanceSequence
-  sequenceIndex: 2
-  layer: Tissue
-  duration: 8
-  validPartTypes:
+  components:
+  - type: SurgeryStep
+    operationId: AdjustMaintenanceBolts
+    sequenceId: CyberLimbMaintenanceSequence
+    sequenceIndex: 2
+    layer: Tissue
+    duration: 8
+    validPartTypes:
     - Arm
     - Leg
-  requiresSkilledTechnician: true
-  requirements:
-    requiresSkinRetracted: false
+    requiresSkilledTechnician: true
+    requirements:
+      requiresSkinRetracted: false
 
-- type: SurgerySteps
+- type: entity
   id: ReplaceMaintenanceWiringStep
-  operationId: ReplaceMaintenanceWiring
-  sequenceId: CyberLimbMaintenanceSequence
-  sequenceIndex: 3
-  layer: Tissue
-  duration: 12
-  validPartTypes:
+  components:
+  - type: SurgeryStep
+    operationId: ReplaceMaintenanceWiring
+    sequenceId: CyberLimbMaintenanceSequence
+    sequenceIndex: 3
+    layer: Tissue
+    duration: 12
+    validPartTypes:
     - Arm
     - Leg
-  requiresSkilledTechnician: true
-  add:
-    ServiceTimeResetComponent: {}
+    requiresSkilledTechnician: true
+    add:
+    - type: ServiceTimeReset
 
-- type: SurgerySteps
+- type: entity
   id: CloseMaintenancePanelStep
-  operationId: CloseMaintenancePanel
-  sequenceId: CyberLimbMaintenanceSequence
-  sequenceIndex: 4
-  layer: Skin
-  duration: 3
-  validPartTypes:
+  components:
+  - type: SurgeryStep
+    operationId: CloseMaintenancePanel
+    sequenceId: CyberLimbMaintenanceSequence
+    sequenceIndex: 4
+    layer: Skin
+    duration: 3
+    validPartTypes:
     - Arm
     - Leg
-  remove:
-    MaintenancePanelOpenComponent: {}
+    remove:
+    - type: MaintenancePanelOpen
 
-- type: SurgerySteps
+- type: entity
   id: SealMaintenancePanelStep
-  operationId: SealMaintenancePanel
-  sequenceId: CyberLimbMaintenanceSequence
-  sequenceIndex: 5
-  layer: Skin
-  duration: 5
-  validPartTypes:
+  components:
+  - type: SurgeryStep
+    operationId: SealMaintenancePanel
+    sequenceId: CyberLimbMaintenanceSequence
+    sequenceIndex: 5
+    layer: Skin
+    duration: 5
+    validPartTypes:
     - Arm
     - Leg
-  removePenaltyStepId: ExposeMaintenanceScrewsStep
-  remove:
-    MaintenanceScrewsExposedComponent: {}
+    removePenaltyStepId: ExposeMaintenanceScrewsStep
+    remove:
+    - type: MaintenanceScrewsExposed
 
-- type: SurgerySteps
+- type: entity
   id: RepairIonDamagedCyberLimbStep1
-  operationId: RepairIonDamagedCyberLimb
-  sequenceId: RepairIonDamagedCyberLimbSequence
-  sequenceIndex: 0
-  layer: Skin
-  duration: 5
-  validPartTypes:
+  components:
+  - type: SurgeryStep
+    operationId: RepairIonDamagedCyberLimb
+    sequenceId: RepairIonDamagedCyberLimbSequence
+    sequenceIndex: 0
+    layer: Skin
+    duration: 5
+    validPartTypes:
     - Arm
     - Leg
-  applyPenalty: 1
-  add:
-    MaintenanceScrewsExposedComponent: {}
+    applyPenalty: 1
+    add:
+    - type: MaintenanceScrewsExposed
 
-- type: SurgerySteps
+- type: entity
   id: RepairIonDamagedCyberLimbStep2
-  operationId: RepairIonDamagedCyberLimb
-  sequenceId: RepairIonDamagedCyberLimbSequence
-  sequenceIndex: 1
-  layer: Skin
-  duration: 3
-  validPartTypes:
+  components:
+  - type: SurgeryStep
+    operationId: RepairIonDamagedCyberLimb
+    sequenceId: RepairIonDamagedCyberLimbSequence
+    sequenceIndex: 1
+    layer: Skin
+    duration: 3
+    validPartTypes:
     - Arm
     - Leg
-  applyPenalty: 1
-  add:
-    MaintenancePanelOpenComponent: {}
+    applyPenalty: 1
+    add:
+    - type: MaintenancePanelOpen
 
-- type: SurgerySteps
+- type: entity
   id: DiagnoseIonDamageStep
-  operationId: RepairIonDamagedCyberLimb
-  sequenceId: RepairIonDamagedCyberLimbSequence
-  sequenceIndex: 2
-  layer: Tissue
-  duration: 3
-  validPartTypes:
+  components:
+  - type: SurgeryStep
+    operationId: RepairIonDamagedCyberLimb
+    sequenceId: RepairIonDamagedCyberLimbSequence
+    sequenceIndex: 2
+    layer: Tissue
+    duration: 3
+    validPartTypes:
     - Arm
     - Leg
-  requirements:
-    requiresSkinRetracted: false
-  tool:
-    Tool: {}
-    # Multitool has Tool component with Pulsing quality
+    requirements:
+      requiresSkinRetracted: false
+    tool:
+    - type: Tool
 
-- type: SurgerySteps
+- type: entity
   id: RepairIonCircuitsStep
-  operationId: RepairIonDamagedCyberLimb
-  sequenceId: RepairIonDamagedCyberLimbSequence
-  sequenceIndex: 3
-  layer: Tissue
-  duration: 5
-  validPartTypes:
+  components:
+  - type: SurgeryStep
+    operationId: RepairIonDamagedCyberLimb
+    sequenceId: RepairIonDamagedCyberLimbSequence
+    sequenceIndex: 3
+    layer: Tissue
+    duration: 5
+    validPartTypes:
     - Arm
     - Leg
-  requiresSkilledTechnician: true
-  requirements:
-    requiresSkinRetracted: false
-  tool:
-    Tool: {}
-    # Wire/Cable has Tool component
-  add:
-    IonDamageRepairedComponent: {}
+    requiresSkilledTechnician: true
+    requirements:
+      requiresSkinRetracted: false
+    tool:
+    - type: Tool
+    add:
+    - type: IonDamageRepaired
 
-- type: SurgerySteps
+- type: entity
   id: RepairIonDamagedCyberLimbStep5
-  operationId: RepairIonDamagedCyberLimb
-  sequenceId: RepairIonDamagedCyberLimbSequence
-  sequenceIndex: 4
-  layer: Skin
-  duration: 3
-  validPartTypes:
+  components:
+  - type: SurgeryStep
+    operationId: RepairIonDamagedCyberLimb
+    sequenceId: RepairIonDamagedCyberLimbSequence
+    sequenceIndex: 4
+    layer: Skin
+    duration: 3
+    validPartTypes:
     - Arm
     - Leg
-  remove:
-    MaintenancePanelOpenComponent: {}
+    remove:
+    - type: MaintenancePanelOpen
 
-- type: SurgerySteps
+- type: entity
   id: RepairIonDamagedCyberLimbStep6
-  operationId: RepairIonDamagedCyberLimb
-  sequenceId: RepairIonDamagedCyberLimbSequence
-  sequenceIndex: 5
-  layer: Skin
-  duration: 5
-  validPartTypes:
+  components:
+  - type: SurgeryStep
+    operationId: RepairIonDamagedCyberLimb
+    sequenceId: RepairIonDamagedCyberLimbSequence
+    sequenceIndex: 5
+    layer: Skin
+    duration: 5
+    validPartTypes:
     - Arm
     - Leg
-  removePenaltyStepId: RepairIonDamagedCyberLimbStep1
-  remove:
-    MaintenanceScrewsExposedComponent: {}
+    removePenaltyStepId: RepairIonDamagedCyberLimbStep1
+    remove:
+    - type: MaintenanceScrewsExposed

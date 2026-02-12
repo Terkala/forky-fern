@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 using Content.Shared.Body.Part;
+using Robust.Shared.GameObjects;
 using Robust.Shared.Serialization;
 
 namespace Content.Shared.Body.Systems;
@@ -28,7 +29,7 @@ public sealed class SlimeLimbRegenerationData
     /// Reference to the regenerated limb entity, if it has been spawned.
     /// </summary>
     [DataField]
-    public EntityUid? RegeneratedPart;
+    public NetEntity? RegeneratedPart;
 
     /// <summary>
     /// Whether the system is in the healing phase (spawned limb healing to 100%).

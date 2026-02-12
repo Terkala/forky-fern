@@ -94,6 +94,20 @@ public struct IntegrityBreakdownEntry
 }
 
 /// <summary>
+/// Message sent from client to server when user selects a body part in Surgery mode.
+/// </summary>
+[Serializable, NetSerializable]
+public sealed class HealthAnalyzerBodyPartSelectedMessage : BoundUserInterfaceMessage
+{
+    public TargetBodyPart SelectedBodyPart;
+
+    public HealthAnalyzerBodyPartSelectedMessage(TargetBodyPart selectedBodyPart)
+    {
+        SelectedBodyPart = selectedBodyPart;
+    }
+}
+
+/// <summary>
 /// Message sent from client to server when user clicks "Begin Surgery" button.
 /// </summary>
 [Serializable, NetSerializable]

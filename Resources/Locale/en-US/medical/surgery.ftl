@@ -32,6 +32,7 @@ surgery-crude-bone-smashing-speed = The crude bone smashing is {$speed ->
     [slow] painfully slow
     [average] proceeding at average speed
     [fast] surprisingly quick
+   *[other] proceeding at an unusual pace
    }.
 surgery-repair-smashed-bones-progress = You continue reconstructing the shattered bones. ({$step}/5)
 surgery-repair-smashed-bones-complete = You've successfully repaired the smashed bones, restoring structural integrity.

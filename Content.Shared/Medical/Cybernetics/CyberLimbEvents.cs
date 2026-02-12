@@ -1,6 +1,8 @@
 using Content.Shared.Body;
 using Content.Shared.Body.Components;
 using Content.Shared.Body.Part;
+using Content.Shared.DoAfter;
+using Robust.Shared.Serialization;
 
 namespace Content.Shared.Medical.Cybernetics;
 
@@ -42,3 +44,11 @@ public readonly record struct CyberLimbDetachedEvent(Entity<BodyComponent> Body,
 /// </summary>
 [ByRefEvent]
 public readonly record struct IonDamageCyberLimbsEvent(EntityUid Body);
+
+/// <summary>
+/// Event raised when a battery module is successfully removed from a cyber-limb.
+/// </summary>
+[Serializable, NetSerializable]
+public sealed partial class RemoveBatteryModuleDoAfterEvent : SimpleDoAfterEvent
+{
+}

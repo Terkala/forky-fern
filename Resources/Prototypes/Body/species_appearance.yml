@@ -79,6 +79,15 @@
   components:
   - type: Body
   - type: Hands
+  - type: Feet
+    feet:
+      left_foot:
+        location: Left
+      right_foot:
+        location: Right
+    sortedFeet:
+    - left_foot
+    - right_foot
   - type: ComplexInteraction
   - type: ContainerContainer
   - type: Appearance

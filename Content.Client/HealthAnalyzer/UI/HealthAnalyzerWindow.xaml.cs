@@ -49,21 +49,24 @@ public sealed partial class HealthAnalyzerWindow : FancyWindow
     private HealthAnalyzerMode _currentMode = HealthAnalyzerMode.Health;
     private HealthAnalyzerUiState? _currentState;
     private readonly IEntityManager _entMan;
-    public event Action<NetEntity>? OnBeginSurgeryClicked;
+
     public event Action<NetEntity, NetEntity, SurgeryLayer, TargetBodyPart?, bool>? OnAttemptSurgery;
 
     public HealthAnalyzerWindow()
     {
         RobustXamlLoader.Load(this);
         _entMan = IoCManager.Resolve<IEntityManager>();
-        
-        BeginSurgeryButton.OnPressed += OnBeginSurgeryButtonPressed;
-        
+
+        HealthButton.OnPressed += _ => SetMode(HealthAnalyzerMode.Health);
+
         // Subscribe to mode button presses
         HealthModeButton.OnPressed += _ => SetMode(HealthAnalyzerMode.Health);
         IntegrityModeButton.OnPressed += _ => SetMode(HealthAnalyzerMode.Integrity);
         SurgeryModeButton.OnPressed += _ => SetMode(HealthAnalyzerMode.Surgery);
-        
+
+        // Surgery button hidden until we receive state with valid surgical target
+        SurgeryModeButton.Visible = false;
+
         // Set initial mode
         SetMode(HealthAnalyzerMode.Health);
     }
@@ -71,12 +74,22 @@ public sealed partial class HealthAnalyzerWindow : FancyWindow
     public void Populate(HealthAnalyzerScannedUserMessage msg)
     {
         _currentState = msg.State;
-        HealthAnalyzerControl.Populate(msg.State, _currentMode);
-        
-        // Store current target entity
         _currentTargetEntity = msg.State.TargetEntity;
-        
-        // Update surgery UI based on mode
+
+        // Surgery mode button only visible when target is valid surgical target
+        var isValidSurgicalTarget = msg.State.SurgerySteps != null && msg.State.SurgerySteps.Count > 0;
+        SurgeryModeButton.Visible = isValidSurgicalTarget;
+
+        // If target became invalid while in Surgery mode, switch back to Health
+        if (_currentMode == HealthAnalyzerMode.Surgery && !isValidSurgicalTarget)
+        {
+            SetMode(HealthAnalyzerMode.Health);
+        }
+        else
+        {
+            HealthAnalyzerControl.Populate(msg.State, _currentMode, allowSurgery: true);
+        }
+
         UpdateSurgeryUI();
     }
     
@@ -92,7 +105,7 @@ public sealed partial class HealthAnalyzerWindow : FancyWindow
         // Update UI visibility
         if (_currentState.HasValue)
         {
-            HealthAnalyzerControl.Populate(_currentState.Value, mode);
+            HealthAnalyzerControl.Populate(_currentState.Value, mode, allowSurgery: true);
         }
         
         // Update surgery UI based on mode
@@ -103,10 +116,10 @@ public sealed partial class HealthAnalyzerWindow : FancyWindow
     {
         bool showSurgeryPanel = _currentMode == HealthAnalyzerMode.Surgery && _currentTargetEntity != null;
         SurgeryPanel.Visible = showSurgeryPanel;
-        
-        // Hide BeginSurgeryButton when surgery panel is shown
-        BeginSurgeryButton.Visible = false;
-        
+
+        // Health button visible when in Surgery mode - switches back to Health mode
+        HealthButton.Visible = showSurgeryPanel;
+
         if (showSurgeryPanel && _currentState.HasValue)
         {
             PopulateSurgerySteps(_currentState.Value);
@@ -129,48 +142,37 @@ public sealed partial class HealthAnalyzerWindow : FancyWindow
         }
         
         var currentLayer = state.CurrentSurgeryLayer ?? SurgeryLayer.Skin;
-        var selectedBodyPart = state.SelectedSurgeryBodyPart;
-        
+
         foreach (var stepNetEntity in state.SurgerySteps)
         {
-            // Get operation info for this step
             SurgeryStepOperationInfo? operationInfo = null;
             state.SurgeryStepOperationInfo?.TryGetValue(stepNetEntity, out operationInfo);
-            
-            // Create step control (simplified version for health analyzer)
+
             var stepControl = new SurgeryStepControl(
                 _entMan,
                 stepNetEntity,
                 operationInfo,
                 currentLayer
             );
-            
+
             stepControl.OnStepSelected += (step) =>
             {
                 if (_currentTargetEntity != null)
                 {
-                    OnAttemptSurgery?.Invoke(step, _currentTargetEntity.Value, currentLayer, selectedBodyPart, false);
+                    // Use current selection from control - sent with step to prevent miscommunication
+                    OnAttemptSurgery?.Invoke(step, _currentTargetEntity.Value, currentLayer, HealthAnalyzerControl.SelectedBodyPart, false);
                 }
             };
-            
+
             stepControl.OnToolMethodSelected += (step, isImprovised) =>
             {
                 if (_currentTargetEntity != null)
                 {
-                    OnAttemptSurgery?.Invoke(step, _currentTargetEntity.Value, currentLayer, selectedBodyPart, isImprovised);
+                    OnAttemptSurgery?.Invoke(step, _currentTargetEntity.Value, currentLayer, HealthAnalyzerControl.SelectedBodyPart, isImprovised);
                 }
             };
-            
+
             SurgeryStepsContainer.AddChild(stepControl);
         }
     }
-    
-    private void OnBeginSurgeryButtonPressed(BaseButton.ButtonEventArgs args)
-    {
-        if (_currentTargetEntity == null)
-            return;
-            
-        OnBeginSurgeryClicked?.Invoke(_currentTargetEntity.Value);
-    }
-    
 }

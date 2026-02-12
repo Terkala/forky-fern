@@ -14,8 +14,15 @@ public abstract partial class SharedHandsSystem
 {
     private void InitializeEventListeners()
     {
+        SubscribeLocalEvent<HandsComponent, GetHandCountEvent>(OnGetHandCount);
         SubscribeLocalEvent<HandsComponent, GetStandUpTimeEvent>(OnStandupArgs);
         SubscribeLocalEvent<HandsComponent, KnockedDownRefreshEvent>(OnKnockedDownRefresh);
+    }
+
+    private void OnGetHandCount(Entity<HandsComponent> ent, ref GetHandCountEvent args)
+    {
+        args.TotalCount = ent.Comp.Count;
+        args.EmptyCount = CountFreeHands(ent.AsNullable());
     }
 
     /// <summary>
@@ -26,24 +33,25 @@ public abstract partial class SharedHandsSystem
         if (!HasComp<KnockedDownComponent>(ent))
             return;
 
-        var hands = GetEmptyHandCount(ent.Owner);
+        var ev = new GetHandCountEvent();
+        RaiseLocalEvent(ent.Owner, ref ev);
 
-        if (hands == 0)
+        if (ev.TotalCount == 0 || ev.EmptyCount == 0)
             return;
 
-        time.DoAfterTime *= (float)ent.Comp.Count / (hands + ent.Comp.Count);
+        time.DoAfterTime *= (float)ev.TotalCount / (ev.EmptyCount + ev.TotalCount);
     }
 
     private void OnKnockedDownRefresh(Entity<HandsComponent> ent, ref KnockedDownRefreshEvent args)
     {
-        var freeHands = CountFreeHands(ent.AsNullable());
-        var totalHands = GetHandCount(ent.AsNullable());
+        var ev = new GetHandCountEvent();
+        RaiseLocalEvent(ent.Owner, ref ev);
 
         // Can't crawl around without any hands.
         // Entities without the HandsComponent will always have full crawling speed.
-        if (totalHands == 0)
+        if (ev.TotalCount == 0)
             args.SpeedModifier = 0f;
         else
-            args.SpeedModifier *= (float)freeHands / totalHands;
+            args.SpeedModifier *= (float)ev.EmptyCount / ev.TotalCount;
     }
 }

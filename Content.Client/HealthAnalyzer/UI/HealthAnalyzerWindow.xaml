@@ -34,9 +34,9 @@
         </ScrollContainer>
     </BoxContainer>
     <Button
-        Name="BeginSurgeryButton"
+        Name="HealthButton"
         Access="Public"
-        Text="Begin Surgery"
+        Text="{Loc 'health-analyzer-mode-health'}"
         Visible="False"
         Margin="5"/>
 </controls:FancyWindow>

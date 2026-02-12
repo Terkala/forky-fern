@@ -356,6 +356,18 @@ namespace Content.Shared.Hands
         public EntityUid Sender { get; }
     }
 
+    /// <summary>
+    /// Raised on an entity to query hand count and orientation.
+    /// Handlers (e.g. HandsComponent) set TotalCount and EmptyCount.
+    /// Default to 0 when no handler runs.
+    /// </summary>
+    [ByRefEvent]
+    public record struct GetHandCountEvent
+    {
+        public int TotalCount;
+        public int EmptyCount;
+    }
+
     [ByRefEvent]
     public sealed class HeldRelayedEvent<TEvent> : EntityEventArgs
     {

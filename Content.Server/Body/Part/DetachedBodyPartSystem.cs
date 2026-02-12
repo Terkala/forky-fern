@@ -50,6 +50,10 @@ public sealed class DetachedBodyPartSystem : EntitySystem
     private void OnBodyPartAppearanceHandled(Entity<BodyComponent> ent, ref BodyPartAppearanceHandledEvent args)
     {
         HandleBodyPartDetaching(ent, args.BodyPart);
+
+        // Raise event for other systems (e.g. SlimeLimbRegenerationSystem) that need to react to detachment
+        var detachedEv = new BodyPartFullyDetachedEvent(ent, args.BodyPart);
+        RaiseLocalEvent(ent, ref detachedEv);
     }
 
     /// <summary>

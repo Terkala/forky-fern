@@ -1,5 +1,6 @@
 using System.Linq;
 using Content.Shared.Body;
+using Content.Shared.Body.Events;
 using Content.Shared.Body.Part;
 using Content.Shared.Body.Systems;
 using Content.Shared.Damage;
@@ -35,7 +36,7 @@ public sealed class SlimeLimbRegenerationSystem : EntitySystem
     {
         base.Initialize();
 
-        SubscribeLocalEvent<BodyComponent, BodyPartRemovedFromBodyEvent>(OnBodyPartRemoved);
+        SubscribeLocalEvent<BodyComponent, BodyPartFullyDetachedEvent>(OnBodyPartFullyDetached);
     }
 
     public override void Update(float frameTime)
@@ -93,15 +94,13 @@ public sealed class SlimeLimbRegenerationSystem : EntitySystem
         }
     }
 
-    private void OnBodyPartRemoved(Entity<BodyComponent> body, ref BodyPartRemovedFromBodyEvent args)
+    private void OnBodyPartFullyDetached(Entity<BodyComponent> body, ref BodyPartFullyDetachedEvent args)
     {
         // Only process slime species
         if (!IsSlimeSpecies(body))
             return;
 
-        // Get the removed body part info before it's gone
-        if (!TryComp<BodyPartComponent>(args.BodyPart, out var part))
-            return;
+        var part = args.BodyPart.Comp;
 
         // Only regenerate arms and legs (not head or torso)
         if (part.PartType != BodyPartType.Arm && part.PartType != BodyPartType.Leg)
@@ -168,7 +167,7 @@ public sealed class SlimeLimbRegenerationSystem : EntitySystem
         }
 
         // Transition to healing phase
-        regenData.RegeneratedPart = limbEntity;
+        regenData.RegeneratedPart = GetNetEntity(limbEntity);
         regenData.IsHealing = true;
         regenData.HealingStartTime = _timing.CurTime;
     }
@@ -240,13 +239,11 @@ public sealed class SlimeLimbRegenerationSystem : EntitySystem
     /// <returns>True if the limb should be removed from tracking (fully healed or destroyed)</returns>
     private bool HealRegeneratedLimb(EntityUid body, BodyPartType partType, BodyPartSymmetry symmetry, SlimeLimbRegenerationData regenData, TimeSpan curTime)
     {
-        if (regenData.RegeneratedPart == null || !Exists(regenData.RegeneratedPart.Value))
+        if (regenData.RegeneratedPart == null || !TryGetEntity(regenData.RegeneratedPart.Value, out var limb))
         {
             // Limb was destroyed, cancel regeneration for this limb
             return true;
         }
-
-        var limb = regenData.RegeneratedPart.Value;
 
         if (!TryComp<DamageableComponent>(limb, out var damageable))
         {
@@ -276,7 +273,7 @@ public sealed class SlimeLimbRegenerationSystem : EntitySystem
                     finalHeal.DamageDict[type] = -value; // Negative for healing
                 }
             }
-            _damageable.ChangeDamage(limb, finalHeal, ignoreResistances: true);
+            _damageable.ChangeDamage((limb.Value, damageable), finalHeal, ignoreResistances: true);
             return true;
         }
 
@@ -301,7 +298,7 @@ public sealed class SlimeLimbRegenerationSystem : EntitySystem
                 }
             }
 
-            _damageable.ChangeDamage(limb, healSpec, ignoreResistances: true);
+            _damageable.ChangeDamage((limb.Value, damageable), healSpec, ignoreResistances: true);
         }
 
         return false; // Continue tracking this limb

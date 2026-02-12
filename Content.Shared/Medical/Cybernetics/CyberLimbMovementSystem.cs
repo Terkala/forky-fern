@@ -22,8 +22,6 @@ public abstract class CyberLimbMovementSystem : EntitySystem
 
         SubscribeLocalEvent<BodyComponent, RefreshMovementSpeedModifiersEvent>(OnRefreshMovementSpeed);
         SubscribeLocalEvent<CyberLimbStatsComponent, GetStandUpTimeEvent>(OnGetStandUpTime);
-        SubscribeLocalEvent<CyberLimbComponent, CyberLimbModuleInstalledEvent>(OnModuleInstalled);
-        SubscribeLocalEvent<CyberLimbComponent, CyberLimbModuleRemovedEvent>(OnModuleRemoved);
     }
 
     /// <summary>
@@ -108,54 +106,6 @@ public abstract class CyberLimbMovementSystem : EntitySystem
                 args.DoAfterTime = TimeSpan.FromSeconds(args.DoAfterTime.TotalSeconds * speedModule.StandUpSpeedMultiplier);
             }
         }
-    }
-
-    /// <summary>
-    /// Handles module installation and refreshes movement speed if a speed module was installed.
-    /// </summary>
-    private void OnModuleInstalled(Entity<CyberLimbComponent> ent, ref CyberLimbModuleInstalledEvent args)
-    {
-        // Check if the installed module is a speed module
-        if (!HasComp<SpeedModuleComponent>(args.Module))
-            return;
-
-        // Check if this is a leg
-        if (!TryComp<BodyPartComponent>(ent, out var bodyPart))
-            return;
-
-        if (bodyPart.PartType != BodyPartType.Leg)
-            return;
-
-        // Get the body entity to refresh movement speed
-        if (bodyPart.Body == null)
-            return;
-
-        // Refresh movement speed modifiers
-        MovementSpeedModifierSystem.RefreshMovementSpeedModifiers(bodyPart.Body.Value);
-    }
-
-    /// <summary>
-    /// Handles module removal and refreshes movement speed if a speed module was removed.
-    /// </summary>
-    private void OnModuleRemoved(Entity<CyberLimbComponent> ent, ref CyberLimbModuleRemovedEvent args)
-    {
-        // Check if the removed module is a speed module
-        if (!HasComp<SpeedModuleComponent>(args.Module))
-            return;
-
-        // Check if this is a leg
-        if (!TryComp<BodyPartComponent>(ent, out var bodyPart))
-            return;
-
-        if (bodyPart.PartType != BodyPartType.Leg)
-            return;
-
-        // Get the body entity to refresh movement speed
-        if (bodyPart.Body == null)
-            return;
-
-        // Refresh movement speed modifiers
-        MovementSpeedModifierSystem.RefreshMovementSpeedModifiers(bodyPart.Body.Value);
     }
 
     /// <summary>

@@ -3,6 +3,7 @@
 
 using System.Linq;
 using System.Numerics;
+using Content.Client.HealthAnalyzer.UI;
 using Content.Client.UserInterface.Controls;
 using Content.Shared.Atmos;
 using Content.Shared.Chemistry.Reagent;
@@ -98,7 +99,7 @@ public sealed partial class CryoPodWindow : FancyWindow
         EjectPatientButton.Disabled = !hasPatient;
 
         if (hasPatient)
-            HealthAnalyzer.Populate(msg.Health);
+            HealthAnalyzer.Populate(msg.Health, HealthAnalyzerMode.Health, allowSurgery: false);
 
         // Reagents
         float? lowestTempRequirement = null;

@@ -2,7 +2,7 @@
   id: SawBones
   name: Saw Bones
   primaryTools:
-    - Tool: {}
+    - - type: Tool
     # Saw, SawElectric, SawAdvanced all have Tool component with Sawing quality
   secondaryMethod:
     type: Bashing
@@ -13,7 +13,7 @@
   id: RepairSmashedBones
   name: Repair Smashed Bones
   primaryTools:
-    - Tool: {}
+    - - type: Tool
     # Drill has Tool component
   repairOperationFor: SawBones
   repairIntegrityCost: 16
@@ -22,7 +22,7 @@
   id: ExposeMaintenanceScrews
   name: Expose Maintenance Screws
   primaryTools:
-    - Tool: {}
+    - - type: Tool
     # Welder has Tool component with Welding quality and Heat damage when activated
   # No secondary method - requires proper tool
 
@@ -30,20 +30,20 @@
   id: OpenMaintenancePanel
   name: Open Maintenance Panel
   primaryTools:
-    - Tool: {}
+    - - type: Tool
     # Screwdriver has Tool component with Screwing quality
   secondaryMethod:
     type: ToolList
     evaluator: CheckToolList
     tools:
-      - Tool: {}
+      - - type: Tool
     integrityCost: 2
 
 - type: surgeryOperation
   id: AdjustMaintenanceBolts
   name: Adjust Maintenance Bolts
   primaryTools:
-    - Tool: {}
+    - - type: Tool
     # Wrench has Tool component with Anchoring quality
   # No secondary method - requires proper tool
 
@@ -51,7 +51,7 @@
   id: ReplaceMaintenanceWiring
   name: Replace Maintenance Wiring
   primaryTools:
-    - Tool: {}
+    - - type: Tool
     # Wire/Cable has Tool component
   # No secondary method - requires proper tool
 
@@ -59,7 +59,7 @@
   id: CloseMaintenancePanel
   name: Close Maintenance Panel
   primaryTools:
-    - Tool: {}
+    - - type: Tool
     # Screwdriver has Tool component with Screwing quality
   # No secondary method - requires proper tool
 
@@ -67,7 +67,7 @@
   id: SealMaintenancePanel
   name: Seal Maintenance Panel
   primaryTools:
-    - Tool: {}
+    - - type: Tool
     # Welder has Tool component with Welding quality and Heat damage when activated
   # No secondary method - requires proper tool
 
@@ -75,7 +75,7 @@
   id: IonDamagedCyberLimb
   name: Ion Damaged Cyber-Limb
   primaryTools:
-    - Tool: {}
+    - - type: Tool
     # This is a marker operation representing ion storm damage state
     # It is not performed directly - ion storms add IonDamagedComponent instead
     # This operation exists only to be referenced by RepairIonDamagedCyberLimb
@@ -85,7 +85,7 @@
   id: RepairIonDamagedCyberLimb
   name: Repair Ion Damaged Cyber-Limb
   primaryTools:
-    - Tool: {}
+    - - type: Tool
     # Multitool has Tool component with Pulsing quality
   # No secondary method - requires proper tool
   repairOperationFor: IonDamagedCyberLimb

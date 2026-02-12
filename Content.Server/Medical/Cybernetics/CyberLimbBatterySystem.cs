@@ -15,7 +15,6 @@ using Content.Shared.Tools.Systems;
 using Content.Shared.Wires;
 using Content.Server.Popups;
 using Robust.Shared.Containers;
-using Robust.Shared.Serialization;
 
 namespace Content.Server.Medical.Cybernetics;
 
@@ -147,12 +146,4 @@ public sealed class CyberLimbBatterySystem : EntitySystem
 
         args.Handled = true;
     }
-}
-
-/// <summary>
-/// Event raised when a battery module is successfully removed from a cyber-limb.
-/// </summary>
-[Serializable, NetSerializable]
-public sealed partial class RemoveBatteryModuleDoAfterEvent : SimpleDoAfterEvent
-{
 }

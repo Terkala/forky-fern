@@ -1,14 +1,13 @@
-using Content.Shared.Chemistry.Reagent;
 using Content.Shared.EntityEffects;
+using Content.Shared.EntityEffects.Effects.Medical;
 using Content.Shared.FixedPoint;
 using Content.Shared.Medical.Integrity;
-using Content.Shared.Prototypes;
-using Robust.Shared.Prototypes;
 
-namespace Content.Shared.EntityEffects.Effects.Medical;
+namespace Content.Server.EntityEffects.Effects.Medical;
 
 /// <summary>
 /// Metabolism effect that tracks immunosuppressant reagents and updates integrity bonuses.
+/// Server-only because it depends on SharedIntegritySystem (concrete implementation is server-side).
 /// </summary>
 /// <inheritdoc cref="EntityEffectSystem{T,TEffect}"/>
 public sealed partial class ImmunosuppressantMetabolismEffectSystem : EntityEffectSystem<IntegrityComponent, ImmunosuppressantMetabolism>
@@ -52,31 +51,4 @@ public sealed partial class ImmunosuppressantMetabolismEffectSystem : EntityEffe
 
         Dirty(entity, tracker);
     }
-}
-
-/// <summary>
-/// Effect data for immunosuppressant metabolism.
-/// </summary>
-/// <inheritdoc cref="EntityEffectBase{T}"/>
-public sealed partial class ImmunosuppressantMetabolism : EntityEffectBase<ImmunosuppressantMetabolism>
-{
-    /// <summary>
-    /// Integrity bonus per unit of reagent (e.g., 0.5 for basic, 1.0 for advanced).
-    /// </summary>
-    [DataField]
-    public float IntegrityPerUnit = 0.5f;
-
-    /// <summary>
-    /// The reagent being tracked.
-    /// </summary>
-    [DataField(required: true)]
-    public ProtoId<ReagentPrototype> ReagentId;
-
-    public override string? EntityEffectGuidebookText(IPrototypeManager prototype, IEntitySystemManager entSys)
-    {
-        return Loc.GetString(
-            "entity-effect-guidebook-immunosuppressant",
-            ("bonus", IntegrityPerUnit));
-    }
-
 }

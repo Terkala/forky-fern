@@ -7,6 +7,7 @@ using Content.Shared.Containers;
 using Content.Shared.Medical.Cybernetics.Modules;
 using Content.Shared.Medical.Integrity;
 using Content.Shared.Medical.Surgery.Components;
+using Content.Shared.Movement.Systems;
 using Content.Shared.Storage;
 using Robust.Shared.Containers;
 using Robust.Shared.Reflection;
@@ -62,7 +63,9 @@ public abstract class CyberLimbStatsSystem : EntitySystem
         if (!TryComp<BodyPartComponent>(ent, out var bodyPart) || bodyPart.Body == null)
             return;
 
-        RecalculateStats(bodyPart.Body.Value);
+        var body = bodyPart.Body.Value;
+        RecalculateStats(body);
+        RaiseLocalEvent(body, new RefreshMovementSpeedModifiersEvent());
     }
 
     /// <summary>
@@ -73,7 +76,9 @@ public abstract class CyberLimbStatsSystem : EntitySystem
         if (!TryComp<BodyPartComponent>(ent, out var bodyPart) || bodyPart.Body == null)
             return;
 
-        RecalculateStats(bodyPart.Body.Value);
+        var body = bodyPart.Body.Value;
+        RecalculateStats(body);
+        RaiseLocalEvent(body, new RefreshMovementSpeedModifiersEvent());
     }
 
     /// <summary>

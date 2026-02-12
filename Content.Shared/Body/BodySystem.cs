@@ -9,6 +9,7 @@ namespace Content.Shared.Body;
 public sealed partial class BodySystem : EntitySystem
 {
     [Dependency] private readonly SharedContainerSystem _container = default!;
+    [Dependency] private readonly SharedBodyPartSystem _bodyPartSystem = default!;
 
     private EntityQuery<BodyComponent> _bodyQuery;
     private EntityQuery<OrganComponent> _organQuery;
@@ -16,6 +17,8 @@ public sealed partial class BodySystem : EntitySystem
     public override void Initialize()
     {
         base.Initialize();
+
+        SubscribeLocalEvent<BodyComponent, GetBodyPartsEvent>(OnGetBodyParts);
 
         SubscribeLocalEvent<BodyComponent, ComponentInit>(OnBodyInit);
         SubscribeLocalEvent<BodyComponent, ComponentShutdown>(OnBodyShutdown);
@@ -156,6 +159,14 @@ public sealed partial class BodySystem : EntitySystem
     private void OnCanDrag(Entity<BodyComponent> ent, ref CanDragEvent args)
     {
         args.Handled = true;
+    }
+
+    private void OnGetBodyParts(Entity<BodyComponent> ent, ref GetBodyPartsEvent args)
+    {
+        foreach (var part in _bodyPartSystem.GetBodyChildren(ent, ent.Comp))
+        {
+            args.Parts.Add(part);
+        }
     }
 
     /// <summary>

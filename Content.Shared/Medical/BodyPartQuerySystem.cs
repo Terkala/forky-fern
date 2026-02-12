@@ -1,5 +1,4 @@
-using Content.Shared.Body;
-using Content.Shared.Body.Components;
+using Content.Shared.Body.Events;
 using Content.Shared.Body.Part;
 
 namespace Content.Shared.Medical;
@@ -10,22 +9,10 @@ namespace Content.Shared.Medical;
 /// </summary>
 public sealed class BodyPartQuerySystem : EntitySystem
 {
-    private SharedBodyPartSystem? _bodyPartSystem;
-
-    private SharedBodyPartSystem BodyPartSystem
-    {
-        get
-        {
-            // Lazy initialization - get the concrete implementation (BodyPartSystem on server, or shared implementation)
-            // EntitySystem.Get works because BodyPartSystem inherits from SharedBodyPartSystem
-            return _bodyPartSystem ??= EntitySystem.Get<SharedBodyPartSystem>();
-        }
-    }
-
     /// <summary>
     /// Gets all body parts for an entity, optionally filtered by part type and symmetry.
     /// </summary>
-    /// <param name="entity">The entity with a body component</param>
+    /// <param name="entity">The entity to query</param>
     /// <param name="partType">Optional filter by body part type</param>
     /// <param name="symmetry">Optional filter by body part symmetry</param>
     /// <returns>Enumerable of (EntityUid, BodyPartComponent) tuples for matching body parts</returns>
@@ -34,25 +21,22 @@ public sealed class BodyPartQuerySystem : EntitySystem
         BodyPartType? partType = null,
         BodyPartSymmetry? symmetry = null)
     {
-        if (!TryComp<BodyComponent>(entity, out var body))
-            yield break;
+        var ev = new GetBodyPartsEvent();
+        RaiseLocalEvent(entity, ref ev);
 
-        if (partType.HasValue)
+        var seen = new HashSet<EntityUid>();
+        foreach (var part in ev.Parts)
         {
-            foreach (var part in BodyPartSystem.GetBodyChildrenOfType(entity, partType.Value, body, symmetry))
-            {
-                yield return part;
-            }
-        }
-        else
-        {
-            foreach (var part in BodyPartSystem.GetBodyChildren(entity, body))
-            {
-                if (symmetry.HasValue && part.Component.Symmetry != symmetry.Value)
-                    continue;
+            if (!seen.Add(part.Id))
+                continue;
 
-                yield return part;
-            }
+            if (partType.HasValue && part.Component.PartType != partType.Value)
+                continue;
+
+            if (symmetry.HasValue && part.Component.Symmetry != symmetry.Value)
+                continue;
+
+            yield return part;
         }
     }
 
@@ -61,17 +45,14 @@ public sealed class BodyPartQuerySystem : EntitySystem
     /// Returns null if the part doesn't exist (e.g., missing limb).
     /// Note: LeftHand/RightHand map to LeftArm/RightArm, LeftFoot/RightFoot map to LeftLeg/RightLeg.
     /// </summary>
-    /// <param name="entity">The entity with a body component</param>
+    /// <param name="entity">The entity to query</param>
     /// <param name="targetPart">The target body part to find</param>
     /// <returns>The body part entity and component, or null if not found</returns>
     public (EntityUid Id, BodyPartComponent Component)? GetBodyPart(EntityUid entity, TargetBodyPart targetPart)
     {
-        if (!TryComp<BodyComponent>(entity, out var body))
-            return null;
-
         var (partType, symmetry) = ConvertTargetBodyPart(targetPart);
 
-        foreach (var part in BodyPartSystem.GetBodyChildrenOfType(entity, partType, body, symmetry))
+        foreach (var part in GetBodyParts(entity, partType, symmetry))
         {
             return (part.Id, part.Component);
         }

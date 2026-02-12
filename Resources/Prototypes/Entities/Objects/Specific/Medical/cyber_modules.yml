@@ -5,8 +5,6 @@
   components:
   - type: Item
     size: Tiny
-  - type: Sprite
-    sprite: Objects/Specific/Medical/cyber_modules.rsi
 
 - type: entity
   id: CyberModuleBatterySmall
@@ -16,7 +14,8 @@
   - type: BatteryModule
     capacityContribution: 5000
   - type: Sprite
-    state: battery_small
+    sprite: Objects/Power/power_cells.rsi
+    state: small
 
 - type: entity
   id: CyberModuleBatteryMedium
@@ -26,7 +25,8 @@
   - type: BatteryModule
     capacityContribution: 10000
   - type: Sprite
-    state: battery_medium
+    sprite: Objects/Power/power_cells.rsi
+    state: medium
 
 - type: entity
   id: CyberModuleMatterBin
@@ -36,6 +36,7 @@
   - type: MatterBinModule
     serviceTimeContribution: 600
   - type: Sprite
+    sprite: Objects/Misc/stock_parts.rsi
     state: matter_bin
 
 - type: entity
@@ -46,7 +47,8 @@
   - type: ManipulatorModule
     efficiencyBonus: 0.10
   - type: Sprite
-    state: manipulator
+    sprite: Objects/Misc/stock_parts.rsi
+    state: micro_mani
 
 - type: entity
   id: CyberModuleCapacitor
@@ -56,4 +58,5 @@
   - type: CapacitorModule
     serviceTimeMultiplier: 0.10
   - type: Sprite
+    sprite: Objects/Misc/stock_parts.rsi
     state: capacitor

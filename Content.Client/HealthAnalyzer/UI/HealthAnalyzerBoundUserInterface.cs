@@ -14,6 +14,7 @@
 // SPDX-FileCopyrightText: 2024 Nemanja <98561806+EmoGarbage404@users.noreply.github.com>
 // SPDX-License-Identifier: MIT
 
+using Content.Shared.Medical.Surgery;
 using Content.Shared.MedicalScanner;
 using JetBrains.Annotations;
 using Robust.Client.UserInterface;
@@ -37,15 +38,16 @@ namespace Content.Client.HealthAnalyzer.UI
             _window = this.CreateWindow<HealthAnalyzerWindow>();
 
             _window.Title = EntMan.GetComponent<MetaDataComponent>(Owner).EntityName;
-            
-            _window.OnBeginSurgeryClicked += (targetEntity) =>
-            {
-                SendMessage(new BeginSurgeryMessage(targetEntity));
-            };
-            
+
             _window.OnAttemptSurgery += (step, targetEntity, layer, selectedBodyPart, isImprovised) =>
             {
                 SendMessage(new AttemptSurgeryMessage(step, targetEntity, layer, selectedBodyPart, isImprovised));
+            };
+
+            _window.HealthAnalyzerControl.OnBodyPartSelected += (targetBodyPart) =>
+            {
+                if (targetBodyPart.HasValue)
+                    SendMessage(new HealthAnalyzerBodyPartSelectedMessage(targetBodyPart.Value));
             };
         }
 
@@ -59,11 +61,6 @@ namespace Content.Client.HealthAnalyzer.UI
                 _window.Populate(cast);
                 return;
             }
-        }
-        
-        public void SendBeginSurgeryMessage(NetEntity targetEntity)
-        {
-            SendMessage(new BeginSurgeryMessage(targetEntity));
         }
     }
 }
