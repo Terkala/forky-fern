@@ -17,22 +17,8 @@
         - id: OrganArachnidHead
         - id: OrganArachnidArmLeft
         - id: OrganArachnidArmRight
-        - id: OrganArachnidHandRight
-        - id: OrganArachnidHandLeft
         - id: OrganArachnidLegLeft
         - id: OrganArachnidLegRight
-        - id: OrganArachnidFootLeft
-        - id: OrganArachnidFootRight
-        - id: OrganArachnidBrain
-        - id: OrganArachnidEyes
-        - id: OrganArachnidTongue
-        - id: OrganArachnidAppendix
-        - id: OrganArachnidEars
-        - id: OrganArachnidLungs
-        - id: OrganArachnidHeart
-        - id: OrganArachnidStomach
-        - id: OrganArachnidLiver
-        - id: OrganArachnidKidneys
   - type: HumanoidAppearance
     species: Arachnid
 
@@ -140,18 +126,58 @@
 - type: entity
   parent: [ OrganBaseTorso, OrganArachnidExternal ]
   id: OrganArachnidTorso
+  components:
+  - type: BodyPart
+    containerId: internal_organs
+  - type: EntityTableContainerFill
+    containers:
+      internal_organs: !type:AllSelector
+        children:
+        - id: OrganArachnidLungs
+        - id: OrganArachnidHeart
+        - id: OrganArachnidStomach
+        - id: OrganArachnidLiver
+        - id: OrganArachnidKidneys
+        - id: OrganArachnidAppendix
 
 - type: entity
   parent: [ OrganBaseHead, OrganArachnidExternal ]
   id: OrganArachnidHead
+  components:
+  - type: BodyPart
+    containerId: head_organs
+  - type: EntityTableContainerFill
+    containers:
+      head_organs: !type:AllSelector
+        children:
+        - id: OrganArachnidBrain
+        - id: OrganArachnidEyes
+        - id: OrganArachnidTongue
+        - id: OrganArachnidEars
 
 - type: entity
   parent: [ OrganBaseArmLeft, OrganArachnidExternal ]
   id: OrganArachnidArmLeft
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganArachnidHandLeft
 
 - type: entity
   parent: [ OrganBaseArmRight, OrganArachnidExternal ]
   id: OrganArachnidArmRight
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganArachnidHandRight
 
 - type: entity
   parent: [ OrganBaseHandLeft, OrganArachnidExternal ]
@@ -164,10 +190,26 @@
 - type: entity
   parent: [ OrganBaseLegLeft, OrganArachnidExternal ]
   id: OrganArachnidLegLeft
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganArachnidFootLeft
 
 - type: entity
   parent: [ OrganBaseLegRight, OrganArachnidExternal ]
   id: OrganArachnidLegRight
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganArachnidFootRight
 
 - type: entity
   parent: [ OrganBaseFootLeft, OrganArachnidExternal ]

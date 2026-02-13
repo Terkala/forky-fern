@@ -21,22 +21,8 @@
         - id: OrganGingerbreadHead
         - id: OrganGingerbreadArmLeft
         - id: OrganGingerbreadArmRight
-        - id: OrganGingerbreadHandRight
-        - id: OrganGingerbreadHandLeft
         - id: OrganGingerbreadLegLeft
         - id: OrganGingerbreadLegRight
-        - id: OrganGingerbreadFootLeft
-        - id: OrganGingerbreadFootRight
-        - id: OrganHumanBrain
-        - id: OrganHumanEyes
-        - id: OrganHumanTongue
-        - id: OrganHumanAppendix
-        - id: OrganHumanEars
-        - id: OrganHumanLungs
-        - id: OrganHumanHeart
-        - id: OrganHumanStomach
-        - id: OrganHumanLiver
-        - id: OrganHumanKidneys
   - type: HumanoidAppearance
     species: Gingerbread
 
@@ -97,19 +83,19 @@
     sprite: Mobs/Species/Gingerbread/parts.rsi
 
 - type: entity
-  parent: [ OrganBaseTorso, OrganGingerbreadExternal ]
+  parent: OrganHumanTorso
   id: OrganGingerbreadTorso
 
 - type: entity
-  parent: [ OrganBaseHead, OrganGingerbreadExternal ]
+  parent: OrganHumanHead
   id: OrganGingerbreadHead
 
 - type: entity
-  parent: [ OrganBaseArmLeft, OrganGingerbreadExternal ]
+  parent: OrganHumanArmLeft
   id: OrganGingerbreadArmLeft
 
 - type: entity
-  parent: [ OrganBaseArmRight, OrganGingerbreadExternal ]
+  parent: OrganHumanArmRight
   id: OrganGingerbreadArmRight
 
 - type: entity
@@ -121,11 +107,11 @@
   id: OrganGingerbreadHandRight
 
 - type: entity
-  parent: [ OrganBaseLegLeft, OrganGingerbreadExternal ]
+  parent: OrganHumanLegLeft
   id: OrganGingerbreadLegLeft
 
 - type: entity
-  parent: [ OrganBaseLegRight, OrganGingerbreadExternal ]
+  parent: OrganHumanLegRight
   id: OrganGingerbreadLegRight
 
 - type: entity

@@ -21,14 +21,8 @@
         - id: OrganSlimePersonHead
         - id: OrganSlimePersonArmLeft
         - id: OrganSlimePersonArmRight
-        - id: OrganSlimePersonHandRight
-        - id: OrganSlimePersonHandLeft
         - id: OrganSlimePersonLegLeft
         - id: OrganSlimePersonLegRight
-        - id: OrganSlimePersonFootLeft
-        - id: OrganSlimePersonFootRight
-        - id: OrganSlimePersonCore
-        - id: OrganSlimePersonLungs
   - type: HumanoidAppearance
     species: SlimePerson
 
@@ -166,18 +160,46 @@
 - type: entity
   parent: [ OrganBaseTorso, OrganSlimePersonExternal ]
   id: OrganSlimePersonTorso
+  components:
+  - type: BodyPart
+    containerId: internal_organs
+  - type: EntityTableContainerFill
+    containers:
+      internal_organs: !type:AllSelector
+        children:
+        - id: OrganSlimePersonCore
+        - id: OrganSlimePersonLungs
 
 - type: entity
   parent: [ OrganBaseHead, OrganSlimePersonExternal ]
   id: OrganSlimePersonHead
+  components:
+  - type: BodyPart
+    containerId: head_organs
 
 - type: entity
   parent: [ OrganBaseArmLeft, OrganSlimePersonExternal ]
   id: OrganSlimePersonArmLeft
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganSlimePersonHandLeft
 
 - type: entity
   parent: [ OrganBaseArmRight, OrganSlimePersonExternal ]
   id: OrganSlimePersonArmRight
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganSlimePersonHandRight
 
 - type: entity
   parent: [ OrganBaseHandLeft, OrganSlimePersonExternal ]
@@ -190,10 +212,26 @@
 - type: entity
   parent: [ OrganBaseLegLeft, OrganSlimePersonExternal ]
   id: OrganSlimePersonLegLeft
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganSlimePersonFootLeft
 
 - type: entity
   parent: [ OrganBaseLegRight, OrganSlimePersonExternal ]
   id: OrganSlimePersonLegRight
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganSlimePersonFootRight
 
 - type: entity
   parent: [ OrganBaseFootLeft, OrganSlimePersonExternal ]

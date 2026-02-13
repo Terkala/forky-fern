@@ -22,16 +22,8 @@
         - id: OrganDionaHead
         - id: OrganDionaArmLeft
         - id: OrganDionaArmRight
-        - id: OrganDionaHandRight
-        - id: OrganDionaHandLeft
         - id: OrganDionaLegLeft
         - id: OrganDionaLegRight
-        - id: OrganDionaFootLeft
-        - id: OrganDionaFootRight
-        - id: OrganDionaBrainNymphing
-        - id: OrganDionaEyes
-        - id: OrganDionaLungsNymphing
-        - id: OrganDionaStomachNymphing
   - type: HumanoidAppearance
     species: Diona
 
@@ -174,18 +166,52 @@
 - type: entity
   parent: [ OrganBaseTorso, OrganDionaExternal ]
   id: OrganDionaTorso
+  components:
+  - type: BodyPart
+    containerId: internal_organs
+  - type: EntityTableContainerFill
+    containers:
+      internal_organs: !type:AllSelector
+        children:
+        - id: OrganDionaLungsNymphing
+        - id: OrganDionaStomachNymphing
 
 - type: entity
   parent: [ OrganBaseHead, OrganDionaExternal ]
   id: OrganDionaHead
+  components:
+  - type: BodyPart
+    containerId: head_organs
+  - type: EntityTableContainerFill
+    containers:
+      head_organs: !type:AllSelector
+        children:
+        - id: OrganDionaBrainNymphing
+        - id: OrganDionaEyes
 
 - type: entity
   parent: [ OrganBaseArmLeft, OrganDionaExternal ]
   id: OrganDionaArmLeft
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganDionaHandLeft
 
 - type: entity
   parent: [ OrganBaseArmRight, OrganDionaExternal ]
   id: OrganDionaArmRight
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganDionaHandRight
 
 - type: entity
   parent: [ OrganBaseHandLeft, OrganDionaExternal ]
@@ -198,10 +224,26 @@
 - type: entity
   parent: [ OrganBaseLegLeft, OrganDionaExternal ]
   id: OrganDionaLegLeft
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganDionaFootLeft
 
 - type: entity
   parent: [ OrganBaseLegRight, OrganDionaExternal ]
   id: OrganDionaLegRight
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganDionaFootRight
 
 - type: entity
   parent: [ OrganBaseFootLeft, OrganDionaExternal ]

@@ -68,22 +68,8 @@
         - id: OrganMothHead
         - id: OrganMothArmLeft
         - id: OrganMothArmRight
-        - id: OrganMothHandRight
-        - id: OrganMothHandLeft
         - id: OrganMothLegLeft
         - id: OrganMothLegRight
-        - id: OrganMothFootLeft
-        - id: OrganMothFootRight
-        - id: OrganMothBrain
-        - id: OrganMothEyes
-        - id: OrganMothTongue
-        - id: OrganMothAppendix
-        - id: OrganMothEars
-        - id: OrganMothLungs
-        - id: OrganMothHeart
-        - id: OrganMothStomach
-        - id: OrganMothLiver
-        - id: OrganMothKidneys
   - type: HumanoidAppearance
     species: Moth
 
@@ -179,18 +165,58 @@
 - type: entity
   parent: [ OrganBaseTorso, OrganMothExternal ]
   id: OrganMothTorso
+  components:
+  - type: BodyPart
+    containerId: internal_organs
+  - type: EntityTableContainerFill
+    containers:
+      internal_organs: !type:AllSelector
+        children:
+        - id: OrganMothLungs
+        - id: OrganMothHeart
+        - id: OrganMothStomach
+        - id: OrganMothLiver
+        - id: OrganMothKidneys
+        - id: OrganMothAppendix
 
 - type: entity
   parent: [ OrganBaseHead, OrganMothExternal ]
   id: OrganMothHead
+  components:
+  - type: BodyPart
+    containerId: head_organs
+  - type: EntityTableContainerFill
+    containers:
+      head_organs: !type:AllSelector
+        children:
+        - id: OrganMothBrain
+        - id: OrganMothEyes
+        - id: OrganMothTongue
+        - id: OrganMothEars
 
 - type: entity
   parent: [ OrganBaseArmLeft, OrganMothExternal ]
   id: OrganMothArmLeft
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganMothHandLeft
 
 - type: entity
   parent: [ OrganBaseArmRight, OrganMothExternal ]
   id: OrganMothArmRight
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganMothHandRight
 
 - type: entity
   parent: [ OrganBaseHandLeft, OrganMothExternal ]
@@ -203,10 +229,26 @@
 - type: entity
   parent: [ OrganBaseLegLeft, OrganMothExternal ]
   id: OrganMothLegLeft
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganMothFootLeft
 
 - type: entity
   parent: [ OrganBaseLegRight, OrganMothExternal ]
   id: OrganMothLegRight
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganMothFootRight
 
 - type: entity
   parent: [ OrganBaseFootLeft, OrganMothExternal ]

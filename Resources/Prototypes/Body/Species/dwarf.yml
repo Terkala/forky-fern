@@ -17,26 +17,12 @@
     containers:
       body_organs: !type:AllSelector
         children:
-        - id: OrganHumanTorso
+        - id: OrganDwarfTorso
         - id: OrganHumanHead
         - id: OrganHumanArmLeft
         - id: OrganHumanArmRight
-        - id: OrganHumanHandRight
-        - id: OrganHumanHandLeft
         - id: OrganHumanLegLeft
         - id: OrganHumanLegRight
-        - id: OrganHumanFootLeft
-        - id: OrganHumanFootRight
-        - id: OrganHumanBrain
-        - id: OrganHumanEyes
-        - id: OrganHumanTongue
-        - id: OrganHumanAppendix
-        - id: OrganHumanEars
-        - id: OrganHumanLungs
-        - id: OrganDwarfHeart
-        - id: OrganDwarfStomach
-        - id: OrganDwarfLiver
-        - id: OrganHumanKidneys
   - type: HumanoidAppearance
     species: Dwarf
   - type: ScaleVisuals
@@ -84,6 +70,21 @@
   components:
   - type: Metabolizer
     metabolizerTypes: [ Dwarf ]
+
+- type: entity
+  parent: OrganHumanTorso
+  id: OrganDwarfTorso
+  components:
+  - type: EntityTableContainerFill
+    containers:
+      internal_organs: !type:AllSelector
+        children:
+        - id: OrganHumanLungs
+        - id: OrganDwarfHeart
+        - id: OrganDwarfStomach
+        - id: OrganDwarfLiver
+        - id: OrganHumanKidneys
+        - id: OrganHumanAppendix
 
 - type: entity
   parent: [ OrganDwarfMetabolizer, OrganHumanStomach ]

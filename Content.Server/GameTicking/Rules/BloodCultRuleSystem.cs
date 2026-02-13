@@ -189,6 +189,7 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 	[Dependency] private readonly ActionContainerSystem _actionContainer = default!;
 	[Dependency] private readonly SharedPointLightSystem _pointLight = default!;
 	[Dependency] private readonly SharedUserInterfaceSystem _uiSystem = default!;
+	[Dependency] private readonly BodySystem _body = default!;
 
 	public readonly string CultComponentId = "BloodCultist";
 
@@ -404,7 +405,7 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 				if (!hasHead && TryComp<BodyComponent>(traitor, out var body))
 				{
 					// Fallback: check if body has brain organ (non-humanoids may have heads with brains)
-					hasHead = body.Organs?.ContainedEntities.Any(o => HasComp<BrainComponent>(o)) ?? false;
+					hasHead = _body.GetAllOrgans(traitor).Any(o => HasComp<BrainComponent>(o));
 				}
 				_appearance.SetData(traitor, CultEyesVisuals.CultEyes, hasHead, appearance);
 			}
@@ -1040,7 +1041,7 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 			if (!hasHead && TryComp<BodyComponent>(uid, out var body))
 			{
 				// Fallback: check if body has brain organ (non-humanoids may have heads with brains)
-				hasHead = body.Organs?.ContainedEntities.Any(o => HasComp<BrainComponent>(o)) ?? false;
+				hasHead = _body.GetAllOrgans(uid).Any(o => HasComp<BrainComponent>(o));
 			}
 			_appearance.SetData(uid, CultEyesVisuals.CultEyes, hasHead, appearance);
 		}
@@ -1069,7 +1070,7 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 		if (!hasHead && TryComp<BodyComponent>(bodyUid, out var body))
 		{
 			// Fallback: check if body has brain organ (non-humanoids may have heads with brains)
-			hasHead = body.Organs?.ContainedEntities.Any(o => HasComp<BrainComponent>(o)) ?? false;
+			hasHead = _body.GetAllOrgans(bodyUid).Any(o => HasComp<BrainComponent>(o));
 		}
 
 		// Update eyes visual based on whether head exists
@@ -1278,7 +1279,7 @@ public sealed class BloodCultRuleSystem : GameRuleSystem<BloodCultRuleComponent>
 				if (!hasHead && TryComp<BodyComponent>(cultist, out var body))
 				{
 					// Fallback: check if body has brain organ (non-humanoids may have heads with brains)
-					hasHead = body.Organs?.ContainedEntities.Any(o => HasComp<BrainComponent>(o)) ?? false;
+					hasHead = _body.GetAllOrgans(cultist).Any(o => HasComp<BrainComponent>(o));
 				}
 				_appearance.SetData(cultist, CultEyesVisuals.CultEyes, hasHead, appearance);
 			}

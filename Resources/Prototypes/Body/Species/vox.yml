@@ -99,22 +99,8 @@
         - id: OrganVoxHead
         - id: OrganVoxArmLeft
         - id: OrganVoxArmRight
-        - id: OrganVoxHandRight
-        - id: OrganVoxHandLeft
         - id: OrganVoxLegLeft
         - id: OrganVoxLegRight
-        - id: OrganVoxFootLeft
-        - id: OrganVoxFootRight
-        - id: OrganVoxBrain
-        - id: OrganVoxEyes
-        - id: OrganVoxTongue
-        - id: OrganVoxAppendix
-        - id: OrganVoxEars
-        - id: OrganVoxLungs
-        - id: OrganVoxHeart
-        - id: OrganVoxStomach
-        - id: OrganVoxLiver
-        - id: OrganVoxKidneys
   - type: HumanoidAppearance
     species: Vox
     undergarmentTop: UndergarmentTopTanktopVox
@@ -258,6 +244,18 @@
   components:
   - type: Sprite
     state: torso
+  - type: BodyPart
+    containerId: internal_organs
+  - type: EntityTableContainerFill
+    containers:
+      internal_organs: !type:AllSelector
+        children:
+        - id: OrganVoxLungs
+        - id: OrganVoxHeart
+        - id: OrganVoxStomach
+        - id: OrganVoxLiver
+        - id: OrganVoxKidneys
+        - id: OrganVoxAppendix
 
 - type: entity
   parent: [ OrganBaseHead, OrganVoxExternal ]
@@ -265,14 +263,40 @@
   components:
   - type: Sprite
     state: head
+  - type: BodyPart
+    containerId: head_organs
+  - type: EntityTableContainerFill
+    containers:
+      head_organs: !type:AllSelector
+        children:
+        - id: OrganVoxBrain
+        - id: OrganVoxEyes
+        - id: OrganVoxTongue
+        - id: OrganVoxEars
 
 - type: entity
   parent: [ OrganBaseArmLeft, OrganVoxExternal ]
   id: OrganVoxArmLeft
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganVoxHandLeft
 
 - type: entity
   parent: [ OrganBaseArmRight, OrganVoxExternal ]
   id: OrganVoxArmRight
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganVoxHandRight
 
 - type: entity
   parent: [ OrganBaseHandLeft, OrganVoxExternal ]
@@ -285,10 +309,26 @@
 - type: entity
   parent: [ OrganBaseLegLeft, OrganVoxExternal ]
   id: OrganVoxLegLeft
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganVoxFootLeft
 
 - type: entity
   parent: [ OrganBaseLegRight, OrganVoxExternal ]
   id: OrganVoxLegRight
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganVoxFootRight
 
 - type: entity
   parent: [ OrganBaseFootLeft, OrganVoxExternal ]

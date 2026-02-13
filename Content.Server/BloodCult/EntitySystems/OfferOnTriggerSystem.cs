@@ -69,6 +69,7 @@ namespace Content.Server.BloodCult.EntitySystems
 		[Dependency] private readonly SharedAudioSystem _audio = default!;
 		[Dependency] private readonly GameTicker _gameTicker = default!;
 		[Dependency] private readonly SharedContainerSystem _container = default!;
+		[Dependency] private readonly BodySystem _body = default!;
 		[Dependency] private readonly BloodstreamSystem _bloodstream = default!;
 		[Dependency] private readonly SharedStunSystem _stun = default!;
 	[Dependency] private readonly BloodCultRuleSystem _bloodCultRule = default!;
@@ -433,9 +434,9 @@ namespace Content.Server.BloodCult.EntitySystems
 		
 		// Entities with BodyComponent containing brain organs (e.g., animals, Diona Brain Nymphs)
 		// Exclude humanoids - they should be converted instead
-		if (!_container.IsEntityInContainer(uid) && !HasComp<HumanoidAppearanceComponent>(uid) && TryComp<BodyComponent>(uid, out var body))
+		if (!_container.IsEntityInContainer(uid) && !HasComp<HumanoidAppearanceComponent>(uid) && HasComp<BodyComponent>(uid))
 		{
-			if (body.Organs?.ContainedEntities.Any(o => HasComp<BrainComponent>(o)) == true)
+			if (_body.GetAllOrgans(uid).Any(o => HasComp<BrainComponent>(o)))
 				return true;
 		}
 		
@@ -459,9 +460,9 @@ namespace Content.Server.BloodCult.EntitySystems
 		
 		// Entities with BodyComponent containing brain organs (e.g., Diona Brain Nymphs) should be soulstone-eligible
 		// BUT exclude humanoids - they should be converted instead
-		if (!_container.IsEntityInContainer(uid) && !HasComp<HumanoidAppearanceComponent>(uid) && TryComp<BodyComponent>(uid, out var body))
+		if (!_container.IsEntityInContainer(uid) && !HasComp<HumanoidAppearanceComponent>(uid) && HasComp<BodyComponent>(uid))
 		{
-			if (body.Organs?.ContainedEntities.Any(o => HasComp<BrainComponent>(o)) == true)
+			if (_body.GetAllOrgans(uid).Any(o => HasComp<BrainComponent>(o)))
 				return true;
 		}
 		

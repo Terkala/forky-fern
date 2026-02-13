@@ -14,22 +14,8 @@
         - id: OrganVulpkaninHead
         - id: OrganVulpkaninArmLeft
         - id: OrganVulpkaninArmRight
-        - id: OrganVulpkaninHandRight
-        - id: OrganVulpkaninHandLeft
         - id: OrganVulpkaninLegLeft
         - id: OrganVulpkaninLegRight
-        - id: OrganVulpkaninFootLeft
-        - id: OrganVulpkaninFootRight
-        - id: OrganVulpkaninBrain
-        - id: OrganVulpkaninEyes
-        - id: OrganVulpkaninTongue
-        - id: OrganVulpkaninAppendix
-        - id: OrganVulpkaninEars
-        - id: OrganVulpkaninLungs
-        - id: OrganVulpkaninHeart
-        - id: OrganVulpkaninStomach
-        - id: OrganVulpkaninLiver
-        - id: OrganVulpkaninKidneys
   - type: HumanoidAppearance
     species: Vulpkanin
     undergarmentTop: UndergarmentTopTanktopVulpkanin
@@ -183,18 +169,58 @@
 - type: entity
   parent: [ OrganBaseTorso, OrganVulpkaninExternal ]
   id: OrganVulpkaninTorso
+  components:
+  - type: BodyPart
+    containerId: internal_organs
+  - type: EntityTableContainerFill
+    containers:
+      internal_organs: !type:AllSelector
+        children:
+        - id: OrganVulpkaninLungs
+        - id: OrganVulpkaninHeart
+        - id: OrganVulpkaninStomach
+        - id: OrganVulpkaninLiver
+        - id: OrganVulpkaninKidneys
+        - id: OrganVulpkaninAppendix
 
 - type: entity
   parent: [ OrganBaseHead, OrganVulpkaninExternal ]
   id: OrganVulpkaninHead
+  components:
+  - type: BodyPart
+    containerId: head_organs
+  - type: EntityTableContainerFill
+    containers:
+      head_organs: !type:AllSelector
+        children:
+        - id: OrganVulpkaninBrain
+        - id: OrganVulpkaninEyes
+        - id: OrganVulpkaninTongue
+        - id: OrganVulpkaninEars
 
 - type: entity
   parent: [ OrganBaseArmLeft, OrganVulpkaninExternal ]
   id: OrganVulpkaninArmLeft
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganVulpkaninHandLeft
 
 - type: entity
   parent: [ OrganBaseArmRight, OrganVulpkaninExternal ]
   id: OrganVulpkaninArmRight
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganVulpkaninHandRight
 
 - type: entity
   parent: [ OrganBaseHandLeft, OrganVulpkaninExternal ]
@@ -207,10 +233,26 @@
 - type: entity
   parent: [ OrganBaseLegLeft, OrganVulpkaninExternal ]
   id: OrganVulpkaninLegLeft
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganVulpkaninFootLeft
 
 - type: entity
   parent: [ OrganBaseLegRight, OrganVulpkaninExternal ]
   id: OrganVulpkaninLegRight
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganVulpkaninFootRight
 
 - type: entity
   parent: [ OrganBaseFootLeft, OrganVulpkaninExternal ]

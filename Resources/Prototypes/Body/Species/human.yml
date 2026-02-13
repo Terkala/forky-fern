@@ -21,22 +21,8 @@
         - id: OrganHumanHead
         - id: OrganHumanArmLeft
         - id: OrganHumanArmRight
-        - id: OrganHumanHandRight
-        - id: OrganHumanHandLeft
         - id: OrganHumanLegLeft
         - id: OrganHumanLegRight
-        - id: OrganHumanFootLeft
-        - id: OrganHumanFootRight
-        - id: OrganHumanBrain
-        - id: OrganHumanEyes
-        - id: OrganHumanTongue
-        - id: OrganHumanAppendix
-        - id: OrganHumanEars
-        - id: OrganHumanLungs
-        - id: OrganHumanHeart
-        - id: OrganHumanStomach
-        - id: OrganHumanLiver
-        - id: OrganHumanKidneys
   - type: HumanoidAppearance
     species: Human
     hideLayersOnEquip:
@@ -87,18 +73,58 @@
 - type: entity
   parent: [ OrganBaseTorso, OrganHumanExternal ]
   id: OrganHumanTorso
+  components:
+  - type: BodyPart
+    containerId: internal_organs
+  - type: EntityTableContainerFill
+    containers:
+      internal_organs: !type:AllSelector
+        children:
+        - id: OrganHumanLungs
+        - id: OrganHumanHeart
+        - id: OrganHumanStomach
+        - id: OrganHumanLiver
+        - id: OrganHumanKidneys
+        - id: OrganHumanAppendix
 
 - type: entity
   parent: [ OrganBaseHead, OrganHumanExternal ]
   id: OrganHumanHead
+  components:
+  - type: BodyPart
+    containerId: head_organs
+  - type: EntityTableContainerFill
+    containers:
+      head_organs: !type:AllSelector
+        children:
+        - id: OrganHumanBrain
+        - id: OrganHumanEyes
+        - id: OrganHumanTongue
+        - id: OrganHumanEars
 
 - type: entity
   parent: [ OrganBaseArmLeft, OrganHumanExternal ]
   id: OrganHumanArmLeft
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganHumanHandLeft
 
 - type: entity
   parent: [ OrganBaseArmRight, OrganHumanExternal ]
   id: OrganHumanArmRight
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganHumanHandRight
 
 - type: entity
   parent: [ OrganBaseHandLeft, OrganHumanExternal ]
@@ -111,10 +137,26 @@
 - type: entity
   parent: [ OrganBaseLegLeft, OrganHumanExternal ]
   id: OrganHumanLegLeft
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganHumanFootLeft
 
 - type: entity
   parent: [ OrganBaseLegRight, OrganHumanExternal ]
   id: OrganHumanLegRight
+  components:
+  - type: BodyPart
+    containerId: limb_organs
+  - type: EntityTableContainerFill
+    containers:
+      limb_organs: !type:AllSelector
+        children:
+        - id: OrganHumanFootRight
 
 - type: entity
   parent: [ OrganBaseFootLeft, OrganHumanExternal ]
