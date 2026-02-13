@@ -7,7 +7,7 @@ using Robust.Shared.Prototypes;
 namespace Content.Shared.Body;
 
 [RegisterComponent, NetworkedComponent, AutoGenerateComponentState]
-[Access(typeof(BodySystem))]
+[Access(typeof(BodySystem), typeof(BodyPartOrganSystem))]
 public sealed partial class OrganComponent : Component
 {
     /// <summary>

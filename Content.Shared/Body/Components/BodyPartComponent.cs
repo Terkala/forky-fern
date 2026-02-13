@@ -9,7 +9,7 @@ namespace Content.Shared.Body.Components;
 /// Body parts are inserted into the body's body_organs container.
 /// </summary>
 [RegisterComponent, NetworkedComponent]
-[Access(typeof(BodySystem))]
+[Access(typeof(BodySystem), typeof(BodyPartOrganSystem))]
 public sealed partial class BodyPartComponent : Component
 {
     /// <summary>
