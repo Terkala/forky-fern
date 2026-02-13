@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Content.Shared.Body.Components;
+using Content.Shared.Body.Events;
 using Content.Shared.DragDrop;
 using Robust.Shared.Containers;
 
@@ -31,6 +32,9 @@ public sealed partial class BodySystem : EntitySystem
 
         SubscribeLocalEvent<BodyPartComponent, EntInsertedIntoContainerMessage>(OnBodyPartEntInserted);
         SubscribeLocalEvent<BodyPartComponent, EntRemovedFromContainerMessage>(OnBodyPartEntRemoved);
+
+        SubscribeLocalEvent<BodyComponent, BodyPartQueryEvent>(OnBodyPartQuery);
+        SubscribeLocalEvent<BodyComponent, BodyPartQueryByTypeEvent>(OnBodyPartQueryByType);
 
         _bodyQuery = GetEntityQuery<BodyComponent>();
         _organQuery = GetEntityQuery<OrganComponent>();
@@ -208,6 +212,47 @@ public sealed partial class BodySystem : EntitySystem
     private void OnCanDrag(Entity<BodyComponent> ent, ref CanDragEvent args)
     {
         args.Handled = true;
+    }
+
+    private void OnBodyPartQuery(Entity<BodyComponent> ent, ref BodyPartQueryEvent args)
+    {
+        if (args.Body != ent.Owner || ent.Comp.Organs == null)
+            return;
+
+        args.Parts.Clear();
+        foreach (var entity in ent.Comp.Organs.ContainedEntities)
+        {
+            args.Parts.Add(entity);
+        }
+    }
+
+    private void OnBodyPartQueryByType(Entity<BodyComponent> ent, ref BodyPartQueryByTypeEvent args)
+    {
+        if (args.Body != ent.Owner || ent.Comp.Organs == null)
+            return;
+
+        args.Parts.Clear();
+        foreach (var entity in ent.Comp.Organs.ContainedEntities)
+        {
+            if (!_organQuery.TryComp(entity, out var organ))
+                continue;
+
+            if (args.Category is { } category && organ.Category != category)
+                continue;
+
+            if (args.Symmetry is { } symmetry && symmetry != BodyPartSymmetry.None)
+            {
+                var categoryStr = organ.Category?.Id ?? "";
+                var isLeft = categoryStr.Contains("Left", System.StringComparison.OrdinalIgnoreCase);
+                var isRight = categoryStr.Contains("Right", System.StringComparison.OrdinalIgnoreCase);
+                if (symmetry == BodyPartSymmetry.Left && !isLeft)
+                    continue;
+                if (symmetry == BodyPartSymmetry.Right && !isRight)
+                    continue;
+            }
+
+            args.Parts.Add(entity);
+        }
     }
 
     /// <summary>

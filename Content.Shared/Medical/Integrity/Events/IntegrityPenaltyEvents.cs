@@ -1,0 +1,37 @@
+namespace Content.Shared.Medical.Integrity.Events;
+
+/// <summary>
+/// Raised when a surgery procedure applies an integrity penalty to a body part (organ, limb, implant).
+/// </summary>
+[ByRefEvent]
+public readonly record struct SurgeryPenaltyAppliedEvent(EntityUid BodyPart, int Amount);
+
+/// <summary>
+/// Raised when a surgery procedure removes an integrity penalty from a body part.
+/// </summary>
+[ByRefEvent]
+public readonly record struct SurgeryPenaltyRemovedEvent(EntityUid BodyPart, int Amount);
+
+/// <summary>
+/// Raised to add a contextual integrity penalty to a body (dirty room, improper tools).
+/// </summary>
+[ByRefEvent]
+public readonly record struct IntegrityPenaltyAppliedEvent(EntityUid Body, int Amount, string Reason, int ProcedureTypeIndex);
+
+/// <summary>
+/// Raised to clear contextual integrity penalties by procedure type index.
+/// </summary>
+[ByRefEvent]
+public readonly record struct IntegrityPenaltyClearedEvent(EntityUid Body, int ProcedureTypeIndex);
+
+/// <summary>
+/// Raised to request the total integrity penalty for a body. Response is set in <see cref="Total"/>.
+/// </summary>
+[ByRefEvent]
+public record struct IntegrityPenaltyTotalRequestEvent(EntityUid Body)
+{
+    /// <summary>
+    /// The total integrity penalty. Populated by IntegrityPenaltyAggregatorSystem.
+    /// </summary>
+    public int Total { get; set; }
+}
