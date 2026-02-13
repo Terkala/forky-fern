@@ -3,6 +3,7 @@ using System.Linq;
 using Content.Shared.Body.Components;
 using Content.Shared.Body.Events;
 using Content.Shared.DragDrop;
+using Content.Shared.Medical.Surgery.Components;
 using Robust.Shared.Containers;
 
 namespace Content.Shared.Body;
@@ -47,6 +48,7 @@ public sealed partial class BodySystem : EntitySystem
     {
         ent.Comp.Organs =
             _container.EnsureContainer<Container>(ent, ent.Comp.ContainerId);
+        EnsureComp<SurgeryLayerComponent>(ent);
     }
 
     private void OnBodyPartShutdown(Entity<BodyPartComponent> ent, ref ComponentShutdown args)

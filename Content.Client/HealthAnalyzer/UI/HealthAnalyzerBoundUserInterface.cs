@@ -37,6 +37,7 @@ namespace Content.Client.HealthAnalyzer.UI
             _window = this.CreateWindow<HealthAnalyzerWindow>();
 
             _window.Title = EntMan.GetComponent<MetaDataComponent>(Owner).EntityName;
+            _window.SetOnSurgeryRequest(msg => SendMessage(msg));
         }
 
         protected override void ReceiveMessage(BoundUserInterfaceMessage message)

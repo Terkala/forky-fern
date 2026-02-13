@@ -22,4 +22,12 @@ health-analyzer-window-scan-mode-text = Scan Mode:
 health-analyzer-window-scan-mode-active = Active
 health-analyzer-window-scan-mode-inactive = Inactive
 
+health-analyzer-mode-health = Health
+health-analyzer-mode-integrity = Integrity
+health-analyzer-mode-surgery = Surgery
+
+health-analyzer-surgery-step-retract-skin = Retract Skin
+health-analyzer-surgery-step-retract-tissue = Retract Tissue
+health-analyzer-surgery-step-saw-bones = Saw Bones
+
 health-analyzer-popup-scan-target = {CAPITALIZE(THE($user))} is trying to scan you!

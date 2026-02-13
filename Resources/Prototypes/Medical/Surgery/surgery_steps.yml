@@ -1,0 +1,26 @@
+- type: surgeryStep
+  id: RetractSkin
+  layer: Skin
+  name: health-analyzer-surgery-step-retract-skin
+  penalty: 1
+  procedureTypeIndex: 0
+  requiredToolTag: SurgeryTool
+  doAfterDelay: 2
+
+- type: surgeryStep
+  id: RetractTissue
+  layer: Tissue
+  name: health-analyzer-surgery-step-retract-tissue
+  penalty: 1
+  procedureTypeIndex: 1
+  requiredToolTag: SurgeryTool
+  doAfterDelay: 2
+
+- type: surgeryStep
+  id: SawBones
+  layer: Tissue
+  name: health-analyzer-surgery-step-saw-bones
+  penalty: 8
+  procedureTypeIndex: 2
+  requiredToolTag: SurgeryTool
+  doAfterDelay: 3

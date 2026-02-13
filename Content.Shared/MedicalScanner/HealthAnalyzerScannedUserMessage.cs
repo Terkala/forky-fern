@@ -36,8 +36,18 @@ public struct HealthAnalyzerUiState
     public bool? ScanMode;
     public bool? Bleeding;
     public bool? Unrevivable;
+    public HealthAnalyzerMode Mode;
+    public List<NetEntity> BodyParts;
+    public int? IntegrityTotal;
+    public int? IntegrityMax;
+    public List<SurgeryLayerStateData> BodyPartLayerState;
 
-    public HealthAnalyzerUiState() {}
+    public HealthAnalyzerUiState()
+    {
+        Mode = HealthAnalyzerMode.Health;
+        BodyParts = new List<NetEntity>();
+        BodyPartLayerState = new List<SurgeryLayerStateData>();
+    }
 
     public HealthAnalyzerUiState(NetEntity? targetEntity, float temperature, float bloodLevel, bool? scanMode, bool? bleeding, bool? unrevivable)
     {
@@ -47,5 +57,25 @@ public struct HealthAnalyzerUiState
         ScanMode = scanMode;
         Bleeding = bleeding;
         Unrevivable = unrevivable;
+        Mode = HealthAnalyzerMode.Health;
+        BodyParts = new List<NetEntity>();
+        BodyPartLayerState = new List<SurgeryLayerStateData>();
     }
+}
+
+[Serializable, NetSerializable]
+public enum HealthAnalyzerMode : byte
+{
+    Health,
+    Integrity,
+    Surgery
+}
+
+[Serializable, NetSerializable]
+public struct SurgeryLayerStateData
+{
+    public NetEntity BodyPart;
+    public bool SkinRetracted;
+    public bool TissueRetracted;
+    public bool BonesSawed;
 }

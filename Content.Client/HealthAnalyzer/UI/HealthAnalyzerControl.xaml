@@ -2,6 +2,12 @@
     xmlns="https://spacestation14.io"
     VerticalExpand="True"
     Orientation="Vertical">
+    <BoxContainer Name="ModeButtonContainer" Orientation="Horizontal" Margin="0 0 0 5">
+        <Button Name="HealthModeButton" Text="{Loc health-analyzer-mode-health}" />
+        <Button Name="IntegrityModeButton" Text="{Loc health-analyzer-mode-integrity}" />
+        <Button Name="SurgeryModeButton" Text="{Loc health-analyzer-mode-surgery}" />
+    </BoxContainer>
+
     <Label
         Name="NoPatientDataText"
         Text="{Loc health-analyzer-window-no-patient-data-text}" />
@@ -48,6 +54,23 @@
         Name="GroupsContainer"
         Margin="0 5 0 5"
         Orientation="Vertical">
+    </BoxContainer>
+
+    <BoxContainer Name="IntegrityContainer" Visible="False" Orientation="Vertical" Margin="0 5 0 5">
+        <Label Name="IntegrityLabel" />
+    </BoxContainer>
+
+    <BoxContainer Name="SurgeryContainer" Visible="False" Orientation="Vertical" Margin="0 5 0 5">
+        <Label Name="SurgeryLayerLabel" Text="Layer:" />
+        <BoxContainer Name="SurgeryLayerButtons" Orientation="Horizontal" Margin="0 2 0 5">
+            <Button Name="SkinLayerButton" Text="Skin" />
+            <Button Name="TissueLayerButton" Text="Tissue" />
+            <Button Name="OrganLayerButton" Text="Organ" />
+        </BoxContainer>
+        <Label Name="SurgeryBodyPartLabel" Text="Body part:" />
+        <BoxContainer Name="SurgeryBodyPartList" Orientation="Vertical" Margin="0 2 0 5" />
+        <Label Name="SurgeryStepsLabel" Text="Steps:" />
+        <BoxContainer Name="SurgeryStepsList" Orientation="Vertical" Margin="0 2 0 0" />
     </BoxContainer>
 
 </BoxContainer>

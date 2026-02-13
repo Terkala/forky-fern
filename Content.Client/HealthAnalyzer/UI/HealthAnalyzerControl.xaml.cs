@@ -10,6 +10,7 @@ using Content.Shared.FixedPoint;
 using Content.Shared.Humanoid;
 using Content.Shared.Humanoid.Prototypes;
 using Content.Shared.IdentityManagement;
+using Content.Shared.Medical.Surgery;
 using Content.Shared.MedicalScanner;
 using Content.Shared.Mobs;
 using Content.Shared.Mobs.Components;
@@ -34,6 +35,13 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
     private readonly IPrototypeManager _prototypes;
     private readonly IResourceCache _cache;
 
+    private HealthAnalyzerUiState _state;
+    private HealthAnalyzerMode _mode = HealthAnalyzerMode.Health;
+    private NetEntity? _selectedBodyPart;
+    private SurgeryLayer _selectedLayer = SurgeryLayer.Skin;
+
+    public Action<SurgeryRequestBuiMessage>? OnSurgeryRequest;
+
     public HealthAnalyzerControl()
     {
         RobustXamlLoader.Load(this);
@@ -43,10 +51,115 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
         _spriteSystem = _entityManager.System<SpriteSystem>();
         _prototypes = dependencies.Resolve<IPrototypeManager>();
         _cache = dependencies.Resolve<IResourceCache>();
+
+        HealthModeButton.OnPressed += _ => SetMode(HealthAnalyzerMode.Health);
+        IntegrityModeButton.OnPressed += _ => SetMode(HealthAnalyzerMode.Integrity);
+        SurgeryModeButton.OnPressed += _ => SetMode(HealthAnalyzerMode.Surgery);
+        SkinLayerButton.OnPressed += _ => SetSurgeryLayer(SurgeryLayer.Skin);
+        TissueLayerButton.OnPressed += _ => SetSurgeryLayer(SurgeryLayer.Tissue);
+        OrganLayerButton.OnPressed += _ => SetSurgeryLayer(SurgeryLayer.Organ);
+    }
+
+    private void SetMode(HealthAnalyzerMode mode)
+    {
+        _mode = mode;
+        PatientDataContainer.Visible = mode == HealthAnalyzerMode.Health;
+        GroupsContainer.Visible = mode == HealthAnalyzerMode.Health;
+        AlertsDivider.Visible = mode == HealthAnalyzerMode.Health && (_state.Unrevivable == true || _state.Bleeding == true);
+        AlertsContainer.Visible = AlertsDivider.Visible;
+        IntegrityContainer.Visible = mode == HealthAnalyzerMode.Integrity;
+        SurgeryContainer.Visible = mode == HealthAnalyzerMode.Surgery;
+        if (mode == HealthAnalyzerMode.Integrity)
+            UpdateIntegrityView();
+        if (mode == HealthAnalyzerMode.Surgery)
+            UpdateSurgeryView();
+    }
+
+    private void SetSurgeryLayer(SurgeryLayer layer)
+    {
+        _selectedLayer = layer;
+        UpdateSurgeryView();
+    }
+
+    private void UpdateIntegrityView()
+    {
+        IntegrityLabel.Text = _state.IntegrityTotal.HasValue && _state.IntegrityMax.HasValue
+            ? $"Integrity: {_state.IntegrityTotal}/{_state.IntegrityMax}"
+            : "Integrity: N/A";
+    }
+
+    private void UpdateSurgeryView()
+    {
+        SurgeryBodyPartList.RemoveAllChildren();
+        SurgeryStepsList.RemoveAllChildren();
+
+        if (_state.TargetEntity == null || _state.BodyParts == null)
+            return;
+
+        foreach (var part in _state.BodyParts)
+        {
+            var btn = new Button { Text = $"Body part {part}" };
+            btn.OnPressed += _ =>
+            {
+                _selectedBodyPart = part;
+                UpdateSurgerySteps();
+            };
+            SurgeryBodyPartList.AddChild(btn);
+        }
+
+        if (_state.BodyParts.Count > 0 && !_selectedBodyPart.HasValue)
+            _selectedBodyPart = _state.BodyParts[0];
+
+        UpdateSurgerySteps();
+    }
+
+    private void UpdateSurgerySteps()
+    {
+        SurgeryStepsList.RemoveAllChildren();
+        if (!_selectedBodyPart.HasValue || _state.TargetEntity == null)
+            return;
+
+        var layerState = _state.BodyPartLayerState != null
+            ? _state.BodyPartLayerState.FirstOrDefault(s => s.BodyPart == _selectedBodyPart)
+            : default;
+
+        if (_selectedLayer == SurgeryLayer.Skin)
+        {
+            if (!layerState.SkinRetracted)
+                AddStepButton("RetractSkin", "health-analyzer-surgery-step-retract-skin");
+        }
+        if (_selectedLayer == SurgeryLayer.Tissue)
+        {
+            if (!layerState.TissueRetracted && layerState.SkinRetracted)
+                AddStepButton("RetractTissue", "health-analyzer-surgery-step-retract-tissue");
+        }
+        if (_selectedLayer == SurgeryLayer.Organ)
+        {
+            if (!layerState.BonesSawed && layerState.TissueRetracted)
+                AddStepButton("SawBones", "health-analyzer-surgery-step-saw-bones");
+        }
+    }
+
+    private void AddStepButton(string stepId, string locId)
+    {
+        var btn = new Button { Text = Loc.GetString(locId) };
+        btn.OnPressed += _ =>
+        {
+            if (_state.TargetEntity == null || !_selectedBodyPart.HasValue)
+                return;
+            OnSurgeryRequest?.Invoke(new SurgeryRequestBuiMessage(
+                _state.TargetEntity.Value,
+                _selectedBodyPart.Value,
+                stepId,
+                _selectedLayer,
+                false));
+        };
+        SurgeryStepsList.AddChild(btn);
     }
 
     public void Populate(HealthAnalyzerUiState state)
     {
+        _state = state;
         var target = _entityManager.GetEntity(state.TargetEntity);
 
         if (target == null
@@ -141,6 +254,8 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
         IReadOnlyDictionary<string, FixedPoint2> damagePerType = damageable.Damage.DamageDict;
 
         DrawDiagnosticGroups(damageSortedGroups, damagePerType);
+
+        SetMode(_mode);
     }
 
     private static string GetStatus(MobState mobState)

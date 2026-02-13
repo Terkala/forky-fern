@@ -32,8 +32,11 @@
 // SPDX-FileCopyrightText: 2026 Fruitsalad <949631+Fruitsalad@users.noreply.github.com>
 // SPDX-License-Identifier: MIT
 
+using System.Linq;
 using Content.Server.Medical.Components;
+using Content.Shared.Body;
 using Content.Shared.Body.Components;
+using Content.Shared.Body.Events;
 using Content.Shared.Chemistry.EntitySystems;
 using Content.Shared.Damage.Components;
 using Content.Shared.DoAfter;
@@ -42,6 +45,10 @@ using Content.Shared.Interaction;
 using Content.Shared.Interaction.Events;
 using Content.Shared.Item.ItemToggle;
 using Content.Shared.Item.ItemToggle.Components;
+using Content.Shared.Medical.Integrity;
+using Content.Shared.Medical.Integrity.Events;
+using Content.Shared.Medical.Surgery.Components;
+using Content.Shared.Medical.Surgery.Events;
 using Content.Shared.MedicalScanner;
 using Content.Shared.Mobs.Components;
 using Content.Shared.Popups;
@@ -68,6 +75,7 @@ public sealed class HealthAnalyzerSystem : EntitySystem
     [Dependency] private readonly TransformSystem _transformSystem = default!;
     [Dependency] private readonly SharedPopupSystem _popupSystem = default!;
     [Dependency] private readonly BloodstreamSystem _bloodstreamSystem = default!;
+    [Dependency] private readonly BodySystem _body = default!;
 
     public override void Initialize()
     {
@@ -76,6 +84,24 @@ public sealed class HealthAnalyzerSystem : EntitySystem
         SubscribeLocalEvent<HealthAnalyzerComponent, EntGotInsertedIntoContainerMessage>(OnInsertedIntoContainer);
         SubscribeLocalEvent<HealthAnalyzerComponent, ItemToggledEvent>(OnToggled);
         SubscribeLocalEvent<HealthAnalyzerComponent, DroppedEvent>(OnDropped);
+        SubscribeLocalEvent<HealthAnalyzerComponent, SurgeryRequestBuiMessage>(OnSurgeryRequest);
+    }
+
+    private void OnSurgeryRequest(Entity<HealthAnalyzerComponent> uid, ref SurgeryRequestBuiMessage args)
+    {
+        if (uid.Comp.ScannedEntity is not { } target)
+            return;
+
+        var targetNet = GetNetEntity(target);
+        if (args.Target != targetNet)
+            return;
+
+        var targetUid = GetEntity(args.Target);
+        var bodyPartUid = GetEntity(args.BodyPart);
+        var user = args.Actor;
+
+        var ev = new SurgeryRequestEvent(uid.Owner, user, targetUid, bodyPartUid, args.StepId, args.Layer, args.IsImprovised);
+        RaiseLocalEvent(targetUid, ref ev);
     }
 
     public override void Update(float frameTime)
@@ -266,7 +292,7 @@ public sealed class HealthAnalyzerSystem : EntitySystem
         if (TryComp<UnrevivableComponent>(entity, out var unrevivableComp) && unrevivableComp.Analyzable)
             unrevivable = true;
 
-        return new HealthAnalyzerUiState(
+        var state = new HealthAnalyzerUiState(
             GetNetEntity(entity),
             bodyTemperature,
             bloodAmount,
@@ -274,5 +300,33 @@ public sealed class HealthAnalyzerSystem : EntitySystem
             bleeding,
             unrevivable
         );
+
+        if (TryComp<BodyComponent>(entity, out var body))
+        {
+            var query = new BodyPartQueryEvent(entity);
+            RaiseLocalEvent(entity, ref query);
+            state.BodyParts = query.Parts.Select(e => GetNetEntity(e)).ToList();
+
+            var totalEv = new IntegrityPenaltyTotalRequestEvent(entity);
+            RaiseLocalEvent(entity, ref totalEv);
+            state.IntegrityTotal = totalEv.Total;
+            state.IntegrityMax = 6;
+
+            foreach (var part in query.Parts)
+            {
+                if (TryComp<SurgeryLayerComponent>(part, out var layer))
+                {
+                    state.BodyPartLayerState.Add(new SurgeryLayerStateData
+                    {
+                        BodyPart = GetNetEntity(part),
+                        SkinRetracted = layer.SkinRetracted,
+                        TissueRetracted = layer.TissueRetracted,
+                        BonesSawed = layer.BonesSawed
+                    });
+                }
+            }
+        }
+
+        return state;
     }
 }
