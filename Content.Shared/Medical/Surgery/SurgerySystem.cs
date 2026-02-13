@@ -10,6 +10,7 @@ using Content.Shared.Medical.Surgery.Events;
 using Content.Shared.Medical.Surgery.Prototypes;
 using Content.Shared.Popups;
 using Content.Shared.Tag;
+using Robust.Shared.Map;
 using Robust.Shared.Prototypes;
 
 namespace Content.Shared.Medical.Surgery;
@@ -227,8 +228,10 @@ public sealed class SurgerySystem : EntitySystem
                     _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-organ-gone"), args.User, args.User, PopupType.Medium);
                     return;
                 }
-                var removeEv = new OrganRemoveRequestEvent(organ);
+                var removeEv = new OrganRemoveRequestEvent(organ) { Destination = Transform(args.User).Coordinates };
                 RaiseLocalEvent(organ, ref removeEv);
+                if (removeEv.Success)
+                    _hands.TryPickupAnyHand(args.User, organ, checkActionBlocker: false);
             }
             else if (args.StepId == "InsertOrgan")
             {

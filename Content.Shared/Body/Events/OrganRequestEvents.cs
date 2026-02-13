@@ -1,3 +1,5 @@
+using Robust.Shared.Map;
+
 namespace Content.Shared.Body.Events;
 
 /// <summary>
@@ -18,6 +20,11 @@ public record struct OrganInsertRequestEvent(EntityUid BodyPart, EntityUid Organ
 [ByRefEvent]
 public record struct OrganRemoveRequestEvent(EntityUid Organ)
 {
+    /// <summary>
+    /// Where to place the organ after removal. If null, uses default AttachParentToContainerOrGrid behavior.
+    /// </summary>
+    public EntityCoordinates? Destination;
+
     /// <summary>
     /// Whether the remove succeeded. Populated by BodyPartOrganSystem.
     /// </summary>
