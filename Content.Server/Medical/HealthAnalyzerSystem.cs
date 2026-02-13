@@ -36,6 +36,7 @@ using System.Linq;
 using Content.Server.Medical.Components;
 using Content.Shared.Body;
 using Content.Shared.Body.Components;
+using Content.Shared.Medical.Integrity.Events;
 using Content.Shared.Body.Events;
 using Content.Shared.Chemistry.EntitySystems;
 using Content.Shared.Damage.Components;
@@ -85,6 +86,24 @@ public sealed class HealthAnalyzerSystem : EntitySystem
         SubscribeLocalEvent<HealthAnalyzerComponent, ItemToggledEvent>(OnToggled);
         SubscribeLocalEvent<HealthAnalyzerComponent, DroppedEvent>(OnDropped);
         SubscribeLocalEvent<HealthAnalyzerComponent, SurgeryRequestBuiMessage>(OnSurgeryRequest);
+        SubscribeLocalEvent<SurgeryLayerComponent, SurgeryPenaltyAppliedEvent>(OnSurgeryPenaltyApplied);
+    }
+
+    private void OnSurgeryPenaltyApplied(Entity<SurgeryLayerComponent> ent, ref SurgeryPenaltyAppliedEvent args)
+    {
+        var bodyPart = ent.Owner;
+        if (!TryComp<BodyPartComponent>(bodyPart, out var bodyPartComp) || bodyPartComp.Body is not { } body)
+            return;
+
+        var analyzerQuery = EntityQueryEnumerator<HealthAnalyzerComponent>();
+        while (analyzerQuery.MoveNext(out var uid, out var comp))
+        {
+            if (comp.ScannedEntity == body)
+            {
+                UpdateScannedUser(uid, body, true);
+                break;
+            }
+        }
     }
 
     private void OnSurgeryRequest(Entity<HealthAnalyzerComponent> uid, ref SurgeryRequestBuiMessage args)
@@ -316,9 +335,11 @@ public sealed class HealthAnalyzerSystem : EntitySystem
             {
                 if (TryComp<SurgeryLayerComponent>(part, out var layer))
                 {
+                    var categoryId = TryComp<OrganComponent>(part, out var organ) ? organ.Category?.ToString() : null;
                     state.BodyPartLayerState.Add(new SurgeryLayerStateData
                     {
                         BodyPart = GetNetEntity(part),
+                        CategoryId = categoryId,
                         SkinRetracted = layer.SkinRetracted,
                         TissueRetracted = layer.TissueRetracted,
                         BonesSawed = layer.BonesSawed

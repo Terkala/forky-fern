@@ -75,6 +75,7 @@ public enum HealthAnalyzerMode : byte
 public struct SurgeryLayerStateData
 {
     public NetEntity BodyPart;
+    public string? CategoryId;
     public bool SkinRetracted;
     public bool TissueRetracted;
     public bool BonesSawed;

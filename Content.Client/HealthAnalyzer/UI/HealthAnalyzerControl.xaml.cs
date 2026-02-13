@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Fruitsalad <949631+Fruitsalad@users.noreply.github.com>
 // SPDX-License-Identifier: MIT
 
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Content.Shared.Atmos;
@@ -39,6 +40,7 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
     private HealthAnalyzerMode _mode = HealthAnalyzerMode.Health;
     private NetEntity? _selectedBodyPart;
     private SurgeryLayer _selectedLayer = SurgeryLayer.Skin;
+    private SurgeryLayerStateData? _prevLayerStateForSelectedPart;
 
     public Action<SurgeryRequestBuiMessage>? OnSurgeryRequest;
 
@@ -52,23 +54,36 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
         _prototypes = dependencies.Resolve<IPrototypeManager>();
         _cache = dependencies.Resolve<IResourceCache>();
 
+        HealthModeButton.ToggleMode = true;
+        IntegrityModeButton.ToggleMode = true;
+        SurgeryModeButton.ToggleMode = true;
+        SkinLayerButton.ToggleMode = true;
+        TissueLayerButton.ToggleMode = true;
+        OrganLayerButton.ToggleMode = true;
+
         HealthModeButton.OnPressed += _ => SetMode(HealthAnalyzerMode.Health);
         IntegrityModeButton.OnPressed += _ => SetMode(HealthAnalyzerMode.Integrity);
         SurgeryModeButton.OnPressed += _ => SetMode(HealthAnalyzerMode.Surgery);
         SkinLayerButton.OnPressed += _ => SetSurgeryLayer(SurgeryLayer.Skin);
         TissueLayerButton.OnPressed += _ => SetSurgeryLayer(SurgeryLayer.Tissue);
         OrganLayerButton.OnPressed += _ => SetSurgeryLayer(SurgeryLayer.Organ);
+
+        UpdateModeButtonStates();
     }
 
     private void SetMode(HealthAnalyzerMode mode)
     {
         _mode = mode;
-        PatientDataContainer.Visible = mode == HealthAnalyzerMode.Health;
+        UpdateModeButtonStates();
+        BodyHeaderContainer.Visible = _state.TargetEntity != null;
+        HealthContent.Visible = mode == HealthAnalyzerMode.Health;
         GroupsContainer.Visible = mode == HealthAnalyzerMode.Health;
+        HealthDivider.Visible = mode == HealthAnalyzerMode.Health;
         AlertsDivider.Visible = mode == HealthAnalyzerMode.Health && (_state.Unrevivable == true || _state.Bleeding == true);
         AlertsContainer.Visible = AlertsDivider.Visible;
-        IntegrityContainer.Visible = mode == HealthAnalyzerMode.Integrity;
-        SurgeryContainer.Visible = mode == HealthAnalyzerMode.Surgery;
+        IntegrityContent.Visible = mode == HealthAnalyzerMode.Integrity;
+        SurgeryContent.Visible = mode == HealthAnalyzerMode.Surgery;
+        BodyDiagram.IsClickable = mode == HealthAnalyzerMode.Surgery;
         if (mode == HealthAnalyzerMode.Integrity)
             UpdateIntegrityView();
         if (mode == HealthAnalyzerMode.Surgery)
@@ -78,39 +93,104 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
     private void SetSurgeryLayer(SurgeryLayer layer)
     {
         _selectedLayer = layer;
-        UpdateSurgeryView();
+        UpdateSurgeryView(autoSelectDeepest: false);
     }
 
     private void UpdateIntegrityView()
     {
         IntegrityLabel.Text = _state.IntegrityTotal.HasValue && _state.IntegrityMax.HasValue
-            ? $"Integrity: {_state.IntegrityTotal}/{_state.IntegrityMax}"
-            : "Integrity: N/A";
+            ? $"{_state.IntegrityTotal}/{_state.IntegrityMax}"
+            : Loc.GetString("health-analyzer-window-entity-unknown-value-text");
     }
 
-    private void UpdateSurgeryView()
+    private void UpdateSurgeryView(bool autoSelectDeepest = true)
     {
-        SurgeryBodyPartList.RemoveAllChildren();
         SurgeryStepsList.RemoveAllChildren();
 
         if (_state.TargetEntity == null || _state.BodyParts == null)
             return;
 
-        foreach (var part in _state.BodyParts)
+        BodyDiagram.SetTarget(_state.TargetEntity, _state.BodyPartLayerState ?? new List<SurgeryLayerStateData>());
+        BodyDiagram.OnBodyPartSelected = part =>
         {
-            var btn = new Button { Text = $"Body part {part}" };
-            btn.OnPressed += _ =>
-            {
-                _selectedBodyPart = part;
-                UpdateSurgerySteps();
-            };
-            SurgeryBodyPartList.AddChild(btn);
-        }
+            _selectedBodyPart = part;
+            BodyDiagram.SetSelectedBodyPart(part);
+            SelectDeepestOpenedLayer(part);
+            _prevLayerStateForSelectedPart = _state.BodyPartLayerState?.FirstOrDefault(s => s.BodyPart == part) ?? default;
+            UpdateLayerButtonAccessibility();
+            UpdateSurgerySteps();
+        };
 
         if (_state.BodyParts.Count > 0 && !_selectedBodyPart.HasValue)
             _selectedBodyPart = _state.BodyParts[0];
 
+        BodyDiagram.SetSelectedBodyPart(_selectedBodyPart);
+        if (_selectedBodyPart.HasValue && autoSelectDeepest)
+        {
+            var layerState = _state.BodyPartLayerState?.FirstOrDefault(s => s.BodyPart == _selectedBodyPart) ?? default;
+            var prev = _prevLayerStateForSelectedPart.GetValueOrDefault();
+            var bodyPartChanged = !_prevLayerStateForSelectedPart.HasValue
+                || prev.BodyPart != _selectedBodyPart;
+            var layerJustOpened = !bodyPartChanged
+                && (layerState.SkinRetracted && !prev.SkinRetracted
+                    || layerState.TissueRetracted && !prev.TissueRetracted
+                    || layerState.BonesSawed && !prev.BonesSawed);
+            if (bodyPartChanged || layerJustOpened)
+                SelectDeepestOpenedLayer(_selectedBodyPart.Value);
+            _prevLayerStateForSelectedPart = layerState;
+        }
+        UpdateLayerButtonAccessibility();
         UpdateSurgerySteps();
+    }
+
+    private void SelectDeepestOpenedLayer(NetEntity bodyPart)
+    {
+        var layerState = _state.BodyPartLayerState?.FirstOrDefault(s => s.BodyPart == bodyPart) ?? default;
+        _selectedLayer = GetDeepestOpenedLayer(layerState);
+    }
+
+    private static SurgeryLayer GetDeepestOpenedLayer(SurgeryLayerStateData layerState)
+    {
+        if (layerState.BonesSawed) return SurgeryLayer.Organ;
+        if (layerState.TissueRetracted) return SurgeryLayer.Organ;
+        if (layerState.SkinRetracted) return SurgeryLayer.Tissue;
+        return SurgeryLayer.Skin;
+    }
+
+    private void UpdateModeButtonStates()
+    {
+        UpdateButtonState(HealthModeButton, _mode == HealthAnalyzerMode.Health);
+        UpdateButtonState(IntegrityModeButton, _mode == HealthAnalyzerMode.Integrity);
+        UpdateButtonState(SurgeryModeButton, _mode == HealthAnalyzerMode.Surgery);
+    }
+
+    private void UpdateLayerButtonAccessibility()
+    {
+        var layerState = _selectedBodyPart.HasValue && _state.BodyPartLayerState != null
+            ? _state.BodyPartLayerState.FirstOrDefault(s => s.BodyPart == _selectedBodyPart)
+            : default;
+
+        // Current layer: green, pressed, disabled (not clickable). Others: white, unpressed, disabled only if locked.
+        // Lock = not yet reachable. Skin never locked (always accessible for backtracking). Tissue locked until skin opened; Organ until tissue opened.
+        UpdateButtonState(SkinLayerButton, _selectedLayer == SurgeryLayer.Skin, false);
+        UpdateButtonState(TissueLayerButton, _selectedLayer == SurgeryLayer.Tissue, !layerState.SkinRetracted);
+        UpdateButtonState(OrganLayerButton, _selectedLayer == SurgeryLayer.Organ, !layerState.TissueRetracted);
+    }
+
+    private static void UpdateButtonState(Button button, bool isSelected, bool isLocked = false)
+    {
+        if (isSelected)
+        {
+            button.Pressed = true;
+            button.Disabled = true;
+            button.Modulate = Color.LimeGreen;
+        }
+        else
+        {
+            button.Pressed = false;
+            button.Disabled = isLocked;
+            button.Modulate = Color.White;
+        }
     }
 
     private void UpdateSurgerySteps()
@@ -181,11 +261,11 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
 
         ScanModeLabel.FontColorOverride = state.ScanMode.HasValue && state.ScanMode.Value ? Color.Green : Color.Red;
 
-        // Patient Information
+        // Patient Information - use BodyDiagram (standing preview) for all modes
 
-        SpriteView.SetEntity(target.Value);
-        SpriteView.Visible = state.ScanMode.HasValue && state.ScanMode.Value;
-        NoDataTex.Visible = !SpriteView.Visible;
+        BodyDiagram.SetTarget(state.TargetEntity, state.BodyPartLayerState ?? new List<SurgeryLayerStateData>());
+        BodyDiagram.Visible = state.ScanMode.HasValue && state.ScanMode.Value;
+        NoDataTex.Visible = !BodyDiagram.Visible;
 
         var name = new FormattedMessage();
         name.PushColor(Color.White);
