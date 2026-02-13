@@ -12911,8 +12911,6 @@ entities:
       deleteOnEmptyLinks: True
       linkedEntities:
       - 2523
-    missingComponents:
-    - PointLight
   - uid: 76
     components:
     - type: MetaData
@@ -12924,8 +12922,6 @@ entities:
       deleteOnEmptyLinks: True
       linkedEntities:
       - 2257
-    missingComponents:
-    - PointLight
   - uid: 121
     components:
     - type: MetaData
@@ -12937,8 +12933,6 @@ entities:
       deleteOnEmptyLinks: True
       linkedEntities:
       - 616
-    missingComponents:
-    - PointLight
   - uid: 615
     components:
     - type: MetaData
@@ -12950,8 +12944,6 @@ entities:
       deleteOnEmptyLinks: True
       linkedEntities:
       - 1376
-    missingComponents:
-    - PointLight
   - uid: 616
     components:
     - type: MetaData
@@ -12963,8 +12955,6 @@ entities:
       deleteOnEmptyLinks: True
       linkedEntities:
       - 121
-    missingComponents:
-    - PointLight
   - uid: 617
     components:
     - type: MetaData
@@ -12976,8 +12966,6 @@ entities:
       deleteOnEmptyLinks: True
       linkedEntities:
       - 984
-    missingComponents:
-    - PointLight
   - uid: 618
     components:
     - type: MetaData
@@ -12989,8 +12977,6 @@ entities:
       deleteOnEmptyLinks: True
       linkedEntities:
       - 1201
-    missingComponents:
-    - PointLight
   - uid: 984
     components:
     - type: MetaData
@@ -13002,8 +12988,6 @@ entities:
       deleteOnEmptyLinks: True
       linkedEntities:
       - 617
-    missingComponents:
-    - PointLight
   - uid: 1201
     components:
     - type: MetaData
@@ -13015,8 +12999,6 @@ entities:
       deleteOnEmptyLinks: True
       linkedEntities:
       - 618
-    missingComponents:
-    - PointLight
   - uid: 1376
     components:
     - type: MetaData
@@ -13028,8 +13010,6 @@ entities:
       deleteOnEmptyLinks: True
       linkedEntities:
       - 615
-    missingComponents:
-    - PointLight
   - uid: 2257
     components:
     - type: MetaData
@@ -13052,8 +13032,6 @@ entities:
       deleteOnEmptyLinks: True
       linkedEntities:
       - 50
-    missingComponents:
-    - PointLight
 - proto: PosterContrabandAtmosiaDeclarationIndependence
   entities:
   - uid: 3157
@@ -16768,22 +16746,16 @@ entities:
     - type: Transform
       pos: 77.5,44.5
       parent: 1
-    missingComponents:
-    - Occluder
   - uid: 2016
     components:
     - type: Transform
       pos: 76.5,44.5
       parent: 1
-    missingComponents:
-    - Occluder
   - uid: 2017
     components:
     - type: Transform
       pos: 75.5,44.5
       parent: 1
-    missingComponents:
-    - Occluder
 - proto: WallPlastitaniumDiagonalIndestructible
   entities:
   - uid: 1327
@@ -19680,22 +19652,16 @@ entities:
     - type: Transform
       pos: 83.5,42.5
       parent: 1
-    missingComponents:
-    - Occluder
   - uid: 2019
     components:
     - type: Transform
       pos: 83.5,41.5
       parent: 1
-    missingComponents:
-    - Occluder
   - uid: 2020
     components:
     - type: Transform
       pos: 83.5,40.5
       parent: 1
-    missingComponents:
-    - Occluder
 - proto: WallShuttle
   entities:
   - uid: 2809
@@ -20469,22 +20435,16 @@ entities:
     - type: Transform
       pos: 80.5,44.5
       parent: 1
-    missingComponents:
-    - Occluder
   - uid: 2010
     components:
     - type: Transform
       pos: 79.5,44.5
       parent: 1
-    missingComponents:
-    - Occluder
   - uid: 2011
     components:
     - type: Transform
       pos: 81.5,44.5
       parent: 1
-    missingComponents:
-    - Occluder
 - proto: WardrobeChemistryFilled
   entities:
   - uid: 1132

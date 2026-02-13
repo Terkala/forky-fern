@@ -18,6 +18,11 @@ public abstract class SharedBodyPartSystem : EntitySystem
     /// </summary>
     public const string BodyRootContainerId = "body_parts_root";
 
+    /// <summary>
+    /// Gets the container ID for a body part slot on a parent part.
+    /// </summary>
+    public static string GetPartSlotContainerId(string slotId) => $"body_part_slot_{slotId}";
+
     [Dependency] protected readonly SharedContainerSystem ContainerSystem = default!;
 
     public override void Initialize()
@@ -208,6 +213,49 @@ public abstract class SharedBodyPartSystem : EntitySystem
 
             yield return (id, part);
         }
+    }
+
+    /// <summary>
+    /// Attaches a body part to a body or parent part.
+    /// </summary>
+    /// <param name="body">The body entity to attach to (for root parts) or the body that owns the parent part</param>
+    /// <param name="part">The body part entity to attach</param>
+    /// <param name="slotId">The slot ID on the parent part, or null for root parts</param>
+    /// <param name="parentPart">The parent body part, or null for root parts</param>
+    /// <returns>True if attachment was successful</returns>
+    public virtual bool AttachBodyPart(EntityUid body, EntityUid part, string? slotId = null, EntityUid? parentPart = null)
+    {
+        if (!TryComp<BodyPartComponent>(part, out var partComp))
+            return false;
+
+        if (!HasComp<BodyComponent>(body))
+            return false;
+
+        BaseContainer? container;
+
+        if (parentPart == null)
+        {
+            container = ContainerSystem.EnsureContainer<Container>(body, BodyRootContainerId);
+        }
+        else
+        {
+            if (!TryComp<BodyPartComponent>(parentPart, out _))
+                return false;
+
+            var containerId = GetPartSlotContainerId(slotId ?? "");
+            container = ContainerSystem.EnsureContainer<Container>(parentPart.Value, containerId);
+        }
+
+        if (!ContainerSystem.Insert((part, null, null, null), container))
+            return false;
+
+        partComp.Parent = parentPart;
+        partComp.SlotId = slotId;
+        partComp.Body = body;
+
+        Dirty(part, partComp);
+
+        return true;
     }
 
     public EntityUid? GetParentPart(EntityUid part)

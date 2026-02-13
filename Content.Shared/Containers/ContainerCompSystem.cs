@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 using Robust.Shared.Containers;
+using Robust.Shared.GameObjects;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Timing;
 
@@ -28,9 +29,17 @@ public sealed class ContainerCompSystem : EntitySystem
         if (args.Container.ID != ent.Comp.Container || _timing.ApplyingState)
             return;
 
-        if (_proto.Resolve(ent.Comp.Proto, out var entProto))
+        if (!_proto.Resolve(ent.Comp.Proto, out var entProto))
+            return;
+
+        // Never attempt to remove protected components (Transform, MetaData) - prevents client crashes
+        // when entity state sync sends NetComponents lists that would trigger removal of these.
+        foreach (var (_, entry) in entProto.Components)
         {
-            EntityManager.RemoveComponents(args.Entity, entProto.Components);
+            var compType = entry.Component.GetType();
+            if (compType == typeof(TransformComponent) || compType == typeof(MetaDataComponent))
+                continue;
+            EntityManager.RemoveComponent(args.Entity, compType);
         }
     }
 

@@ -21,62 +21,6 @@ public sealed class BodyPartSystem : SharedBodyPartSystem
     [Dependency] private readonly SharedActionsSystem _actions = default!;
 
     /// <summary>
-    /// Gets the container ID for a body part slot on a parent part.
-    /// </summary>
-    public static string GetPartSlotContainerId(string slotId) => $"body_part_slot_{slotId}";
-
-    /// <summary>
-    /// Attaches a body part to a body or parent part.
-    /// </summary>
-    /// <param name="body">The body entity to attach to (for root parts) or the body that owns the parent part</param>
-    /// <param name="part">The body part entity to attach</param>
-    /// <param name="slotId">The slot ID on the parent part, or null for root parts</param>
-    /// <param name="parentPart">The parent body part, or null for root parts</param>
-    /// <returns>True if attachment was successful</returns>
-    public bool AttachBodyPart(EntityUid body, EntityUid part, string? slotId = null, EntityUid? parentPart = null)
-    {
-        if (!TryComp<BodyPartComponent>(part, out var partComp))
-            return false;
-
-        if (!HasComp<BodyComponent>(body))
-            return false;
-
-        // Determine which container to use
-        BaseContainer? container;
-        EntityUid containerOwner;
-
-        if (parentPart == null)
-        {
-            // Root part - attach to body's root container
-            container = _container.EnsureContainer<Container>(body, SharedBodyPartSystem.BodyRootContainerId);
-            containerOwner = body;
-        }
-        else
-        {
-            // Child part - attach to parent part's slot container
-            if (!TryComp<BodyPartComponent>(parentPart, out var parentComp))
-                return false;
-
-            var containerId = GetPartSlotContainerId(slotId ?? "");
-            container = _container.EnsureContainer<Container>(parentPart.Value, containerId);
-            containerOwner = parentPart.Value;
-        }
-
-        // Insert into container
-        if (!_container.Insert((part, null, null, null), container))
-            return false;
-
-        // Set parent and slot info
-        partComp.Parent = parentPart;
-        partComp.SlotId = slotId;
-        partComp.Body = body;
-
-        Dirty(part, partComp);
-
-        return true;
-    }
-
-    /// <summary>
     /// Detaches a body part from its body or parent part.
     /// </summary>
     /// <param name="part">The body part entity to detach</param>
@@ -110,7 +54,7 @@ public sealed class BodyPartSystem : SharedBodyPartSystem
             // Child part - in parent's slot container
             if (partComp.SlotId != null)
             {
-                var containerId = GetPartSlotContainerId(partComp.SlotId);
+                var containerId = SharedBodyPartSystem.GetPartSlotContainerId(partComp.SlotId);
                 if (_container.TryGetContainer(partComp.Parent.Value, containerId, out var slotContainer))
                 {
                     container = slotContainer;

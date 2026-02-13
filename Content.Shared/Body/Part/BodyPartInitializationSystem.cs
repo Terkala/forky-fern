@@ -4,21 +4,24 @@ using Content.Shared.Body.Part;
 using Content.Shared.Humanoid;
 using Content.Shared.Humanoid.Prototypes;
 using Robust.Shared.Containers;
+using Robust.Shared.Network;
 using Robust.Shared.Prototypes;
 using System.Linq;
 
-namespace Content.Server.Body.Part;
+namespace Content.Shared.Body.Part;
 
 /// <summary>
 /// System that initializes body parts on entities with BodyComponent and HumanoidAppearanceComponent.
 /// Uses prototype-based body part structures defined in SpeciesPrototype.
 /// Also handles migration of existing organs from body container to body part containers.
+/// Runs on both client and server to ensure consistent body structure for state sync.
 /// </summary>
 public sealed class BodyPartInitializationSystem : EntitySystem
 {
-    [Dependency] private readonly BodyPartSystem _bodyPartSystem = default!;
+    [Dependency] private readonly SharedBodyPartSystem _bodyPartSystem = default!;
     [Dependency] private readonly SharedContainerSystem _container = default!;
     [Dependency] private readonly IPrototypeManager _prototypes = default!;
+    [Dependency] private readonly INetManager _netManager = default!;
 
     public override void Initialize()
     {
@@ -26,8 +29,8 @@ public sealed class BodyPartInitializationSystem : EntitySystem
         // Subscribe to BodyInitializedEvent instead of ComponentInit to avoid duplicate subscription
         // This event is raised by BodySystem after it finishes initializing containers
         SubscribeLocalEvent<BodyComponent, BodyInitializedEvent>(OnBodyInitialized);
-        
-        // Validate all body part structure prototypes
+
+        // Validate all body part structure prototypes (server-side validation, but safe to run on client)
         ValidateBodyPartStructures();
     }
 
@@ -133,8 +136,7 @@ public sealed class BodyPartInitializationSystem : EntitySystem
             return;
 
         // Check if body parts already exist
-        var bodyPartSystem = EntitySystem.Get<SharedBodyPartSystem>();
-        if (bodyPartSystem.GetBodyChildren(ent).Any())
+        if (_bodyPartSystem.GetBodyChildren(ent).Any())
             return; // Body parts already initialized
 
         // Get species prototype
@@ -166,14 +168,15 @@ public sealed class BodyPartInitializationSystem : EntitySystem
     {
         // Topologically sort body parts by dependencies
         var sortedParts = TopologicalSortBodyParts(structure.Parts);
-        
+
         // Map of prototype ID to spawned entity UID
         var partMap = new Dictionary<EntProtoId, EntityUid>();
 
         foreach (var partDef in sortedParts)
         {
-            // Spawn the body part
-            var partEntity = Spawn(partDef.Prototype, Transform(ent).Coordinates);
+            // Spawn the body part at map position (not as child) - must be fully initialized before
+            // attaching to container, otherwise engine asserts on "child added prior to being initialized"
+            var partEntity = SpawnAtPosition(partDef.Prototype, Transform(ent).Coordinates);
             partMap[partDef.Prototype] = partEntity;
 
             // Determine parent and slot
@@ -242,7 +245,7 @@ public sealed class BodyPartInitializationSystem : EntitySystem
         // Build dependency graph
         var partMap = parts.ToDictionary(p => p.Prototype);
         var dependencies = new Dictionary<EntProtoId, List<EntProtoId>>();
-        
+
         foreach (var part in parts)
         {
             dependencies[part.Prototype] = new List<EntProtoId>();
@@ -315,18 +318,21 @@ public sealed class BodyPartInitializationSystem : EntitySystem
     /// <summary>
     /// Migrates existing organs from the body's container to appropriate body part containers
     /// based on organ placement rules from the prototype.
+    /// Server-only: On client, organ positions come from state sync - running migration during
+    /// ApplyEntState fails because AttachToGridOrMap can't find the map/grid yet.
     /// </summary>
     private void MigrateOrgansToBodyParts(Entity<BodyComponent> ent, BodyPartStructurePrototype structure)
     {
+        if (_netManager.IsClient)
+            return;
+
         if (ent.Comp.Organs == null)
             return;
 
-        var bodyPartSystem = EntitySystem.Get<SharedBodyPartSystem>();
-        
         // Build map of body part type to entity
         var partTypeMap = new Dictionary<BodyPartType, EntityUid?>();
-        
-        foreach (var (partId, partComp) in bodyPartSystem.GetBodyChildren(ent))
+
+        foreach (var (partId, partComp) in _bodyPartSystem.GetBodyChildren(ent))
         {
             partTypeMap[partComp.PartType] = partId;
         }
@@ -340,12 +346,12 @@ public sealed class BodyPartInitializationSystem : EntitySystem
 
             // Find matching organ placement rule
             EntityUid? targetPart = null;
-            
+
             foreach (var rule in structure.OrganPlacementRules)
             {
                 // Check if this rule matches the organ
                 bool matches = false;
-                
+
                 if (rule.OrganCategory == null)
                 {
                     // Default rule - matches all organs

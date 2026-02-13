@@ -4,12 +4,14 @@
 // SPDX-License-Identifier: MIT
 
 using System.Numerics;
-using Robust.Shared.GameStates;
 
 namespace Content.Shared.Medical.Cryogenics;
 
+/// <summary>
+/// Marker component for entities inside a cryo pod.
+/// Server-only to avoid LastComponentRemoved triggering client crashes when removed from player.
+/// </summary>
 [RegisterComponent]
-[NetworkedComponent]
 public sealed partial class InsideCryoPodComponent: Component
 {
     [ViewVariables]

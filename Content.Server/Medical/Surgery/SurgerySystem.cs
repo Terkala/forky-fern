@@ -46,6 +46,7 @@ using Content.Shared.Implants.Components;
 using Content.Shared.UserInterface;
 using Content.Shared.Prototypes;
 using Content.Shared.Interaction;
+using Content.Shared.Teleportation.Components;
 // using Content.Shared._Shitmed.Targeting; // Shitmed system, not in Forky
 using Robust.Server.GameObjects;
 using Robust.Shared.Containers;
@@ -749,6 +750,26 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
         // Get body part from args.Target (passed as target in DoAfterArgs)
         var targetBodyPart = args.Target ?? bodyPart;
 
+        // Re-validate target is a body part (may have changed due to EntityUid reuse)
+        if (Deleted(targetBodyPart))
+        {
+            Log.Warning("Surgery DoAfter completed but target was deleted. Aborting.");
+            args.Handled = true;
+            return;
+        }
+        if (HasComp<PortalComponent>(targetBodyPart))
+        {
+            Log.Warning($"Surgery DoAfter completed but target {ToPrettyString(targetBodyPart)} is a portal (wrong entity due to UID reuse?). Aborting.");
+            args.Handled = true;
+            return;
+        }
+        if (!HasComp<SurgeryLayerComponent>(targetBodyPart) && !HasComp<BodyPartComponent>(targetBodyPart))
+        {
+            Log.Warning($"Surgery DoAfter completed but target {ToPrettyString(targetBodyPart)} is no longer a body part. Aborting.");
+            args.Handled = true;
+            return;
+        }
+
         args.Handled = true;
 
         // Play end sound from tools
@@ -1114,6 +1135,24 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
 
     private void ExecuteStep(EntityUid bodyPart, EntityUid stepEntity, SurgeryStepComponent step, EntityUid? user = null)
     {
+        // Validate we're operating on a real body part - prevents wrong-entity operations
+        // (e.g., bluespace portal mistaken for body part due to EntityUid reuse)
+        if (Deleted(bodyPart))
+        {
+            Log.Warning("ExecuteStep called on deleted entity. Aborting.");
+            return;
+        }
+        if (HasComp<PortalComponent>(bodyPart))
+        {
+            Log.Warning($"ExecuteStep called on portal {ToPrettyString(bodyPart)} (wrong entity). Aborting.");
+            return;
+        }
+        if (!HasComp<SurgeryLayerComponent>(bodyPart) && !HasComp<BodyPartComponent>(bodyPart))
+        {
+            Log.Warning($"ExecuteStep called on non-body-part entity {ToPrettyString(bodyPart)}. Aborting.");
+            return;
+        }
+
         // Handle operation-based steps
         bool isImprovised = false;
         float speedModifier = 1.0f;
@@ -1390,6 +1429,14 @@ public sealed class SurgerySystem : SSSharedSurgerySystem
             {
                 if (_componentFactory.TryGetRegistration(compName, out var registration))
                 {
+                    // Never attempt to remove protected components - prevents crashes from
+                    // YAML misconfiguration or wrong-entity operations
+                    if (registration.Type == typeof(TransformComponent) ||
+                        registration.Type == typeof(MetaDataComponent))
+                    {
+                        Log.Warning($"Surgery step attempted to remove protected component {compName} from {ToPrettyString(bodyPart)}. Skipping.");
+                        continue;
+                    }
                     EntityManager.RemoveComponent(bodyPart, registration.Type);
                 }
             }

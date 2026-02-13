@@ -56,7 +56,7 @@ public sealed class PryingSystem : EntitySystem
         if (!args.CanInteract || !args.CanAccess)
             return;
 
-        if (!TryComp<PryingComponent>(args.User, out _))
+        if (!HasPryingCapability(args.User))
             return;
 
         args.Verbs.Add(new AlternativeVerb()
@@ -74,14 +74,13 @@ public sealed class PryingSystem : EntitySystem
     {
         id = null;
 
-        PryingComponent? comp = null;
-        if (!Resolve(tool, ref comp, false))
+        if (!TryGetPryingModifier(tool, out var speedModifier, out var enabled))
             return false;
 
-        if (!comp.Enabled)
+        if (!enabled)
             return false;
 
-        if (!CanPry(target, user, out var message, comp))
+        if (!CanPry(target, user, out var message, tool))
         {
             if (!string.IsNullOrWhiteSpace(message))
                 _popup.PopupClient(Loc.GetString(message), target, user);
@@ -90,9 +89,39 @@ public sealed class PryingSystem : EntitySystem
             return true;
         }
 
-        StartPry(target, user, tool, comp.SpeedModifier, out id);
+        StartPry(target, user, tool, speedModifier, out id);
 
         return true;
+    }
+
+    /// <summary>
+    /// Whether the entity has prying capability (PryingComponent or server-only PryingCapabilityComponent).
+    /// </summary>
+    public bool HasPryingCapability(EntityUid uid)
+    {
+        return HasComp<PryingComponent>(uid) || HasComp<PryingCapabilityComponent>(uid);
+    }
+
+    /// <summary>
+    /// Gets prying speed modifier and enabled state from an entity.
+    /// </summary>
+    private bool TryGetPryingModifier(EntityUid uid, out float speedModifier, out bool enabled)
+    {
+        if (TryComp<PryingComponent>(uid, out var prying))
+        {
+            speedModifier = prying.SpeedModifier;
+            enabled = prying.Enabled;
+            return true;
+        }
+        if (TryComp<PryingCapabilityComponent>(uid, out var cap))
+        {
+            speedModifier = cap.SpeedModifier;
+            enabled = cap.Enabled;
+            return true;
+        }
+        speedModifier = 1f;
+        enabled = false;
+        return false;
     }
 
     /// <summary>
@@ -109,17 +138,29 @@ public sealed class PryingSystem : EntitySystem
             return true;
 
         // hand-prying is much slower
-        var modifier = CompOrNull<PryingComponent>(user)?.SpeedModifier ?? unpoweredComp.PryModifier;
+        var modifier = TryGetPryingModifier(user, out var mod, out _) ? mod : unpoweredComp.PryModifier;
         return StartPry(target, user, null, modifier, out id);
     }
 
-    private bool CanPry(EntityUid target, EntityUid user, out string? message, PryingComponent? comp = null, PryUnpoweredComponent? unpoweredComp = null)
+    private bool CanPry(EntityUid target, EntityUid user, out string? message, EntityUid? tool = null, PryingComponent? comp = null, PryUnpoweredComponent? unpoweredComp = null)
     {
         BeforePryEvent canev;
 
-        if (comp != null || Resolve(user, ref comp, false))
+        if (comp != null)
         {
             canev = new BeforePryEvent(user, comp.PryPowered, comp.Force, true);
+        }
+        else if (tool != null && TryGetPryingCapability(tool.Value, out var toolPryPowered, out var toolForce))
+        {
+            canev = new BeforePryEvent(user, toolPryPowered, toolForce, true);
+        }
+        else if (Resolve(user, ref comp, false))
+        {
+            canev = new BeforePryEvent(user, comp.PryPowered, comp.Force, true);
+        }
+        else if (TryGetPryingCapability(user, out var userPryPowered, out var userForce))
+        {
+            canev = new BeforePryEvent(user, userPryPowered, userForce, true);
         }
         else
         {
@@ -137,6 +178,25 @@ public sealed class PryingSystem : EntitySystem
         message = canev.Message;
 
         return !canev.Cancelled;
+    }
+
+    private bool TryGetPryingCapability(EntityUid uid, out bool pryPowered, out bool force)
+    {
+        if (TryComp<PryingComponent>(uid, out var prying))
+        {
+            pryPowered = prying.PryPowered;
+            force = prying.Force;
+            return true;
+        }
+        if (TryComp<PryingCapabilityComponent>(uid, out var cap))
+        {
+            pryPowered = cap.PryPowered;
+            force = cap.Force;
+            return true;
+        }
+        pryPowered = false;
+        force = false;
+        return false;
     }
 
     private bool StartPry(EntityUid target, EntityUid user, EntityUid? tool, float toolModifier, [NotNullWhen(true)] out DoAfterId? id)
@@ -170,17 +230,19 @@ public sealed class PryingSystem : EntitySystem
             return;
 
         TryComp<PryingComponent>(args.Used, out var comp);
+        TryComp<PryingCapabilityComponent>(args.Used, out var capComp);
 
-        if (!CanPry(uid, args.User, out var message, comp))
+        if (!CanPry(uid, args.User, out var message, args.Used, comp))
         {
             if (!string.IsNullOrWhiteSpace(message))
                 _popup.PopupClient(Loc.GetString(message), uid, args.User);
             return;
         }
 
-        if (args.Used != null && comp != null)
+        if (args.Used != null && (comp != null || capComp != null))
         {
-            _audioSystem.PlayPredicted(comp.UseSound, args.Used.Value, args.User);
+            var sound = comp?.UseSound ?? capComp!.UseSound;
+            _audioSystem.PlayPredicted(sound, args.Used.Value, args.User);
         }
 
         var ev = new PriedEvent(args.User);

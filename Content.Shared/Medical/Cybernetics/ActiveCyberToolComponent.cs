@@ -1,29 +1,28 @@
-using Robust.Shared.GameStates;
-
 namespace Content.Shared.Medical.Cybernetics;
 
 /// <summary>
 /// Component that tracks the currently active cyber-tool on a user.
 /// Prevents multiple cyber-tools from being active simultaneously.
+/// Server-only to avoid LastComponentRemoved triggering client crashes when removed from player.
 /// </summary>
-[RegisterComponent, NetworkedComponent, AutoGenerateComponentState]
+[RegisterComponent]
 public sealed partial class ActiveCyberToolComponent : Component
 {
     /// <summary>
     /// Type of tool currently active (e.g., "JawsOfLife", "Screwdriver").
     /// </summary>
-    [DataField, AutoNetworkedField]
+    [DataField]
     public string ToolType = string.Empty;
 
     /// <summary>
     /// Time when the tool was activated.
     /// </summary>
-    [DataField, AutoNetworkedField]
+    [DataField]
     public TimeSpan ActivationTime;
 
     /// <summary>
     /// Entity UID of the source module that activated this tool.
     /// </summary>
-    [DataField, AutoNetworkedField]
+    [DataField]
     public EntityUid? SourceModule;
 }

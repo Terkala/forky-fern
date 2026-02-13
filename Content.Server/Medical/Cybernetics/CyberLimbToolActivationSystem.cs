@@ -61,14 +61,16 @@ public sealed class CyberLimbToolActivationSystem : Content.Shared.Medical.Cyber
             return;
 
         // Check if already has a tool component (from previous activation)
-        if (HasComp<PryingComponent>(user) || HasComp<ToolComponent>(user))
+        if (HasComp<PryingCapabilityComponent>(user) || HasComp<ToolComponent>(user))
             return;
 
         // Activate based on module type
+        // Use PryingCapabilityComponent (server-only) instead of PryingComponent to avoid LastComponentRemoved
+        // triggering client crashes when the capability is removed.
         if (TryComp<JawsOfLifeModuleComponent>(module, out var jawsModule))
         {
-            // Add temporary PryingComponent
-            var prying = EnsureComp<PryingComponent>(user);
+            // Add temporary PryingCapabilityComponent (server-only, avoids client sync crash)
+            var prying = EnsureComp<PryingCapabilityComponent>(user);
             
             // Calculate final prying speed based on cyber-limb efficiency
             float finalPryingSpeed = jawsModule.PryingSpeed;
@@ -98,8 +100,8 @@ public sealed class CyberLimbToolActivationSystem : Content.Shared.Medical.Cyber
         // Handle modules with SpecialModuleComponent where ModuleType is Tool and ToolQuality is Prying (e.g., CyberCrowbar)
         else if (specialModule.ModuleType == SpecialModuleType.Tool && specialModule.ToolQuality == "Prying")
         {
-            // Add temporary PryingComponent (similar to Jaws of Life but with default crowbar values)
-            var prying = EnsureComp<PryingComponent>(user);
+            // Add temporary PryingCapabilityComponent (similar to Jaws of Life but with default crowbar values)
+            var prying = EnsureComp<PryingCapabilityComponent>(user);
             prying.SpeedModifier = 1.0f;
             prying.PryPowered = false;
             prying.Enabled = true;
@@ -164,17 +166,10 @@ public sealed class CyberLimbToolActivationSystem : Content.Shared.Medical.Cyber
     /// </summary>
     private void CleanupActiveTool(EntityUid uid)
     {
-        // Remove temporary tool components
-        if (HasComp<PryingComponent>(uid))
-        {
-            RemComp<PryingComponent>(uid);
-        }
-        if (HasComp<ToolComponent>(uid))
-        {
-            RemComp<ToolComponent>(uid);
-        }
-
-        // Remove active tool tracking
+        // Remove temporary tool components. PryingCapabilityComponent is server-only (no NetworkedComponent),
+        // so its removal doesn't trigger LastComponentRemoved / NetComponents sync that could crash the client.
+        // We never add PryingComponent or ToolComponent for cyber limbs - only PryingCapabilityComponent.
+        RemComp<PryingCapabilityComponent>(uid);
         RemComp<ActiveCyberToolComponent>(uid);
     }
 
