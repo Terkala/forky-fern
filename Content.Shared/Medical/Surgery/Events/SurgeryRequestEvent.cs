@@ -14,7 +14,8 @@ public record struct SurgeryRequestEvent(
     EntityUid BodyPart,
     string StepId,
     SurgeryLayer Layer,
-    bool IsImprovised)
+    bool IsImprovised,
+    EntityUid? Organ = null)
 {
     public bool Valid;
     public string? RejectReason;

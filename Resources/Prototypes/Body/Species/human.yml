@@ -76,6 +76,7 @@
   components:
   - type: BodyPart
     containerId: internal_organs
+    slots: [ Lungs, Heart, Stomach, Liver, Kidneys, Appendix ]
   - type: EntityTableContainerFill
     containers:
       internal_organs: !type:AllSelector
@@ -93,6 +94,7 @@
   components:
   - type: BodyPart
     containerId: head_organs
+    slots: [ Brain, Eyes, Tongue, Ears ]
   - type: EntityTableContainerFill
     containers:
       head_organs: !type:AllSelector
@@ -108,6 +110,7 @@
   components:
   - type: BodyPart
     containerId: limb_organs
+    slots: [ HandLeft ]
   - type: EntityTableContainerFill
     containers:
       limb_organs: !type:AllSelector
@@ -120,6 +123,7 @@
   components:
   - type: BodyPart
     containerId: limb_organs
+    slots: [ HandRight ]
   - type: EntityTableContainerFill
     containers:
       limb_organs: !type:AllSelector
@@ -140,6 +144,7 @@
   components:
   - type: BodyPart
     containerId: limb_organs
+    slots: [ FootLeft ]
   - type: EntityTableContainerFill
     containers:
       limb_organs: !type:AllSelector
@@ -152,6 +157,7 @@
   components:
   - type: BodyPart
     containerId: limb_organs
+    slots: [ FootRight ]
   - type: EntityTableContainerFill
     containers:
       limb_organs: !type:AllSelector

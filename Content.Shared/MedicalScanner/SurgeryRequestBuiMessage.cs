@@ -11,13 +11,15 @@ public sealed class SurgeryRequestBuiMessage : BoundUserInterfaceMessage
     public string StepId;
     public SurgeryLayer Layer;
     public bool IsImprovised;
+    public NetEntity? Organ;
 
-    public SurgeryRequestBuiMessage(NetEntity target, NetEntity bodyPart, string stepId, SurgeryLayer layer, bool isImprovised)
+    public SurgeryRequestBuiMessage(NetEntity target, NetEntity bodyPart, string stepId, SurgeryLayer layer, bool isImprovised, NetEntity? organ = null)
     {
         Target = target;
         BodyPart = bodyPart;
         StepId = stepId;
         Layer = layer;
         IsImprovised = isImprovised;
+        Organ = organ;
     }
 }

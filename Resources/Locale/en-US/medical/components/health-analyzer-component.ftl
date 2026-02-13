@@ -30,5 +30,14 @@ health-analyzer-mode-surgery = Surgery
 health-analyzer-surgery-step-retract-skin = Retract Skin
 health-analyzer-surgery-step-retract-tissue = Retract Tissue
 health-analyzer-surgery-step-saw-bones = Saw Bones
+health-analyzer-surgery-step-remove-organ = Remove Organ
+health-analyzer-surgery-step-insert-organ = Insert Organ
+health-analyzer-surgery-step-remove-organ-with-name = Remove { $organName }
+health-analyzer-surgery-step-insert-organ-with-name = Insert { $organName }
+
+health-analyzer-surgery-error-organ-gone = The organ is no longer there.
+health-analyzer-surgery-error-organ-not-in-hand = The organ is no longer in your hand.
+health-analyzer-surgery-error-slot-filled = That organ slot is already filled.
+health-analyzer-surgery-error-invalid-surgical-process = The surgical site is no longer valid.
 
 health-analyzer-popup-scan-target = {CAPITALIZE(THE($user))} is trying to scan you!

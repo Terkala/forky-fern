@@ -72,6 +72,13 @@ public enum HealthAnalyzerMode : byte
 }
 
 [Serializable, NetSerializable]
+public struct OrganInBodyPartData
+{
+    public NetEntity Organ;
+    public string? CategoryId;
+}
+
+[Serializable, NetSerializable]
 public struct SurgeryLayerStateData
 {
     public NetEntity BodyPart;
@@ -79,4 +86,12 @@ public struct SurgeryLayerStateData
     public bool SkinRetracted;
     public bool TissueRetracted;
     public bool BonesSawed;
+    public List<OrganInBodyPartData> Organs;
+    public List<string> EmptySlots;
+
+    public SurgeryLayerStateData()
+    {
+        Organs = new();
+        EmptySlots = new();
+    }
 }

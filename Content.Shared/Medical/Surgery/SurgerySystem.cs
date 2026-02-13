@@ -8,6 +8,7 @@ using Content.Shared.Medical.Integrity.Events;
 using Content.Shared.Medical.Surgery.Components;
 using Content.Shared.Medical.Surgery.Events;
 using Content.Shared.Medical.Surgery.Prototypes;
+using Content.Shared.Popups;
 using Content.Shared.Tag;
 using Robust.Shared.Prototypes;
 
@@ -19,6 +20,7 @@ public sealed class SurgerySystem : EntitySystem
     [Dependency] private readonly SharedDoAfterSystem _doAfter = default!;
     [Dependency] private readonly SharedHandsSystem _hands = default!;
     [Dependency] private readonly IPrototypeManager _prototypes = default!;
+    [Dependency] private readonly SharedPopupSystem _popup = default!;
     [Dependency] private readonly TagSystem _tag = default!;
 
     public override void Initialize()
@@ -99,7 +101,79 @@ public sealed class SurgerySystem : EntitySystem
             return;
         }
 
-        var doAfterEv = new SurgeryDoAfterEvent(GetNetEntity(args.BodyPart), args.StepId);
+        if (args.StepId == "RemoveOrgan")
+        {
+            if (!args.Organ.HasValue || !Exists(args.Organ.Value))
+            {
+                args.RejectReason = "invalid-entity";
+                return;
+            }
+            if (!TryComp<BodyPartComponent>(args.BodyPart, out var bodyPartComp) || bodyPartComp.Organs == null ||
+                !bodyPartComp.Organs.ContainedEntities.Contains(args.Organ.Value))
+            {
+                args.RejectReason = "organ-not-in-body-part";
+                return;
+            }
+            if (!layerComp.SkinRetracted || !layerComp.TissueRetracted || !layerComp.BonesSawed)
+            {
+                args.RejectReason = "layer-not-open";
+                return;
+            }
+            if (bodyPartComp.Body != ent.Owner)
+            {
+                args.RejectReason = "body-part-detached";
+                return;
+            }
+        }
+        else if (args.StepId == "InsertOrgan")
+        {
+            if (!args.Organ.HasValue || !Exists(args.Organ.Value))
+            {
+                args.RejectReason = "invalid-entity";
+                return;
+            }
+            if (!TryComp<OrganComponent>(args.Organ.Value, out var organComp) || organComp.Body.HasValue)
+            {
+                args.RejectReason = "organ-already-in-body";
+                return;
+            }
+            if (!_hands.IsHolding(args.User, args.Organ.Value))
+            {
+                args.RejectReason = "organ-not-in-hand";
+                return;
+            }
+            if (!TryComp<BodyPartComponent>(args.BodyPart, out var insertBodyPart) || insertBodyPart.Organs == null)
+            {
+                args.RejectReason = "body-part-no-container";
+                return;
+            }
+            if (!layerComp.SkinRetracted || !layerComp.TissueRetracted || !layerComp.BonesSawed)
+            {
+                args.RejectReason = "layer-not-open";
+                return;
+            }
+            if (insertBodyPart.Body != ent.Owner)
+            {
+                args.RejectReason = "body-part-detached";
+                return;
+            }
+            if (insertBodyPart.Slots.Count > 0)
+            {
+                if (organComp.Category is not { } category || !insertBodyPart.Slots.Contains(category))
+                {
+                    args.RejectReason = "no-slot-for-organ";
+                    return;
+                }
+                if (insertBodyPart.Organs != null && insertBodyPart.Organs.ContainedEntities.Any(o =>
+                        TryComp<OrganComponent>(o, out var oComp) && oComp.Category == category))
+                {
+                    args.RejectReason = "slot-filled";
+                    return;
+                }
+            }
+        }
+
+        var doAfterEv = new SurgeryDoAfterEvent(GetNetEntity(args.BodyPart), args.StepId, args.Organ.HasValue ? GetNetEntity(args.Organ.Value) : null);
         var doAfterArgs = new DoAfterArgs(EntityManager, args.User, step.DoAfterDelay, doAfterEv, args.Target, args.Target, tool)
         {
             NeedHand = true,
@@ -127,21 +201,88 @@ public sealed class SurgerySystem : EntitySystem
 
         var layerComp = EnsureComp<SurgeryLayerComponent>(bodyPart);
 
-        switch (args.StepId)
+        if (args.StepId is "RemoveOrgan" or "InsertOrgan")
         {
-            case "RetractSkin":
-                layerComp.SkinRetracted = true;
-                break;
-            case "RetractTissue":
-                layerComp.TissueRetracted = true;
-                break;
-            case "SawBones":
-                layerComp.BonesSawed = true;
-                break;
-        }
-        Dirty(bodyPart, layerComp);
+            if (!TryComp<BodyPartComponent>(bodyPart, out var bodyPartComp) || bodyPartComp.Body != ent.Owner)
+            {
+                _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-invalid-surgical-process"), args.User, args.User, PopupType.Medium);
+                return;
+            }
+            if (!layerComp.SkinRetracted || !layerComp.TissueRetracted || !layerComp.BonesSawed)
+            {
+                _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-invalid-surgical-process"), args.User, args.User, PopupType.Medium);
+                return;
+            }
 
-        var penaltyEv = new SurgeryPenaltyAppliedEvent(bodyPart, step.Penalty);
-        RaiseLocalEvent(bodyPart, ref penaltyEv);
+            if (args.StepId == "RemoveOrgan")
+            {
+                if (args.Organ is not { } organNet)
+                {
+                    _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-organ-gone"), args.User, args.User, PopupType.Medium);
+                    return;
+                }
+                var organ = GetEntity(organNet);
+                if (!Exists(organ) || bodyPartComp.Organs == null || !bodyPartComp.Organs.ContainedEntities.Contains(organ))
+                {
+                    _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-organ-gone"), args.User, args.User, PopupType.Medium);
+                    return;
+                }
+                var removeEv = new OrganRemoveRequestEvent(organ);
+                RaiseLocalEvent(organ, ref removeEv);
+            }
+            else if (args.StepId == "InsertOrgan")
+            {
+                if (args.Organ is not { } organNet)
+                {
+                    _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-organ-not-in-hand"), args.User, args.User, PopupType.Medium);
+                    return;
+                }
+                var organ = GetEntity(organNet);
+                if (!Exists(organ))
+                {
+                    _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-organ-not-in-hand"), args.User, args.User, PopupType.Medium);
+                    return;
+                }
+                if (!_hands.IsHolding(args.User, organ))
+                {
+                    _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-organ-not-in-hand"), args.User, args.User, PopupType.Medium);
+                    return;
+                }
+                if (TryComp<OrganComponent>(organ, out var organComp) && organComp.Category is { } category &&
+                    bodyPartComp.Slots.Count > 0 && bodyPartComp.Organs != null &&
+                    bodyPartComp.Organs.ContainedEntities.Any(o =>
+                        TryComp<OrganComponent>(o, out var oComp) && oComp.Category == category))
+                {
+                    _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-slot-filled"), args.User, args.User, PopupType.Medium);
+                    return;
+                }
+                var insertEv = new OrganInsertRequestEvent(bodyPart, organ);
+                RaiseLocalEvent(bodyPart, ref insertEv);
+                if (!insertEv.Success)
+                {
+                    _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-slot-filled"), args.User, args.User, PopupType.Medium);
+                    return;
+                }
+            }
+        }
+        else
+        {
+            switch (args.StepId)
+            {
+                case "RetractSkin":
+                    layerComp.SkinRetracted = true;
+                    break;
+                case "RetractTissue":
+                    layerComp.TissueRetracted = true;
+                    break;
+                case "SawBones":
+                    layerComp.BonesSawed = true;
+                    break;
+            }
+            Dirty(bodyPart, layerComp);
+
+            var penaltyEv = new SurgeryPenaltyAppliedEvent(bodyPart, step.Penalty);
+            RaiseLocalEvent(bodyPart, ref penaltyEv);
+        }
     }
 }

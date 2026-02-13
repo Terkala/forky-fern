@@ -22,5 +22,21 @@
   name: health-analyzer-surgery-step-saw-bones
   penalty: 8
   procedureTypeIndex: 2
-  requiredToolTag: SurgeryTool
+  requiredToolTag: SawingTool
+  doAfterDelay: 3
+
+- type: surgeryStep
+  id: RemoveOrgan
+  layer: Organ
+  name: health-analyzer-surgery-step-remove-organ
+  penalty: 0
+  procedureTypeIndex: 0
+  doAfterDelay: 3
+
+- type: surgeryStep
+  id: InsertOrgan
+  layer: Organ
+  name: health-analyzer-surgery-step-insert-organ
+  penalty: 0
+  procedureTypeIndex: 0
   doAfterDelay: 3

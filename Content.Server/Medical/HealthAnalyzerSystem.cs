@@ -119,7 +119,8 @@ public sealed class HealthAnalyzerSystem : EntitySystem
         var bodyPartUid = GetEntity(args.BodyPart);
         var user = args.Actor;
 
-        var ev = new SurgeryRequestEvent(uid.Owner, user, targetUid, bodyPartUid, args.StepId, args.Layer, args.IsImprovised);
+        var ev = new SurgeryRequestEvent(uid.Owner, user, targetUid, bodyPartUid, args.StepId, args.Layer, args.IsImprovised,
+            args.Organ.HasValue ? GetEntity(args.Organ.Value) : null);
         RaiseLocalEvent(targetUid, ref ev);
     }
 
@@ -336,14 +337,36 @@ public sealed class HealthAnalyzerSystem : EntitySystem
                 if (TryComp<SurgeryLayerComponent>(part, out var layer))
                 {
                     var categoryId = TryComp<OrganComponent>(part, out var organ) ? organ.Category?.ToString() : null;
-                    state.BodyPartLayerState.Add(new SurgeryLayerStateData
+                    var layerData = new SurgeryLayerStateData
                     {
                         BodyPart = GetNetEntity(part),
                         CategoryId = categoryId,
                         SkinRetracted = layer.SkinRetracted,
                         TissueRetracted = layer.TissueRetracted,
                         BonesSawed = layer.BonesSawed
-                    });
+                    };
+                    if (TryComp<BodyPartComponent>(part, out var bodyPartComp) && bodyPartComp.Organs != null)
+                    {
+                        foreach (var child in bodyPartComp.Organs.ContainedEntities)
+                        {
+                            if (TryComp<OrganComponent>(child, out var childOrgan))
+                            {
+                                layerData.Organs.Add(new OrganInBodyPartData
+                                {
+                                    Organ = GetNetEntity(child),
+                                    CategoryId = childOrgan.Category?.ToString()
+                                });
+                            }
+                        }
+                        foreach (var slot in bodyPartComp.Slots)
+                        {
+                            var slotId = slot.ToString();
+                            var filled = layerData.Organs.Any(o => o.CategoryId == slotId);
+                            if (!filled)
+                                layerData.EmptySlots.Add(slotId);
+                        }
+                    }
+                    state.BodyPartLayerState.Add(layerData);
                 }
             }
         }

@@ -1528,6 +1528,9 @@
   id: SurgeryTool # Storage whitelist: ClothingBeltMedical
 
 - type: Tag
+  id: SawingTool # SawBones step: metal saw, choppa, circular saw, etc.
+
+- type: Tag
   id: SurveillanceCameraMonitorCircuitboard # ConstructionGraph: WallmountTelescreen
 
 - type: Tag

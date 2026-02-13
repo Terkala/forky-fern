@@ -36,6 +36,23 @@ public sealed class BodyPartOrganSystem : EntitySystem
         if (ent.Comp.Organs == null)
             return;
 
+        if (organComp.Category is not { } category)
+            return;
+
+        if (ent.Comp.Slots.Count > 0)
+        {
+            if (!ent.Comp.Slots.Contains(category))
+                return;
+
+            foreach (var existing in ent.Comp.Organs.ContainedEntities)
+            {
+                if (_organQuery.TryComp(existing, out var existingOrgan) && existingOrgan.Category == category)
+                {
+                    return;
+                }
+            }
+        }
+
         args.Success = _container.Insert(args.Organ, ent.Comp.Organs);
     }
 
