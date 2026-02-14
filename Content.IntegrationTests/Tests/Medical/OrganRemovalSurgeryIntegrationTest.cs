@@ -6,6 +6,7 @@ using Content.Shared.Body.Components;
 using Content.Shared.Body.Events;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Medical.Surgery;
+using Content.Shared.Medical.Surgery.Events;
 using Content.Shared.MedicalScanner;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Prototypes;
@@ -148,13 +149,31 @@ public sealed class OrganRemovalSurgeryIntegrationTest : InteractionTest
         await Server.WaitPost(() =>
         {
             var heart = SEntMan.GetEntity(heartNet);
-            HandSys.TryPickupAnyHand(SPlayer, heart, checkActionBlocker: false);
+            // Drop saw to free a hand - TryPickupAnyHand requires an empty hand, and we need the analyzer for the BUI
+            foreach (var hand in HandSys.EnumerateHands((SPlayer, Hands!)))
+            {
+                if (HandSys.TryGetHeldItem((SPlayer, Hands!), hand, out var held) && held == SEntMan.GetEntity(sawNet))
+                {
+                    HandSys.TrySetActiveHand((SPlayer, Hands!), hand);
+                    HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
+                    break;
+                }
+            }
+            Assert.That(HandSys.TryPickupAnyHand(SPlayer, heart, checkActionBlocker: false), Is.True, "Heart must be picked up for InsertOrgan");
         });
 
         await RunTicks(5);
 
+        await Server.WaitAssertion(() =>
+        {
+            var heart = SEntMan.GetEntity(heartNet);
+            Assert.That(HandSys.IsHolding(SPlayer, heart), Is.True, "Heart must be in hand before InsertOrgan BUI");
+        });
+
         await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "InsertOrgan", SurgeryLayer.Organ, false, heartNet), analyzerNet);
-        await RunTicks(300);
+        await RunTicks(5);
+        await AwaitDoAfters(maxExpected: 1);
+        await RunTicks(10);
 
         await Server.WaitAssertion(() =>
         {

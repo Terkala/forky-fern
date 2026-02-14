@@ -4,6 +4,7 @@ using Content.Shared.Body.Components;
 using Content.Shared.Body.Events;
 using Content.Shared.DoAfter;
 using Content.Shared.Hands.EntitySystems;
+using Content.Shared.Medical.Integrity.Components;
 using Content.Shared.Medical.Integrity.Events;
 using Content.Shared.Medical.Surgery.Components;
 using Content.Shared.Medical.Surgery.Events;
@@ -172,14 +173,34 @@ public sealed class SurgerySystem : EntitySystem
                     return;
                 }
             }
+
+            var costEv = new IntegrityCostRequestEvent(args.Organ.Value);
+            RaiseLocalEvent(args.Organ.Value, ref costEv);
+            if (costEv.Cost > 0)
+            {
+                var penaltyEv = new IntegrityPenaltyTotalRequestEvent(ent.Owner);
+                RaiseLocalEvent(ent.Owner, ref penaltyEv);
+                var usage = TryComp<IntegrityUsageComponent>(ent.Owner, out var usageComp) ? usageComp.Usage : 0;
+                const int maxIntegrity = 6;
+                if (usage + penaltyEv.Total + costEv.Cost > maxIntegrity)
+                {
+                    args.RejectReason = "integrity-over-capacity";
+                    return;
+                }
+            }
         }
 
         var doAfterEv = new SurgeryDoAfterEvent(GetNetEntity(args.BodyPart), args.StepId, args.Organ.HasValue ? GetNetEntity(args.Organ.Value) : null);
+        // InsertOrgan/RemoveOrgan: organ is in hand, not a tool - relax break conditions for organ-in-hand steps
+        var isOrganStep = args.StepId is "InsertOrgan" or "RemoveOrgan";
         var doAfterArgs = new DoAfterArgs(EntityManager, args.User, step.DoAfterDelay, doAfterEv, args.Target, args.Target, tool)
         {
             NeedHand = true,
-            BreakOnHandChange = true,
-            BreakOnMove = true,
+            BreakOnHandChange = !isOrganStep,
+            BreakOnMove = !isOrganStep,
+            BreakOnDropItem = !isOrganStep,
+            DistanceThreshold = isOrganStep ? 3f : 1.5f,
+            RequireCanInteract = !isOrganStep,
         };
 
         if (!_doAfter.TryStartDoAfter(doAfterArgs))

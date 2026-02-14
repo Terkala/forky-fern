@@ -47,6 +47,7 @@ using Content.Shared.Interaction.Events;
 using Content.Shared.Item.ItemToggle;
 using Content.Shared.Item.ItemToggle.Components;
 using Content.Shared.Medical.Integrity;
+using Content.Shared.Medical.Integrity.Components;
 using Content.Shared.Medical.Integrity.Events;
 using Content.Shared.Medical.Surgery.Components;
 using Content.Shared.Medical.Surgery.Events;
@@ -329,7 +330,8 @@ public sealed class HealthAnalyzerSystem : EntitySystem
 
             var totalEv = new IntegrityPenaltyTotalRequestEvent(entity);
             RaiseLocalEvent(entity, ref totalEv);
-            state.IntegrityTotal = totalEv.Total;
+            var usage = TryComp<IntegrityUsageComponent>(entity, out var usageComp) ? usageComp.Usage : 0;
+            state.IntegrityTotal = totalEv.Total + usage;
             state.IntegrityMax = 6;
 
             foreach (var part in query.Parts)

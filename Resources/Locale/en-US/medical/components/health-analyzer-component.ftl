@@ -39,5 +39,6 @@ health-analyzer-surgery-error-organ-gone = The organ is no longer there.
 health-analyzer-surgery-error-organ-not-in-hand = The organ is no longer in your hand.
 health-analyzer-surgery-error-slot-filled = That organ slot is already filled.
 health-analyzer-surgery-error-invalid-surgical-process = The surgical site is no longer valid.
+health-analyzer-integrity-over-capacity = Patient integrity capacity would be exceeded.
 
 health-analyzer-popup-scan-target = {CAPITALIZE(THE($user))} is trying to scan you!
