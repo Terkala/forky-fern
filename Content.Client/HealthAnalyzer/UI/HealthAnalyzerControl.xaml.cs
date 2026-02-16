@@ -237,21 +237,30 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
             }
         }
 
+        var skinStepIds = stepsConfig != null
+            ? stepsConfig.GetSkinOpenStepIds(_prototypes).Concat(stepsConfig.GetSkinCloseStepIds(_prototypes))
+                .Select(s => new ProtoId<SurgeryStepPrototype>(s)).ToList()
+            : (IReadOnlyList<ProtoId<SurgeryStepPrototype>>?)null;
+        var tissueStepIds = stepsConfig != null
+            ? stepsConfig.GetTissueOpenStepIds(_prototypes).Concat(stepsConfig.GetTissueCloseStepIds(_prototypes))
+                .Select(s => new ProtoId<SurgeryStepPrototype>(s)).ToList()
+            : (IReadOnlyList<ProtoId<SurgeryStepPrototype>>?)null;
+
         if (_selectedLayer == SurgeryLayer.Skin)
         {
-            AddLayerSteps(stepsConfig?.SkinSteps, layerState.SkinProcedures, null, layerState, SurgeryLayer.Skin);
+            AddLayerSteps(skinStepIds, layerState.SkinProcedures, null, layerState, SurgeryLayer.Skin, stepsConfig: stepsConfig);
         }
         if (_selectedLayer == SurgeryLayer.Tissue)
         {
-            if (layerState.SkinRetracted)
-                AddLayerSteps(stepsConfig?.TissueSteps, layerState.TissueProcedures, null, layerState, SurgeryLayer.Tissue, excludeStepIds: ["SawBones"]);
+            if (layerState.SkinOpen)
+                AddLayerSteps(tissueStepIds, layerState.TissueProcedures, null, layerState, SurgeryLayer.Tissue, excludeStepIds: ["SawBones"], stepsConfig: stepsConfig);
         }
         if (_selectedLayer == SurgeryLayer.Organ)
         {
-            if (!layerState.BonesSawed && layerState.TissueRetracted)
-                AddLayerSteps(stepsConfig?.TissueSteps, layerState.TissueProcedures, "SawBones", layerState, SurgeryLayer.Tissue);
+            if (!layerState.OrganOpen && layerState.TissueOpen)
+                AddLayerSteps(tissueStepIds, layerState.TissueProcedures, onlyStepId: "SawBones", layerState, SurgeryLayer.Tissue, stepsConfig: stepsConfig);
 
-            if (layerState.BonesSawed)
+            if (layerState.OrganOpen)
             {
                 foreach (var organData in layerState.Organs ?? [])
                 {
@@ -308,15 +317,14 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
         }
     }
 
-    private static readonly string[] ClosingStepIds = ["CloseIncision", "CloseTissue"];
-
     private void AddLayerSteps(
         IReadOnlyList<ProtoId<SurgeryStepPrototype>>? stepIds,
         IReadOnlyList<SurgeryProcedureState>? performed,
         string? onlyStepId,
         SurgeryLayerStateData layerState,
         SurgeryLayer layer,
-        string[]? excludeStepIds = null)
+        string[]? excludeStepIds = null,
+        BodyPartSurgeryStepsPrototype? stepsConfig = null)
     {
         performed ??= [];
         IReadOnlyList<ProtoId<SurgeryStepPrototype>> steps = stepIds ?? [];
@@ -330,6 +338,11 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
             };
         }
 
+        var skinOpenSteps = stepsConfig?.GetSkinOpenStepIds(_prototypes).ToHashSet() ?? new HashSet<string> { "RetractSkin" };
+        var skinCloseSteps = stepsConfig?.GetSkinCloseStepIds(_prototypes).ToHashSet() ?? new HashSet<string> { "CloseIncision" };
+        var tissueOpenSteps = stepsConfig?.GetTissueOpenStepIds(_prototypes).ToHashSet() ?? new HashSet<string> { "RetractTissue" };
+        var tissueCloseSteps = stepsConfig?.GetTissueCloseStepIds(_prototypes).ToHashSet() ?? new HashSet<string> { "CloseTissue" };
+
         foreach (var stepId in steps)
         {
             var id = stepId.ToString();
@@ -337,15 +350,19 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
                 continue;
             if (onlyStepId != null && id != onlyStepId)
                 continue;
-            if (performed.Any(p => p.StepId == id && p.Performed))
-                continue;
-            if (ClosingStepIds.Contains(id))
+            // Skip performed steps, except for cyclical layers: when closed, show open steps again (allows re-opening)
+            var isPerformed = performed.Any(p => p.StepId == id && p.Performed);
+            if (isPerformed)
             {
-                if (id == "CloseIncision" && !layerState.SkinRetracted)
-                    continue;
-                if (id == "CloseTissue" && !layerState.TissueRetracted)
+                var showAnyway = (layer == SurgeryLayer.Skin && skinOpenSteps.Contains(id) && !layerState.SkinOpen)
+                    || (layer == SurgeryLayer.Tissue && tissueOpenSteps.Contains(id) && !layerState.TissueOpen);
+                if (!showAnyway)
                     continue;
             }
+            if (skinCloseSteps.Contains(id) && !layerState.SkinOpen)
+                continue;
+            if (tissueCloseSteps.Contains(id) && !layerState.TissueOpen)
+                continue;
             if (!_prototypes.TryIndex(stepId, out SurgeryStepPrototype? step))
                 continue;
             var name = step.Name != null ? Loc.GetString(step.Name) : id;

@@ -61,6 +61,7 @@ using Content.Shared.Traits.Assorted;
 using Robust.Server.GameObjects;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Containers;
+using Robust.Shared.Prototypes;
 using Robust.Shared.Timing;
 using Content.Server.Body.Systems;
 
@@ -79,6 +80,7 @@ public sealed class HealthAnalyzerSystem : EntitySystem
     [Dependency] private readonly SharedPopupSystem _popupSystem = default!;
     [Dependency] private readonly BloodstreamSystem _bloodstreamSystem = default!;
     [Dependency] private readonly BodySystem _body = default!;
+    [Dependency] private readonly IPrototypeManager _prototypes = default!;
     [Dependency] private readonly SurgeryLayerSystem _surgeryLayer = default!;
 
     public override void Initialize()
@@ -354,21 +356,45 @@ public sealed class HealthAnalyzerSystem : EntitySystem
                 if (TryComp<SurgeryLayerComponent>(part, out var layer))
                 {
                     var categoryId = TryComp<OrganComponent>(part, out var organ) ? organ.Category?.ToString() : null;
+                    var stepsConfig = _surgeryLayer.GetStepsConfig(entity, part);
+
+                    var skinProcedures = new List<SurgeryProcedureState>();
+                    var tissueProcedures = new List<SurgeryProcedureState>();
+                    bool skinOpen = false, tissueOpen = false, organOpen = false;
+
+                    if (stepsConfig != null)
+                    {
+                        foreach (var stepId in stepsConfig.GetSkinOpenStepIds(_prototypes))
+                            skinProcedures.Add(new SurgeryProcedureState { StepId = stepId, Performed = _surgeryLayer.IsStepPerformed((part, layer), stepId) });
+                        foreach (var stepId in stepsConfig.GetSkinCloseStepIds(_prototypes))
+                            skinProcedures.Add(new SurgeryProcedureState { StepId = stepId, Performed = _surgeryLayer.IsStepPerformed((part, layer), stepId) });
+                        foreach (var stepId in stepsConfig.GetTissueOpenStepIds(_prototypes))
+                            tissueProcedures.Add(new SurgeryProcedureState { StepId = stepId, Performed = _surgeryLayer.IsStepPerformed((part, layer), stepId) });
+                        foreach (var stepId in stepsConfig.GetTissueCloseStepIds(_prototypes))
+                            tissueProcedures.Add(new SurgeryProcedureState { StepId = stepId, Performed = _surgeryLayer.IsStepPerformed((part, layer), stepId) });
+
+                        skinOpen = _surgeryLayer.IsSkinOpen(layer, stepsConfig);
+                        tissueOpen = _surgeryLayer.IsTissueOpen(layer, stepsConfig);
+                        organOpen = _surgeryLayer.IsOrganLayerOpen(layer, stepsConfig);
+                    }
+                    else
+                    {
+                        skinProcedures.Add(new SurgeryProcedureState { StepId = "RetractSkin", Performed = _surgeryLayer.IsStepPerformed((part, layer), "RetractSkin") });
+                        skinProcedures.Add(new SurgeryProcedureState { StepId = "CloseIncision", Performed = _surgeryLayer.IsStepPerformed((part, layer), "CloseIncision") });
+                        tissueProcedures.Add(new SurgeryProcedureState { StepId = "RetractTissue", Performed = _surgeryLayer.IsStepPerformed((part, layer), "RetractTissue") });
+                        tissueProcedures.Add(new SurgeryProcedureState { StepId = "SawBones", Performed = _surgeryLayer.IsStepPerformed((part, layer), "SawBones") });
+                        tissueProcedures.Add(new SurgeryProcedureState { StepId = "CloseTissue", Performed = _surgeryLayer.IsStepPerformed((part, layer), "CloseTissue") });
+                    }
+
                     var layerData = new SurgeryLayerStateData
                     {
                         BodyPart = GetNetEntity(part),
                         CategoryId = categoryId,
-                        SkinProcedures =
-                        [
-                            new SurgeryProcedureState { StepId = "RetractSkin", Performed = _surgeryLayer.IsStepPerformed((part, layer), "RetractSkin") },
-                            new SurgeryProcedureState { StepId = "CloseIncision", Performed = _surgeryLayer.IsStepPerformed((part, layer), "CloseIncision") }
-                        ],
-                        TissueProcedures =
-                        [
-                            new SurgeryProcedureState { StepId = "RetractTissue", Performed = _surgeryLayer.IsStepPerformed((part, layer), "RetractTissue") },
-                            new SurgeryProcedureState { StepId = "SawBones", Performed = _surgeryLayer.IsStepPerformed((part, layer), "SawBones") },
-                            new SurgeryProcedureState { StepId = "CloseTissue", Performed = _surgeryLayer.IsStepPerformed((part, layer), "CloseTissue") }
-                        ],
+                        SkinProcedures = skinProcedures,
+                        TissueProcedures = tissueProcedures,
+                        SkinOpen = skinOpen,
+                        TissueOpen = tissueOpen,
+                        OrganOpen = organOpen,
                         OrganProcedures = _surgeryLayer.GetPerformedSteps((part, layer), SurgeryLayer.Organ).Select(s => new SurgeryProcedureState { StepId = s, Performed = true }).ToList()
                     };
                     if (TryComp<BodyPartComponent>(part, out var bodyPartComp) && bodyPartComp.Organs != null)

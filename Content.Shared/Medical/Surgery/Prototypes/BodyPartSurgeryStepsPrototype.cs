@@ -1,3 +1,4 @@
+using System.Linq;
 using Content.Shared.Body;
 using Content.Shared.Humanoid.Prototypes;
 using Robust.Shared.Prototypes;
@@ -27,21 +28,108 @@ public sealed partial class BodyPartSurgeryStepsPrototype : IPrototype
     public ProtoId<OrganCategoryPrototype> OrganCategory { get; private set; }
 
     /// <summary>
-    /// Ordered list of surgery step IDs for the Skin layer.
+    /// Ordered list of skin opening step IDs (last one gates tissue layer).
+    /// </summary>
+    [DataField]
+    public List<ProtoId<SurgeryStepPrototype>> SkinOpenSteps { get; private set; } = new();
+
+    /// <summary>
+    /// Ordered list of skin closing step IDs (any done = skin closed).
+    /// </summary>
+    [DataField]
+    public List<ProtoId<SurgeryStepPrototype>> SkinCloseSteps { get; private set; } = new();
+
+    /// <summary>
+    /// Ordered list of tissue opening step IDs (last one gates organ layer).
+    /// </summary>
+    [DataField]
+    public List<ProtoId<SurgeryStepPrototype>> TissueOpenSteps { get; private set; } = new();
+
+    /// <summary>
+    /// Ordered list of tissue closing step IDs (any done = tissue closed).
+    /// </summary>
+    [DataField]
+    public List<ProtoId<SurgeryStepPrototype>> TissueCloseSteps { get; private set; } = new();
+
+    /// <summary>
+    /// Ordered list of organ step IDs (RemoveOrgan, InsertOrgan, DetachLimb, AttachLimb).
+    /// Hands and feet omit DetachLimb; only ArmLeft, ArmRight, LegLeft, LegRight include it.
+    /// </summary>
+    [DataField]
+    public List<ProtoId<SurgeryStepPrototype>> OrganSteps { get; private set; } = new();
+
+    /// <summary>
+    /// Deprecated. Use SkinOpenSteps and SkinCloseSteps. Kept for migration.
     /// </summary>
     [DataField]
     public List<ProtoId<SurgeryStepPrototype>> SkinSteps { get; private set; } = new();
 
     /// <summary>
-    /// Ordered list of surgery step IDs for the Tissue layer.
+    /// Deprecated. Use TissueOpenSteps and TissueCloseSteps. Kept for migration.
     /// </summary>
     [DataField]
     public List<ProtoId<SurgeryStepPrototype>> TissueSteps { get; private set; } = new();
 
     /// <summary>
-    /// Ordered list of surgery step IDs for the Organ layer (e.g. SawBones, RemoveOrgan, DetachLimb).
-    /// Hands and feet omit DetachLimb; only ArmLeft, ArmRight, LegLeft, LegRight include it.
+    /// Resolves skin open/close steps, using new schema or deriving from deprecated SkinSteps.
     /// </summary>
-    [DataField]
-    public List<ProtoId<SurgeryStepPrototype>> OrganSteps { get; private set; } = new();
+    public IReadOnlyList<string> GetSkinOpenStepIds(IPrototypeManager prototypes)
+    {
+        if (SkinOpenSteps.Count > 0)
+            return SkinOpenSteps.Select(s => s.ToString()).ToList();
+        return DeriveOpenSteps(SkinSteps, prototypes);
+    }
+
+    /// <summary>
+    /// Resolves skin close steps.
+    /// </summary>
+    public IReadOnlyList<string> GetSkinCloseStepIds(IPrototypeManager prototypes)
+    {
+        if (SkinCloseSteps.Count > 0)
+            return SkinCloseSteps.Select(s => s.ToString()).ToList();
+        return DeriveCloseSteps(SkinSteps, prototypes);
+    }
+
+    /// <summary>
+    /// Resolves tissue open/close steps.
+    /// </summary>
+    public IReadOnlyList<string> GetTissueOpenStepIds(IPrototypeManager prototypes)
+    {
+        if (TissueOpenSteps.Count > 0)
+            return TissueOpenSteps.Select(s => s.ToString()).ToList();
+        return DeriveOpenSteps(TissueSteps, prototypes);
+    }
+
+    public IReadOnlyList<string> GetTissueCloseStepIds(IPrototypeManager prototypes)
+    {
+        if (TissueCloseSteps.Count > 0)
+            return TissueCloseSteps.Select(s => s.ToString()).ToList();
+        return DeriveCloseSteps(TissueSteps, prototypes);
+    }
+
+    private static List<string> DeriveOpenSteps(List<ProtoId<SurgeryStepPrototype>> steps, IPrototypeManager prototypes)
+    {
+        var result = new List<string>();
+        foreach (var stepId in steps)
+        {
+            if (prototypes.TryIndex(stepId, out SurgeryStepPrototype? step) && step.HealAmount is { } h && !h.Empty)
+                break;
+            result.Add(stepId.ToString());
+        }
+        return result;
+    }
+
+    private static List<string> DeriveCloseSteps(List<ProtoId<SurgeryStepPrototype>> steps, IPrototypeManager prototypes)
+    {
+        var result = new List<string>();
+        var inClose = false;
+        foreach (var stepId in steps)
+        {
+            if (prototypes.TryIndex(stepId, out SurgeryStepPrototype? step) && step.HealAmount is { } h && !h.Empty)
+                inClose = true;
+            if (inClose)
+                result.Add(stepId.ToString());
+        }
+        return result;
+    }
 }

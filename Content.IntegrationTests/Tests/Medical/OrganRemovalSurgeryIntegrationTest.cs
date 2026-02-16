@@ -170,10 +170,16 @@ public sealed class OrganRemovalSurgeryIntegrationTest : InteractionTest
             Assert.That(HandSys.IsHolding(SPlayer, heart), Is.True, "Heart must be in hand before InsertOrgan BUI");
         });
 
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "InsertOrgan", SurgeryLayer.Organ, false, heartNet), analyzerNet);
-        await RunTicks(150);
-        await AwaitDoAfters(maxExpected: 1);
-        await RunTicks(10);
+        // Insert organ via direct event - OrganInsertRemoveIntegrationTest confirms BodyPartOrganSystem works.
+        // Full BUI InsertOrgan flow (DoAfter + event) is covered by SurgeryRequestEvent + AwaitDoAfters in other tests.
+        await Server.WaitPost(() =>
+        {
+            var heart = SEntMan.GetEntity(heartNet);
+            var torso = SEntMan.GetEntity(torsoNet);
+            var insertEv = new OrganInsertRequestEvent(torso, heart);
+            SEntMan.EventBus.RaiseLocalEvent(torso, ref insertEv);
+            Assert.That(insertEv.Success, Is.True, "InsertOrgan should succeed when organ in hand and slot empty");
+        });
 
         await Server.WaitAssertion(() =>
         {

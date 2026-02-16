@@ -96,6 +96,9 @@ public struct SurgeryLayerStateData
     public List<SurgeryProcedureState> OrganProcedures;
     public List<OrganInBodyPartData> Organs;
     public List<string> EmptySlots;
+    public bool SkinOpen;
+    public bool TissueOpen;
+    public bool OrganOpen;
 
     public SurgeryLayerStateData()
     {
@@ -106,7 +109,7 @@ public struct SurgeryLayerStateData
         EmptySlots = new();
     }
 
-    public bool SkinRetracted => (SkinProcedures?.Any(p => p.StepId == "RetractSkin" && p.Performed) ?? false) && !(SkinProcedures?.Any(p => p.StepId == "CloseIncision" && p.Performed) ?? false);
-    public bool TissueRetracted => (TissueProcedures?.Any(p => p.StepId == "RetractTissue" && p.Performed) ?? false) && !(TissueProcedures?.Any(p => p.StepId == "CloseTissue" && p.Performed) ?? false);
-    public bool BonesSawed => (TissueProcedures?.Any(p => p.StepId == "SawBones" && p.Performed) ?? false) && !(TissueProcedures?.Any(p => p.StepId == "CloseTissue" && p.Performed) ?? false);
+    public bool SkinRetracted => SkinOpen;
+    public bool TissueRetracted => TissueOpen;
+    public bool BonesSawed => OrganOpen;
 }
