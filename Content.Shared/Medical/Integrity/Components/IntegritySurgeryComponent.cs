@@ -1,3 +1,4 @@
+using Content.Shared.Medical.Integrity;
 using Robust.Shared.GameStates;
 
 namespace Content.Shared.Medical.Integrity.Components;
@@ -19,4 +20,4 @@ public sealed partial class IntegritySurgeryComponent : Component
 /// <summary>
 /// A single contextual integrity penalty entry.
 /// </summary>
-public readonly record struct IntegrityPenaltyEntry(string Reason, int ProcedureTypeIndex, int Amount);
+public readonly record struct IntegrityPenaltyEntry(string Reason, SurgeryProcedureType ProcedureTypeIndex, int Amount);

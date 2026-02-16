@@ -27,18 +27,29 @@ health-analyzer-mode-health = Health
 health-analyzer-mode-integrity = Integrity
 health-analyzer-mode-surgery = Surgery
 
+health-analyzer-surgery-step-create-incision = Create Incision
 health-analyzer-surgery-step-retract-skin = Retract Skin
+health-analyzer-surgery-step-close-incision = Close Incision
 health-analyzer-surgery-step-retract-tissue = Retract Tissue
+health-analyzer-surgery-step-clamp-bleeders = Clamp Bleeders
 health-analyzer-surgery-step-saw-bones = Saw Bones
+health-analyzer-surgery-step-close-tissue = Close Tissue
 health-analyzer-surgery-step-remove-organ = Remove Organ
 health-analyzer-surgery-step-insert-organ = Insert Organ
 health-analyzer-surgery-step-remove-organ-with-name = Remove { $organName }
 health-analyzer-surgery-step-insert-organ-with-name = Insert { $organName }
+health-analyzer-surgery-step-detach-limb = Detach Limb
+health-analyzer-surgery-step-attach-limb = Attach Limb
+health-analyzer-surgery-no-steps-available = No procedures available for this layer.
 
 health-analyzer-surgery-error-organ-gone = The organ is no longer there.
 health-analyzer-surgery-error-organ-not-in-hand = The organ is no longer in your hand.
 health-analyzer-surgery-error-slot-filled = That organ slot is already filled.
 health-analyzer-surgery-error-invalid-surgical-process = The surgical site is no longer valid.
+health-analyzer-surgery-error-missing-tool = You need the correct tool for this procedure. Check which tool the step requires.
+health-analyzer-surgery-error-already-done = This step has already been performed.
+health-analyzer-surgery-error-layer-not-open = Complete the previous steps first to open this layer.
+health-analyzer-surgery-error-doafter-failed = You cannot start this procedure right now. Ensure you are holding the correct tool and not already performing another action.
 health-analyzer-integrity-over-capacity = Patient integrity capacity would be exceeded.
 
 health-analyzer-popup-scan-target = {CAPITALIZE(THE($user))} is trying to scan you!

@@ -325,19 +325,21 @@ public sealed class HandsUIController : UIController, IOnStateEntered<GameplaySt
             var heldEnt = _handsSystem.GetHeldItem((playerEntity, _playerHandsComponent), handName);
 
             var foldedLocation = hand.Value.Location.GetUILocation();
+            // Status panels are laid out with Right hand on left of screen, Left hand on right of screen
+            // (character facing down: their right = screen left). So we swap which panel we update.
             if (foldedLocation == HandUILocation.Left)
             {
                 _statusHandLeft = handControl;
-                HandsGui.UpdatePanelEntityLeft(heldEnt, hand.Value);
+                HandsGui.UpdatePanelEntityRight(heldEnt, hand.Value);
             }
             else
             {
                 // Middle or right
                 _statusHandRight = handControl;
-                HandsGui.UpdatePanelEntityRight(heldEnt, hand.Value);
+                HandsGui.UpdatePanelEntityLeft(heldEnt, hand.Value);
             }
 
-            HandsGui.SetHighlightHand(foldedLocation);
+            HandsGui.SetHighlightHand(foldedLocation == HandUILocation.Left ? HandUILocation.Right : HandUILocation.Left);
         }
     }
 
@@ -540,10 +542,11 @@ public sealed class HandsUIController : UIController, IOnStateEntered<GameplaySt
 
     private void UpdateHandStatus(HandButton hand, EntityUid? entity, Hand? handData)
     {
+        // Status panels: Right is left of screen (next to left hand), Left is right of screen (next to right hand)
         if (hand == _statusHandLeft)
-            HandsGui?.UpdatePanelEntityLeft(entity, handData);
+            HandsGui?.UpdatePanelEntityRight(entity, handData);
 
         if (hand == _statusHandRight)
-            HandsGui?.UpdatePanelEntityRight(entity, handData);
+            HandsGui?.UpdatePanelEntityLeft(entity, handData);
     }
 }

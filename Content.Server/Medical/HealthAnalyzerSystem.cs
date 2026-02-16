@@ -49,6 +49,7 @@ using Content.Shared.Item.ItemToggle.Components;
 using Content.Shared.Medical.Integrity;
 using Content.Shared.Medical.Integrity.Components;
 using Content.Shared.Medical.Integrity.Events;
+using Content.Shared.Medical.Surgery;
 using Content.Shared.Medical.Surgery.Components;
 using Content.Shared.Medical.Surgery.Events;
 using Content.Shared.MedicalScanner;
@@ -78,6 +79,7 @@ public sealed class HealthAnalyzerSystem : EntitySystem
     [Dependency] private readonly SharedPopupSystem _popupSystem = default!;
     [Dependency] private readonly BloodstreamSystem _bloodstreamSystem = default!;
     [Dependency] private readonly BodySystem _body = default!;
+    [Dependency] private readonly SurgeryLayerSystem _surgeryLayer = default!;
 
     public override void Initialize()
     {
@@ -123,6 +125,19 @@ public sealed class HealthAnalyzerSystem : EntitySystem
         var ev = new SurgeryRequestEvent(uid.Owner, user, targetUid, bodyPartUid, args.StepId, args.Layer, args.IsImprovised,
             args.Organ.HasValue ? GetEntity(args.Organ.Value) : null);
         RaiseLocalEvent(targetUid, ref ev);
+
+        if (!ev.Valid && ev.RejectReason != null && Exists(user))
+        {
+            var msg = ev.RejectReason switch
+            {
+                "missing-tool" => "health-analyzer-surgery-error-missing-tool",
+                "already-done" => "health-analyzer-surgery-error-already-done",
+                "layer-not-open" => "health-analyzer-surgery-error-layer-not-open",
+                "doafter-failed" => "health-analyzer-surgery-error-doafter-failed",
+                _ => "health-analyzer-surgery-error-invalid-surgical-process"
+            };
+            _popupSystem.PopupEntity(Loc.GetString(msg), user, user, PopupType.Medium);
+        }
     }
 
     public override void Update(float frameTime)
@@ -343,9 +358,18 @@ public sealed class HealthAnalyzerSystem : EntitySystem
                     {
                         BodyPart = GetNetEntity(part),
                         CategoryId = categoryId,
-                        SkinRetracted = layer.SkinRetracted,
-                        TissueRetracted = layer.TissueRetracted,
-                        BonesSawed = layer.BonesSawed
+                        SkinProcedures =
+                        [
+                            new SurgeryProcedureState { StepId = "RetractSkin", Performed = _surgeryLayer.IsStepPerformed((part, layer), "RetractSkin") },
+                            new SurgeryProcedureState { StepId = "CloseIncision", Performed = _surgeryLayer.IsStepPerformed((part, layer), "CloseIncision") }
+                        ],
+                        TissueProcedures =
+                        [
+                            new SurgeryProcedureState { StepId = "RetractTissue", Performed = _surgeryLayer.IsStepPerformed((part, layer), "RetractTissue") },
+                            new SurgeryProcedureState { StepId = "SawBones", Performed = _surgeryLayer.IsStepPerformed((part, layer), "SawBones") },
+                            new SurgeryProcedureState { StepId = "CloseTissue", Performed = _surgeryLayer.IsStepPerformed((part, layer), "CloseTissue") }
+                        ],
+                        OrganProcedures = _surgeryLayer.GetPerformedSteps((part, layer), SurgeryLayer.Organ).Select(s => new SurgeryProcedureState { StepId = s, Performed = true }).ToList()
                     };
                     if (TryComp<BodyPartComponent>(part, out var bodyPartComp) && bodyPartComp.Organs != null)
                     {

@@ -2,6 +2,8 @@ using System.Linq;
 using Content.Shared.Body;
 using Content.Shared.Body.Components;
 using Content.Shared.Body.Events;
+using Content.Shared.Damage;
+using Content.Shared.Damage.Systems;
 using Content.Shared.DoAfter;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Medical.Integrity.Components;
@@ -11,16 +13,25 @@ using Content.Shared.Medical.Surgery.Events;
 using Content.Shared.Medical.Surgery.Prototypes;
 using Content.Shared.Popups;
 using Content.Shared.Tag;
+using Robust.Shared.Audio.Systems;
+using Robust.Shared.Containers;
 using Robust.Shared.Map;
+using Robust.Shared.Network;
 using Robust.Shared.Prototypes;
 
 namespace Content.Shared.Medical.Surgery;
 
 public sealed class SurgerySystem : EntitySystem
 {
+    private static readonly string[] DetachLimbCategories = ["ArmLeft", "ArmRight", "LegLeft", "LegRight"];
+
     [Dependency] private readonly BodySystem _body = default!;
+    [Dependency] private readonly SharedAudioSystem _audio = default!;
+    [Dependency] private readonly SharedContainerSystem _container = default!;
+    [Dependency] private readonly DamageableSystem _damageable = default!;
     [Dependency] private readonly SharedDoAfterSystem _doAfter = default!;
     [Dependency] private readonly SharedHandsSystem _hands = default!;
+    [Dependency] private readonly INetManager _net = default!;
     [Dependency] private readonly IPrototypeManager _prototypes = default!;
     [Dependency] private readonly SharedPopupSystem _popup = default!;
     [Dependency] private readonly TagSystem _tag = default!;
@@ -67,15 +78,34 @@ public sealed class SurgerySystem : EntitySystem
         }
 
         EntityUid? tool = null;
+        var isImprovised = false;
         if (!string.IsNullOrEmpty(step.RequiredToolTag))
         {
-            var tag = new ProtoId<TagPrototype>(step.RequiredToolTag);
+            var requiredTag = new ProtoId<TagPrototype>(step.RequiredToolTag);
             foreach (var held in _hands.EnumerateHeld((args.User, null)))
             {
-                if (_tag.HasTag(held, tag))
+                if (_tag.HasTag(held, requiredTag))
                 {
                     tool = held;
                     break;
+                }
+            }
+            if (!tool.HasValue && step.ImprovisedToolTags.Count > 0)
+            {
+                foreach (var improvisedTagStr in step.ImprovisedToolTags)
+                {
+                    var improvisedTag = new ProtoId<TagPrototype>(improvisedTagStr);
+                    foreach (var held in _hands.EnumerateHeld((args.User, null)))
+                    {
+                        if (_tag.HasTag(held, improvisedTag))
+                        {
+                            tool = held;
+                            isImprovised = true;
+                            break;
+                        }
+                    }
+                    if (tool.HasValue)
+                        break;
                 }
             }
             if (!tool.HasValue)
@@ -87,20 +117,101 @@ public sealed class SurgerySystem : EntitySystem
 
         var layerComp = EnsureComp<SurgeryLayerComponent>(args.BodyPart);
 
-        if (args.StepId == "RetractSkin" && layerComp.SkinRetracted)
+        var performedList = step.Layer switch
+        {
+            SurgeryLayer.Skin => layerComp.PerformedSkinSteps,
+            SurgeryLayer.Tissue => layerComp.PerformedTissueSteps,
+            SurgeryLayer.Organ => layerComp.PerformedOrganSteps,
+            _ => null
+        };
+        if (performedList != null && performedList.Contains(args.StepId))
         {
             args.RejectReason = "already-done";
             return;
         }
-        if (args.StepId == "RetractTissue" && layerComp.TissueRetracted)
+
+        if (args.StepId == "RetractTissue")
         {
-            args.RejectReason = "already-done";
-            return;
+            if (!layerComp.SkinRetracted)
+            {
+                args.RejectReason = "layer-not-open";
+                return;
+            }
         }
-        if (args.StepId == "SawBones" && layerComp.BonesSawed)
+        else if (args.StepId == "SawBones")
         {
-            args.RejectReason = "already-done";
-            return;
+            if (!layerComp.TissueRetracted)
+            {
+                args.RejectReason = "layer-not-open";
+                return;
+            }
+        }
+        else if (args.StepId == "CloseIncision")
+        {
+            if (!layerComp.PerformedSkinSteps.Contains("RetractSkin"))
+            {
+                args.RejectReason = "layer-not-open";
+                return;
+            }
+        }
+        else if (args.StepId == "CloseTissue")
+        {
+            if (!layerComp.PerformedTissueSteps.Contains("RetractTissue"))
+            {
+                args.RejectReason = "layer-not-open";
+                return;
+            }
+        }
+        else if (args.StepId == "DetachLimb")
+        {
+            if (!TryComp<OrganComponent>(args.BodyPart, out var limbOrgan) || limbOrgan.Category is not { } limbCategory)
+            {
+                args.RejectReason = "invalid-body-part";
+                return;
+            }
+            if (!DetachLimbCategories.Contains(limbCategory.ToString()))
+            {
+                args.RejectReason = "cannot-detach-limb";
+                return;
+            }
+            if (!layerComp.SkinRetracted || !layerComp.TissueRetracted || !layerComp.BonesSawed)
+            {
+                args.RejectReason = "layer-not-open";
+                return;
+            }
+            if (!TryComp<BodyPartComponent>(args.BodyPart, out var limbBodyPart) || limbBodyPart.Body != ent.Owner)
+            {
+                args.RejectReason = "body-part-detached";
+                return;
+            }
+        }
+        else if (args.StepId == "AttachLimb")
+        {
+            if (!args.Organ.HasValue || !Exists(args.Organ.Value))
+            {
+                args.RejectReason = "invalid-entity";
+                return;
+            }
+            if (!TryComp<OrganComponent>(args.Organ.Value, out var limbOrgan) || limbOrgan.Body.HasValue)
+            {
+                args.RejectReason = "organ-already-in-body";
+                return;
+            }
+            if (limbOrgan.Category is not { } limbCategory || !DetachLimbCategories.Contains(limbCategory.ToString()))
+            {
+                args.RejectReason = "invalid-limb-type";
+                return;
+            }
+            if (!_hands.IsHolding(args.User, args.Organ.Value))
+            {
+                args.RejectReason = "limb-not-in-hand";
+                return;
+            }
+            if (!layerComp.SkinRetracted || !layerComp.TissueRetracted || !layerComp.BonesSawed)
+            {
+                args.RejectReason = "layer-not-open";
+                return;
+            }
         }
 
         if (args.StepId == "RemoveOrgan")
@@ -190,10 +301,14 @@ public sealed class SurgerySystem : EntitySystem
             }
         }
 
+        // InsertOrgan/RemoveOrgan/AttachLimb: organ/limb is in hand - use it as DoAfter "used" for tracking
+        if (args.StepId is "InsertOrgan" or "RemoveOrgan" or "AttachLimb" && args.Organ.HasValue)
+            tool = args.Organ.Value;
+
         var doAfterEv = new SurgeryDoAfterEvent(GetNetEntity(args.BodyPart), args.StepId, args.Organ.HasValue ? GetNetEntity(args.Organ.Value) : null);
-        // InsertOrgan/RemoveOrgan: organ is in hand, not a tool - relax break conditions for organ-in-hand steps
-        var isOrganStep = args.StepId is "InsertOrgan" or "RemoveOrgan";
-        var doAfterArgs = new DoAfterArgs(EntityManager, args.User, step.DoAfterDelay, doAfterEv, args.Target, args.Target, tool)
+        var isOrganStep = args.StepId is "InsertOrgan" or "RemoveOrgan" or "AttachLimb";
+        var delay = step.DoAfterDelay * (isImprovised ? step.ImprovisedDelayMultiplier : 1f);
+        var doAfterArgs = new DoAfterArgs(EntityManager, args.User, delay, doAfterEv, args.Target, args.Target, tool)
         {
             NeedHand = true,
             BreakOnHandChange = !isOrganStep,
@@ -223,7 +338,7 @@ public sealed class SurgerySystem : EntitySystem
 
         var layerComp = EnsureComp<SurgeryLayerComponent>(bodyPart);
 
-        if (args.StepId is "RemoveOrgan" or "InsertOrgan")
+        if (args.StepId is "RemoveOrgan" or "InsertOrgan" or "DetachLimb" or "AttachLimb")
         {
             if (!TryComp<BodyPartComponent>(bodyPart, out var bodyPartComp) || bodyPartComp.Body != ent.Owner)
             {
@@ -288,25 +403,74 @@ public sealed class SurgerySystem : EntitySystem
                     return;
                 }
             }
+            else if (args.StepId == "DetachLimb")
+            {
+                var removeEv = new OrganRemoveRequestEvent(bodyPart) { Destination = Transform(ent.Owner).Coordinates };
+                RaiseLocalEvent(bodyPart, ref removeEv);
+            }
+            else if (args.StepId == "AttachLimb")
+            {
+                if (args.Organ is not { } limbNet)
+                {
+                    _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-organ-not-in-hand"), args.User, args.User, PopupType.Medium);
+                    return;
+                }
+                var limb = GetEntity(limbNet);
+                if (!Exists(limb) || !_hands.IsHolding(args.User, limb))
+                {
+                    _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-organ-not-in-hand"), args.User, args.User, PopupType.Medium);
+                    return;
+                }
+                if (TryComp<OrganComponent>(limb, out var limbOrganComp) && limbOrganComp.Category is { } attachCategory)
+                {
+                    var alreadyHasLimb = _body.GetAllOrgans(ent.Owner).Any(o =>
+                        TryComp<OrganComponent>(o, out var oComp) && oComp.Category == attachCategory);
+                    if (alreadyHasLimb)
+                    {
+                        _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-slot-filled"), args.User, args.User, PopupType.Medium);
+                        return;
+                    }
+                }
+                if (ent.Comp.Organs != null && _container.Insert(limb, ent.Comp.Organs))
+                {
+                    _hands.TryDrop(args.User, limb);
+                }
+                else
+                {
+                    _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-slot-filled"), args.User, args.User, PopupType.Medium);
+                }
+            }
         }
         else
         {
-            switch (args.StepId)
+            var list = step.Layer switch
             {
-                case "RetractSkin":
-                    layerComp.SkinRetracted = true;
-                    break;
-                case "RetractTissue":
-                    layerComp.TissueRetracted = true;
-                    break;
-                case "SawBones":
-                    layerComp.BonesSawed = true;
-                    break;
-            }
+                SurgeryLayer.Skin => layerComp.PerformedSkinSteps,
+                SurgeryLayer.Tissue => layerComp.PerformedTissueSteps,
+                SurgeryLayer.Organ => layerComp.PerformedOrganSteps,
+                _ => null
+            };
+            if (list != null && !list.Contains(args.StepId))
+                list.Add(args.StepId);
             Dirty(bodyPart, layerComp);
 
             var penaltyEv = new SurgeryPenaltyAppliedEvent(bodyPart, step.Penalty);
             RaiseLocalEvent(bodyPart, ref penaltyEv);
+        }
+
+        if (step.Damage is { } damage && !damage.Empty)
+        {
+            _damageable.TryChangeDamage(ent.Owner, damage, ignoreResistances: false, origin: args.User);
+        }
+
+        if (step.HealAmount is { } healAmount && !healAmount.Empty)
+        {
+            _damageable.TryChangeDamage(ent.Owner, healAmount, ignoreResistances: true, origin: args.User);
+        }
+
+        if (step.Sound != null && _net.IsServer)
+        {
+            _audio.PlayPvs(step.Sound, ent.Owner);
         }
     }
 }

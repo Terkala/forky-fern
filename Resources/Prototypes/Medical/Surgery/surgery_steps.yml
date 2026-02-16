@@ -1,3 +1,19 @@
+# Skin layer - opening
+- type: surgeryStep
+  id: CreateIncision
+  layer: Skin
+  name: health-analyzer-surgery-step-create-incision
+  penalty: 1
+  procedureTypeIndex: 0
+  requiredToolTag: CuttingTool
+  improvisedToolTags: [SurgeryTool]
+  improvisedDelayMultiplier: 1.5
+  doAfterDelay: 2
+  damage:
+    types:
+      Slash: 5
+  sound: /Audio/Weapons/bladeslice.ogg
+
 - type: surgeryStep
   id: RetractSkin
   layer: Skin
@@ -5,8 +21,31 @@
   penalty: 1
   procedureTypeIndex: 0
   requiredToolTag: SurgeryTool
+  improvisedToolTags: [CuttingTool]
+  improvisedDelayMultiplier: 1.5
   doAfterDelay: 2
+  damage:
+    types:
+      Slash: 1
+  sound: /Audio/Items/drill_hit.ogg
 
+# Skin layer - closing
+- type: surgeryStep
+  id: CloseIncision
+  layer: Skin
+  name: health-analyzer-surgery-step-close-incision
+  penalty: 0
+  procedureTypeIndex: 0
+  requiredToolTag: ManipulatingTool
+  improvisedToolTags: []
+  improvisedDelayMultiplier: 1.5
+  doAfterDelay: 2
+  healAmount:
+    types:
+      Slash: -2
+  sound: /Audio/Effects/lightburn.ogg
+
+# Tissue layer - opening
 - type: surgeryStep
   id: RetractTissue
   layer: Tissue
@@ -14,7 +53,25 @@
   penalty: 1
   procedureTypeIndex: 1
   requiredToolTag: SurgeryTool
+  improvisedToolTags: [CuttingTool]
+  improvisedDelayMultiplier: 1.5
   doAfterDelay: 2
+  damage:
+    types:
+      Slash: 2
+  sound: /Audio/Items/drill_hit.ogg
+
+- type: surgeryStep
+  id: ClampBleeders
+  layer: Tissue
+  name: health-analyzer-surgery-step-clamp-bleeders
+  penalty: 0
+  procedureTypeIndex: 1
+  requiredToolTag: ManipulatingTool
+  improvisedToolTags: [SurgeryTool]
+  improvisedDelayMultiplier: 1.5
+  doAfterDelay: 2
+  sound: /Audio/Items/drill_hit.ogg
 
 - type: surgeryStep
   id: SawBones
@@ -23,20 +80,73 @@
   penalty: 8
   procedureTypeIndex: 2
   requiredToolTag: SawingTool
+  improvisedToolTags: []
+  improvisedDelayMultiplier: 1.5
   doAfterDelay: 3
+  damage:
+    types:
+      Blunt: 3
+      Slash: 2
+  sound: /Audio/Items/drill_hit.ogg
 
+# Tissue layer - closing
+- type: surgeryStep
+  id: CloseTissue
+  layer: Tissue
+  name: health-analyzer-surgery-step-close-tissue
+  penalty: 0
+  procedureTypeIndex: 1
+  requiredToolTag: ManipulatingTool
+  improvisedToolTags: []
+  improvisedDelayMultiplier: 1.5
+  doAfterDelay: 2
+  healAmount:
+    types:
+      Slash: -2
+  sound: /Audio/Effects/lightburn.ogg
+
+# Organ layer
 - type: surgeryStep
   id: RemoveOrgan
   layer: Organ
   name: health-analyzer-surgery-step-remove-organ
   penalty: 0
-  procedureTypeIndex: 0
+  procedureTypeIndex: 6
   doAfterDelay: 3
+  sound: /Audio/Weapons/bladeslice.ogg
 
 - type: surgeryStep
   id: InsertOrgan
   layer: Organ
   name: health-analyzer-surgery-step-insert-organ
   penalty: 0
-  procedureTypeIndex: 0
+  procedureTypeIndex: 7
   doAfterDelay: 3
+  sound: /Audio/Weapons/bladeslice.ogg
+
+- type: surgeryStep
+  id: DetachLimb
+  layer: Organ
+  name: health-analyzer-surgery-step-detach-limb
+  penalty: 0
+  procedureTypeIndex: 8
+  requiredToolTag: CuttingTool
+  improvisedToolTags: [SurgeryTool]
+  improvisedDelayMultiplier: 1.5
+  doAfterDelay: 4
+  damage:
+    types:
+      Slash: 3
+  sound: /Audio/Weapons/bladeslice.ogg
+
+- type: surgeryStep
+  id: AttachLimb
+  layer: Organ
+  name: health-analyzer-surgery-step-attach-limb
+  penalty: 0
+  procedureTypeIndex: 9
+  doAfterDelay: 4
+  healAmount:
+    types:
+      Slash: -2
+  sound: /Audio/Effects/lightburn.ogg

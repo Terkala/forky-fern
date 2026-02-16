@@ -3,12 +3,16 @@ namespace Content.Shared.Medical.Integrity;
 /// <summary>
 /// Procedure type indices for contextual integrity penalties. Used to clear penalties by procedure without string comparison.
 /// </summary>
-public static class SurgeryProcedureType
+public enum SurgeryProcedureType
 {
-    public const int SkinRetraction = 0;
-    public const int TissueRetraction = 1;
-    public const int BoneSawing = 2;
-    public const int BoneSmashing = 3;
-    public const int DirtyRoom = 4;
-    public const int ImproperTools = 5;
+    SkinRetraction = 0,
+    TissueRetraction = 1,
+    BoneSawing = 2,
+    BoneSmashing = 3,
+    DirtyRoom = 4,
+    ImproperTools = 5,
+    OrganRemoval = 6,
+    OrganInsertion = 7,
+    LimbDetach = 8,
+    LimbAttach = 9,
 }

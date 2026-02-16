@@ -1,3 +1,5 @@
+using Content.Shared.Medical.Integrity;
+
 namespace Content.Shared.Medical.Integrity.Events;
 
 /// <summary>
@@ -16,13 +18,13 @@ public readonly record struct SurgeryPenaltyRemovedEvent(EntityUid BodyPart, int
 /// Raised to add a contextual integrity penalty to a body (dirty room, improper tools).
 /// </summary>
 [ByRefEvent]
-public readonly record struct IntegrityPenaltyAppliedEvent(EntityUid Body, int Amount, string Reason, int ProcedureTypeIndex);
+public readonly record struct IntegrityPenaltyAppliedEvent(EntityUid Body, int Amount, string Reason, SurgeryProcedureType ProcedureTypeIndex);
 
 /// <summary>
 /// Raised to clear contextual integrity penalties by procedure type index.
 /// </summary>
 [ByRefEvent]
-public readonly record struct IntegrityPenaltyClearedEvent(EntityUid Body, int ProcedureTypeIndex);
+public readonly record struct IntegrityPenaltyClearedEvent(EntityUid Body, SurgeryProcedureType ProcedureTypeIndex);
 
 /// <summary>
 /// Raised to request the total integrity penalty for a body. Response is set in <see cref="Total"/>.

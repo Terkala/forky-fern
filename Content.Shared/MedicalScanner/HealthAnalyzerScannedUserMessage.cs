@@ -6,6 +6,7 @@
 // SPDX-FileCopyrightText: 2026 Fruitsalad <949631+Fruitsalad@users.noreply.github.com>
 // SPDX-License-Identifier: MIT
 
+using System.Linq;
 using Robust.Shared.Serialization;
 
 namespace Content.Shared.MedicalScanner;
@@ -79,19 +80,33 @@ public struct OrganInBodyPartData
 }
 
 [Serializable, NetSerializable]
+public struct SurgeryProcedureState
+{
+    public string StepId;
+    public bool Performed;
+}
+
+[Serializable, NetSerializable]
 public struct SurgeryLayerStateData
 {
     public NetEntity BodyPart;
     public string? CategoryId;
-    public bool SkinRetracted;
-    public bool TissueRetracted;
-    public bool BonesSawed;
+    public List<SurgeryProcedureState> SkinProcedures;
+    public List<SurgeryProcedureState> TissueProcedures;
+    public List<SurgeryProcedureState> OrganProcedures;
     public List<OrganInBodyPartData> Organs;
     public List<string> EmptySlots;
 
     public SurgeryLayerStateData()
     {
+        SkinProcedures = new();
+        TissueProcedures = new();
+        OrganProcedures = new();
         Organs = new();
         EmptySlots = new();
     }
+
+    public bool SkinRetracted => (SkinProcedures?.Any(p => p.StepId == "RetractSkin" && p.Performed) ?? false) && !(SkinProcedures?.Any(p => p.StepId == "CloseIncision" && p.Performed) ?? false);
+    public bool TissueRetracted => (TissueProcedures?.Any(p => p.StepId == "RetractTissue" && p.Performed) ?? false) && !(TissueProcedures?.Any(p => p.StepId == "CloseTissue" && p.Performed) ?? false);
+    public bool BonesSawed => (TissueProcedures?.Any(p => p.StepId == "SawBones" && p.Performed) ?? false) && !(TissueProcedures?.Any(p => p.StepId == "CloseTissue" && p.Performed) ?? false);
 }

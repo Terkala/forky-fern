@@ -47,20 +47,26 @@ public sealed class SurgeryBodyPartDiagramControl : Control
 
     // Regions aligned for a centered, Fit-scaled sprite facing the player (Direction.South).
     // When facing the player, the sprite's left (low X) = patient's right side, so we swap labels.
-    // Order: limbs before torso so overlapping regions resolve to limbs.
+    // Order: parent limbs (arms, legs) before child parts (hands, feet) so clicking an arm/leg
+    // selects the whole limb for DetachLimb, not just the hand/foot.
     private static readonly (string CategoryId, Box2 NormalizedRect)[] RegionMap =
     {
         ("Head", new Box2(0.25f, 0.15f, 0.75f, 0.38f)),
-        ("HandRight", new Box2(0, 0.58f, 0.22f, 0.78f)),      // sprite left = patient right
-        ("HandLeft", new Box2(0.78f, 0.58f, 1, 0.78f)),       // sprite right = patient left
         ("ArmRight", new Box2(0, 0.35f, 0.42f, 0.78f)),      // extended toward torso to eliminate gap
         ("ArmLeft", new Box2(0.58f, 0.35f, 1, 0.78f)),       // extended toward torso to eliminate gap
-        ("FootRight", new Box2(0.25f, 0.82f, 0.5f, 1)),
-        ("FootLeft", new Box2(0.5f, 0.82f, 0.75f, 1)),
+        ("HandRight", new Box2(0, 0.58f, 0.22f, 0.78f)),      // sprite left = patient right
+        ("HandLeft", new Box2(0.78f, 0.58f, 1, 0.78f)),       // sprite right = patient left
         ("LegRight", new Box2(0.25f, 0.68f, 0.5f, 1)),
         ("LegLeft", new Box2(0.5f, 0.68f, 0.75f, 1)),
+        ("FootRight", new Box2(0.25f, 0.82f, 0.5f, 1)),
+        ("FootLeft", new Box2(0.5f, 0.82f, 0.75f, 1)),
         ("Torso", new Box2(0.42f, 0.40f, 0.58f, 0.65f)),
     };
+
+    /// <summary>
+    /// Exposed for integration tests to verify region order (arms before hands, legs before feet).
+    /// </summary>
+    internal static IReadOnlyList<string> RegionCategoryOrder => RegionMap.Select(r => r.CategoryId).ToArray();
 
     private static readonly IReadOnlyDictionary<string, HumanoidVisualLayers[]> CategoryToLayers = new Dictionary<string, HumanoidVisualLayers[]>
     {

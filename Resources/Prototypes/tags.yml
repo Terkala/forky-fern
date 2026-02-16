@@ -1531,6 +1531,18 @@
   id: SawingTool # SawBones step: metal saw, choppa, circular saw, etc.
 
 - type: Tag
+  id: CuttingTool # DetachLimb, scalpel-based steps
+
+- type: Tag
+  id: BurningTool # Cauterize, welding steps
+
+- type: Tag
+  id: ManipulatingTool # ClampBleeders, retractor steps
+
+- type: Tag
+  id: BreakingTool # Bone-related steps
+
+- type: Tag
   id: SurveillanceCameraMonitorCircuitboard # ConstructionGraph: WallmountTelescreen
 
 - type: Tag
