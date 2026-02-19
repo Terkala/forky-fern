@@ -15,6 +15,7 @@ public sealed partial class BodySystem : EntitySystem
     private EntityQuery<BodyComponent> _bodyQuery;
     private EntityQuery<OrganComponent> _organQuery;
     private EntityQuery<BodyPartComponent> _bodyPartQuery;
+    private EntityQuery<SurgeryLayerComponent> _surgeryLayerQuery;
 
     public override void Initialize()
     {
@@ -40,6 +41,7 @@ public sealed partial class BodySystem : EntitySystem
         _bodyQuery = GetEntityQuery<BodyComponent>();
         _organQuery = GetEntityQuery<OrganComponent>();
         _bodyPartQuery = GetEntityQuery<BodyPartComponent>();
+        _surgeryLayerQuery = GetEntityQuery<SurgeryLayerComponent>();
 
         InitializeRelay();
     }
@@ -82,6 +84,20 @@ public sealed partial class BodySystem : EntitySystem
         {
             bodyPart.Body = ent;
             Dirty(args.Entity, bodyPart);
+
+            // Re-attached limbs: keep organ layer open (RetractSkin, RetractTissue, SawBones) so user can
+            // immediately attach hand/foot. Clear organ steps so limb can be amputated again later.
+            if (_surgeryLayerQuery.TryComp(args.Entity, out var surgeryLayer) &&
+                (surgeryLayer.PerformedSkinSteps.Count > 0 || surgeryLayer.PerformedTissueSteps.Count > 0 || surgeryLayer.PerformedOrganSteps.Count > 0))
+            {
+                surgeryLayer.PerformedSkinSteps.Clear();
+                surgeryLayer.PerformedSkinSteps.Add("RetractSkin");
+                surgeryLayer.PerformedTissueSteps.Clear();
+                surgeryLayer.PerformedTissueSteps.Add("RetractTissue");
+                surgeryLayer.PerformedTissueSteps.Add("SawBones");
+                surgeryLayer.PerformedOrganSteps.Clear();
+                Dirty(args.Entity, surgeryLayer);
+            }
 
             // Organs may have been inserted before this part was in the body (e.g. during MapInit).
             // Catch up: set Organ.Body and raise OrganGotInsertedEvent for each.

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using Content.Client.Humanoid;
 using Content.Shared.Humanoid;
 using Content.Shared.Humanoid.Prototypes;
 using Content.Shared.MedicalScanner;
@@ -121,24 +122,53 @@ public sealed class SurgeryBodyPartDiagramControl : Control
 
     public void SetTarget(NetEntity? target, List<SurgeryLayerStateData> bodyPartLayerState)
     {
-        if (_previewEntity != null)
-        {
-            _entManager.DeleteEntity(_previewEntity.Value);
-            _previewEntity = null;
-        }
-
+        var prevTarget = _targetEntity;
         _targetEntity = target;
         _bodyPartLayerState = bodyPartLayerState ?? new List<SurgeryLayerStateData>();
         _selectedBodyPart = null;
 
         if (target == null || !_entManager.TryGetEntity(target, out var patient))
         {
+            if (_previewEntity != null)
+            {
+                _entManager.DeleteEntity(_previewEntity.Value);
+                _previewEntity = null;
+            }
             _spriteView?.SetEntity(null);
             return;
         }
 
+        // Reuse existing preview when target unchanged; refresh appearance to pick up limb visibility updates
+        if (_previewEntity != null && prevTarget == target)
+        {
+            RefreshPreviewAppearance(patient.Value);
+            return;
+        }
+
+        if (_previewEntity != null)
+        {
+            _entManager.DeleteEntity(_previewEntity.Value);
+            _previewEntity = null;
+        }
+
         _previewEntity = SpawnStandingPreview(patient.Value);
         _spriteView?.SetEntity(_previewEntity.Value);
+    }
+
+    /// <summary>
+    /// Re-copies HumanoidAppearanceComponent from patient to preview so limb visibility (PermanentlyHidden) stays in sync.
+    /// </summary>
+    private void RefreshPreviewAppearance(EntityUid patient)
+    {
+        if (_previewEntity == null)
+            return;
+        if (_entManager.TryGetComponent(patient, out HumanoidAppearanceComponent? srcHumanoid) &&
+            _entManager.TryGetComponent(_previewEntity.Value, out HumanoidAppearanceComponent? destHumanoid) &&
+            _entManager.TryGetComponent(_previewEntity.Value, out SpriteComponent? spriteComp))
+        {
+            _entManager.CopyComponent(patient, _previewEntity.Value, srcHumanoid);
+            _entManager.System<HumanoidAppearanceSystem>().RefreshSprite((_previewEntity.Value, destHumanoid, spriteComp));
+        }
     }
 
     private EntityUid SpawnStandingPreview(EntityUid patient)

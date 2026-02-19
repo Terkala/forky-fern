@@ -41,6 +41,7 @@ using Content.Shared.Body.Events;
 using Content.Shared.Chemistry.EntitySystems;
 using Content.Shared.Damage.Components;
 using Content.Shared.DoAfter;
+using Content.Shared.Humanoid;
 using Content.Shared.IdentityManagement;
 using Content.Shared.Interaction;
 using Content.Shared.Interaction.Events;
@@ -48,7 +49,6 @@ using Content.Shared.Item.ItemToggle;
 using Content.Shared.Item.ItemToggle.Components;
 using Content.Shared.Medical.Integrity;
 using Content.Shared.Medical.Integrity.Components;
-using Content.Shared.Medical.Integrity.Events;
 using Content.Shared.Medical.Surgery;
 using Content.Shared.Medical.Surgery.Components;
 using Content.Shared.Medical.Surgery.Events;
@@ -92,6 +92,20 @@ public sealed class HealthAnalyzerSystem : EntitySystem
         SubscribeLocalEvent<HealthAnalyzerComponent, DroppedEvent>(OnDropped);
         SubscribeLocalEvent<HealthAnalyzerComponent, SurgeryRequestBuiMessage>(OnSurgeryRequest);
         SubscribeLocalEvent<SurgeryLayerComponent, SurgeryPenaltyAppliedEvent>(OnSurgeryPenaltyApplied);
+        SubscribeLocalEvent<BodyComponent, OrganRemovedFromEvent>(OnBodyOrganRemoved);
+    }
+
+    private void OnBodyOrganRemoved(Entity<BodyComponent> ent, ref OrganRemovedFromEvent args)
+    {
+        var analyzerQuery = EntityQueryEnumerator<HealthAnalyzerComponent>();
+        while (analyzerQuery.MoveNext(out var uid, out var comp))
+        {
+            if (comp.ScannedEntity == ent.Owner)
+            {
+                UpdateScannedUser(uid, ent.Owner, true);
+                break;
+            }
+        }
     }
 
     private void OnSurgeryPenaltyApplied(Entity<SurgeryLayerComponent> ent, ref SurgeryPenaltyAppliedEvent args)
@@ -218,7 +232,9 @@ public sealed class HealthAnalyzerSystem : EntitySystem
     private void OnInsertedIntoContainer(Entity<HealthAnalyzerComponent> uid, ref EntGotInsertedIntoContainerMessage args)
     {
         if (uid.Comp.ScannedEntity is { } patient)
-            _toggle.TryDeactivate(uid.Owner);
+        {
+            StopAnalyzingEntity(uid, patient);
+        }
     }
 
     /// <summary>
@@ -231,12 +247,13 @@ public sealed class HealthAnalyzerSystem : EntitySystem
     }
 
     /// <summary>
-    /// Turn off the analyser when dropped
+    /// When dropped, keep ScannedEntity so OrganRemovedFromEvent can still trigger UI updates
+    /// (e.g. leg detachment). Only deactivate when inserted into container.
     /// </summary>
     private void OnDropped(Entity<HealthAnalyzerComponent> uid, ref DroppedEvent args)
     {
-        if (uid.Comp.ScannedEntity is { } patient)
-            _toggle.TryDeactivate(uid.Owner);
+        // Intentionally do not deactivate or clear ScannedEntity - BUI may still be open and
+        // we need to push updates when organs are removed (e.g. limb detachment).
     }
 
     private void OpenUserInterface(EntityUid user, EntityUid analyzer)
@@ -386,6 +403,8 @@ public sealed class HealthAnalyzerSystem : EntitySystem
                         tissueProcedures.Add(new SurgeryProcedureState { StepId = "CloseTissue", Performed = _surgeryLayer.IsStepPerformed((part, layer), "CloseTissue") });
                     }
 
+                    var availableStepIds = _surgeryLayer.GetAvailableSteps(entity, part).ToList();
+
                     var layerData = new SurgeryLayerStateData
                     {
                         BodyPart = GetNetEntity(part),
@@ -395,7 +414,8 @@ public sealed class HealthAnalyzerSystem : EntitySystem
                         SkinOpen = skinOpen,
                         TissueOpen = tissueOpen,
                         OrganOpen = organOpen,
-                        OrganProcedures = _surgeryLayer.GetPerformedSteps((part, layer), SurgeryLayer.Organ).Select(s => new SurgeryProcedureState { StepId = s, Performed = true }).ToList()
+                        OrganProcedures = _surgeryLayer.GetPerformedSteps((part, layer), SurgeryLayer.Organ).Select(s => new SurgeryProcedureState { StepId = s, Performed = true }).ToList(),
+                        AvailableStepIds = availableStepIds
                     };
                     if (TryComp<BodyPartComponent>(part, out var bodyPartComp) && bodyPartComp.Organs != null)
                     {
@@ -419,6 +439,36 @@ public sealed class HealthAnalyzerSystem : EntitySystem
                         }
                     }
                     state.BodyPartLayerState.Add(layerData);
+                }
+            }
+
+            // Add empty limb slots so the diagram can be clicked to select them for AttachLimb.
+            if (TryComp<HumanoidAppearanceComponent>(entity, out var humanoid))
+            {
+                var limbCategories = new[] { "ArmLeft", "ArmRight", "LegLeft", "LegRight" };
+                var presentCategories = new HashSet<string>();
+                foreach (var part in query.Parts)
+                {
+                    if (TryComp<OrganComponent>(part, out var organ) && organ.Category is { } cat)
+                        presentCategories.Add(cat.ToString());
+                }
+                foreach (var categoryId in limbCategories)
+                {
+                    if (presentCategories.Contains(categoryId))
+                        continue;
+                    var availableStepIds = _surgeryLayer.GetAvailableStepsForEmptySlot(entity, categoryId).ToList();
+                    state.BodyPartLayerState.Add(new SurgeryLayerStateData
+                    {
+                        BodyPart = GetNetEntity(entity),
+                        CategoryId = categoryId,
+                        SkinProcedures = new List<SurgeryProcedureState>(),
+                        TissueProcedures = new List<SurgeryProcedureState>(),
+                        SkinOpen = false,
+                        TissueOpen = false,
+                        OrganOpen = true, // Empty slot: no layers to open, ready for AttachLimb
+                        OrganProcedures = new List<SurgeryProcedureState>(),
+                        AvailableStepIds = availableStepIds
+                    });
                 }
             }
         }

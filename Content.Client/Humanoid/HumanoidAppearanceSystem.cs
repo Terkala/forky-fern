@@ -57,6 +57,15 @@ public sealed class HumanoidAppearanceSystem : SharedHumanoidAppearanceSystem
         }
     }
 
+    /// <summary>
+    /// Forces the sprite to be updated from the HumanoidAppearanceComponent.
+    /// Use when the component was modified locally (e.g. CopyComponent) and state sync won't trigger.
+    /// </summary>
+    public void RefreshSprite(Entity<HumanoidAppearanceComponent, SpriteComponent> entity)
+    {
+        UpdateSprite(entity);
+    }
+
     private void UpdateSprite(Entity<HumanoidAppearanceComponent, SpriteComponent> entity)
     {
         UpdateLayers(entity);

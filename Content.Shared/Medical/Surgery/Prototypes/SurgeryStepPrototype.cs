@@ -60,4 +60,10 @@ public sealed partial class SurgeryStepPrototype : IPrototype
     /// </summary>
     [DataField]
     public SoundSpecifier? Sound { get; private set; }
+
+    /// <summary>
+    /// Declarative prerequisites. All must pass for this step to be available.
+    /// </summary>
+    [DataField]
+    public List<StepPrerequisite> Prerequisites { get; private set; } = new();
 }

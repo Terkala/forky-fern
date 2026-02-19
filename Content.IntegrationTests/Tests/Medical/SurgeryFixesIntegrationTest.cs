@@ -217,11 +217,11 @@ public sealed class SurgeryFixesIntegrationTest : InteractionTest
     }
 
     /// <summary>
-    /// When DetachLimb is performed on a leg, the whole leg (including foot) should be detached,
-    /// not just the foot. Verifies the leg entity is detached and still contains its foot.
+    /// When DetachLimb is performed on a leg, both the leg and foot should be detached as separate items.
+    /// Verifies the leg entity is detached and the foot is also detached (not inside the leg).
     /// </summary>
     [Test]
-    public async Task DetachLimb_OnLeg_DetachesWholeLimbWithFoot()
+    public async Task DetachLimb_OnLeg_DetachesLegAndFootSeparately()
     {
         await SpawnTarget("MobHuman");
         var patient = STarget!.Value;
@@ -317,10 +317,22 @@ public sealed class SurgeryFixesIntegrationTest : InteractionTest
             Assert.That(SEntMan.TryGetComponent(leg, out BodyPartComponent? bodyPart), Is.True);
             Assert.That(bodyPart!.Body, Is.Null, "Leg should no longer be attached to body after DetachLimb");
 
-            // The whole leg (including foot) should have been detached - verify the leg still contains the foot
-            Assert.That(bodyPart.Organs, Is.Not.Null, "Leg should have Organs container");
-            Assert.That(bodyPart.Organs!.ContainedEntities.Count, Is.GreaterThan(0),
-                "Leg should still contain its foot after detachment (whole limb detached, not just foot)");
+            // Leg and foot should be detached as separate items - leg should not contain the foot
+            Assert.That(bodyPart.Organs?.ContainedEntities.Count ?? 0, Is.EqualTo(0),
+                "Leg should not contain the foot after DetachLimb; foot drops as separate item");
+
+            // Verify the foot exists as a separate detached entity
+            var footFound = false;
+            var footQuery = SEntMan.EntityQueryEnumerator<OrganComponent>();
+            while (footQuery.MoveNext(out _, out var organ))
+            {
+                if (organ.Category?.ToString() == "FootLeft" && organ.Body == null)
+                {
+                    footFound = true;
+                    break;
+                }
+            }
+            Assert.That(footFound, Is.True, "Foot should exist as separate detached entity");
         });
     }
 

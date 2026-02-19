@@ -8,7 +8,7 @@ namespace Content.Shared.Medical.Surgery.Components;
 /// Used to determine which steps are available and which layers are "open".
 /// </summary>
 [RegisterComponent, NetworkedComponent, AutoGenerateComponentState]
-[Access(typeof(SurgerySystem), typeof(SurgeryLayerSystem))]
+[Access(typeof(SurgerySystem), typeof(SurgeryLayerSystem), typeof(Content.Shared.Body.BodySystem))]
 public sealed partial class SurgeryLayerComponent : Component
 {
     /// <summary>

@@ -131,7 +131,9 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
 
         if (_state.BodyParts.Count > 0)
         {
-            if (!_selectedBodyPart.HasValue || !_state.BodyParts.Contains(_selectedBodyPart.Value))
+            var selectionValid = _selectedBodyPart.HasValue
+                && (_state.BodyParts.Contains(_selectedBodyPart.Value) || _selectedBodyPart.Value == _state.TargetEntity);
+            if (!selectionValid)
                 _selectedBodyPart = _state.BodyParts[0];
         }
         else
@@ -181,15 +183,26 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
 
     private void UpdateLayerButtonAccessibility()
     {
+        var isEmptySlot = _selectedBodyPart == _state.TargetEntity;
         var layerState = _selectedBodyPart.HasValue && _state.BodyPartLayerState != null
             ? _state.BodyPartLayerState.FirstOrDefault(s => s.BodyPart == _selectedBodyPart)
             : default;
 
         // Current layer: green, pressed, disabled (not clickable). Others: white, unpressed, disabled only if locked.
-        // Lock = not yet reachable. Skin never locked (always accessible for backtracking). Tissue locked until skin opened; Organ until tissue opened.
-        UpdateButtonState(SkinLayerButton, _selectedLayer == SurgeryLayer.Skin, false);
-        UpdateButtonState(TissueLayerButton, _selectedLayer == SurgeryLayer.Tissue, !layerState.SkinRetracted);
-        UpdateButtonState(OrganLayerButton, _selectedLayer == SurgeryLayer.Organ, !layerState.TissueRetracted);
+        // Empty slots: only Organ is relevant (AttachLimb); Skin/Tissue have nothing to open.
+        // Non-empty: Skin never locked (backtracking). Tissue locked until skin opened; Organ until tissue opened.
+        if (isEmptySlot)
+        {
+            UpdateButtonState(SkinLayerButton, false, true);
+            UpdateButtonState(TissueLayerButton, false, true);
+            UpdateButtonState(OrganLayerButton, true, false);
+        }
+        else
+        {
+            UpdateButtonState(SkinLayerButton, _selectedLayer == SurgeryLayer.Skin, false);
+            UpdateButtonState(TissueLayerButton, _selectedLayer == SurgeryLayer.Tissue, !layerState.SkinRetracted);
+            UpdateButtonState(OrganLayerButton, _selectedLayer == SurgeryLayer.Organ, !layerState.TissueRetracted);
+        }
     }
 
     private static void UpdateButtonState(Button button, bool isSelected, bool isLocked = false)
@@ -218,88 +231,69 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
             ? _state.BodyPartLayerState.FirstOrDefault(s => s.BodyPart == _selectedBodyPart)
             : default;
 
-        var target = _entityManager.GetEntity(_state.TargetEntity);
-        var speciesId = target != null && _entityManager.TryGetComponent(target.Value, out HumanoidAppearanceComponent? humanoid)
-            ? humanoid.Species
-            : (ProtoId<SpeciesPrototype>?) null;
-
-        BodyPartSurgeryStepsPrototype? stepsConfig = null;
-        if (speciesId.HasValue && layerState.CategoryId != null)
-        {
-            var categoryId = new ProtoId<OrganCategoryPrototype>(layerState.CategoryId);
-            foreach (var proto in _prototypes.EnumeratePrototypes<BodyPartSurgeryStepsPrototype>())
-            {
-                if (proto.SpeciesId == speciesId.Value && proto.OrganCategory == categoryId)
-                {
-                    stepsConfig = proto;
-                    break;
-                }
-            }
-        }
-
-        var skinStepIds = stepsConfig != null
-            ? stepsConfig.GetSkinOpenStepIds(_prototypes).Concat(stepsConfig.GetSkinCloseStepIds(_prototypes))
-                .Select(s => new ProtoId<SurgeryStepPrototype>(s)).ToList()
-            : (IReadOnlyList<ProtoId<SurgeryStepPrototype>>?)null;
-        var tissueStepIds = stepsConfig != null
-            ? stepsConfig.GetTissueOpenStepIds(_prototypes).Concat(stepsConfig.GetTissueCloseStepIds(_prototypes))
-                .Select(s => new ProtoId<SurgeryStepPrototype>(s)).ToList()
-            : (IReadOnlyList<ProtoId<SurgeryStepPrototype>>?)null;
+        var availableStepIds = layerState.AvailableStepIds ?? [];
 
         if (_selectedLayer == SurgeryLayer.Skin)
         {
-            AddLayerSteps(skinStepIds, layerState.SkinProcedures, null, layerState, SurgeryLayer.Skin, stepsConfig: stepsConfig);
+            AddAvailableSteps(availableStepIds, SurgeryLayer.Skin);
         }
         if (_selectedLayer == SurgeryLayer.Tissue)
         {
-            if (layerState.SkinOpen)
-                AddLayerSteps(tissueStepIds, layerState.TissueProcedures, null, layerState, SurgeryLayer.Tissue, excludeStepIds: ["SawBones"], stepsConfig: stepsConfig);
+            AddAvailableSteps(availableStepIds, SurgeryLayer.Tissue);
         }
         if (_selectedLayer == SurgeryLayer.Organ)
         {
             if (!layerState.OrganOpen && layerState.TissueOpen)
-                AddLayerSteps(tissueStepIds, layerState.TissueProcedures, onlyStepId: "SawBones", layerState, SurgeryLayer.Tissue, stepsConfig: stepsConfig);
+                AddAvailableSteps(availableStepIds, SurgeryLayer.Tissue, onlyStepId: "SawBones");
 
             if (layerState.OrganOpen)
             {
-                foreach (var organData in layerState.Organs ?? [])
+                if (availableStepIds.Contains("RemoveOrgan"))
                 {
-                    var organEntity = _entityManager.GetEntity(organData.Organ);
-                    var organName = _entityManager.TryGetComponent<MetaDataComponent>(organEntity, out var meta)
-                        ? meta.EntityName
-                        : Loc.GetString("health-analyzer-window-entity-unknown-text");
-                    AddStepButton("RemoveOrgan", Loc.GetString("health-analyzer-surgery-step-remove-organ-with-name", ("organName", organName)), organData.Organ);
+                    foreach (var organData in layerState.Organs ?? [])
+                    {
+                        var organEntity = _entityManager.GetEntity(organData.Organ);
+                        var organName = _entityManager.TryGetComponent<MetaDataComponent>(organEntity, out var meta)
+                            ? meta.EntityName
+                            : Loc.GetString("health-analyzer-window-entity-unknown-text");
+                        AddStepButton("RemoveOrgan", Loc.GetString("health-analyzer-surgery-step-remove-organ-with-name", ("organName", organName)), organData.Organ);
+                    }
                 }
 
                 var detachLimbCategories = new[] { "ArmLeft", "ArmRight", "LegLeft", "LegRight" };
-                if (layerState.CategoryId != null && detachLimbCategories.Contains(layerState.CategoryId))
+                if (availableStepIds.Contains("DetachLimb") && layerState.CategoryId != null && detachLimbCategories.Contains(layerState.CategoryId))
                 {
                     AddStepButton("DetachLimb", Loc.GetString("health-analyzer-surgery-step-detach-limb"));
                 }
 
-                var localPlayer = _playerManager.LocalSession?.AttachedEntity;
-                if (localPlayer.HasValue && _entityManager.TryGetComponent<HandsComponent>(localPlayer.Value, out var hands) && hands != null)
+                if (availableStepIds.Contains("InsertOrgan") || availableStepIds.Contains("AttachLimb"))
                 {
-                    var handsSystem = _entityManager.System<SharedHandsSystem>();
-                    var existingLimbCategories = (_state.BodyPartLayerState ?? new List<SurgeryLayerStateData>())
-                        .Select(s => s.CategoryId).Where(c => c != null).ToHashSet();
-                    foreach (var held in handsSystem.EnumerateHeld((localPlayer.Value, hands)))
+                    var localPlayer = _playerManager.LocalSession?.AttachedEntity;
+                    if (localPlayer.HasValue && _entityManager.TryGetComponent<HandsComponent>(localPlayer.Value, out var hands) && hands != null)
                     {
-                        if (!_entityManager.TryGetComponent(held, out OrganComponent? organComp) || organComp.Body.HasValue)
-                            continue;
-                        var categoryId = organComp.Category?.ToString();
-                        if (categoryId == null)
-                            continue;
-                        if ((layerState.EmptySlots ?? []).Contains(categoryId))
+                        var handsSystem = _entityManager.System<SharedHandsSystem>();
+                        // Only count limbs the body actually has; empty slots have BodyPart == TargetEntity
+                        var existingLimbCategories = (_state.BodyPartLayerState ?? new List<SurgeryLayerStateData>())
+                            .Where(s => s.BodyPart != _state.TargetEntity)
+                            .Select(s => s.CategoryId).Where(c => c != null).ToHashSet();
+                        foreach (var held in handsSystem.EnumerateHeld((localPlayer.Value, hands)))
                         {
-                            var organName = _entityManager.TryGetComponent(held, out MetaDataComponent? heldMeta)
-                                ? heldMeta.EntityName
-                                : Loc.GetString("health-analyzer-window-entity-unknown-text");
-                            AddStepButton("InsertOrgan", Loc.GetString("health-analyzer-surgery-step-insert-organ-with-name", ("organName", organName)), _entityManager.GetNetEntity(held));
-                        }
-                        else if (detachLimbCategories.Contains(categoryId) && !existingLimbCategories.Contains(categoryId))
-                        {
-                            AddStepButton("AttachLimb", Loc.GetString("health-analyzer-surgery-step-attach-limb"), _entityManager.GetNetEntity(held));
+                            if (!_entityManager.TryGetComponent(held, out OrganComponent? organComp) || organComp.Body.HasValue)
+                                continue;
+                            var categoryId = organComp.Category?.ToString();
+                            if (categoryId == null)
+                                continue;
+                            if (availableStepIds.Contains("InsertOrgan") && (layerState.EmptySlots ?? []).Contains(categoryId))
+                            {
+                                var organName = _entityManager.TryGetComponent(held, out MetaDataComponent? heldMeta)
+                                    ? heldMeta.EntityName
+                                    : Loc.GetString("health-analyzer-window-entity-unknown-text");
+                                AddStepButton("InsertOrgan", Loc.GetString("health-analyzer-surgery-step-insert-organ-with-name", ("organName", organName)), _entityManager.GetNetEntity(held));
+                            }
+                            else if (availableStepIds.Contains("AttachLimb") && detachLimbCategories.Contains(categoryId) && !existingLimbCategories.Contains(categoryId))
+                            {
+                                AddStepButton("AttachLimb", Loc.GetString("health-analyzer-surgery-step-attach-limb"), _entityManager.GetNetEntity(held));
+                            }
                         }
                     }
                 }
@@ -317,56 +311,18 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
         }
     }
 
-    private void AddLayerSteps(
-        IReadOnlyList<ProtoId<SurgeryStepPrototype>>? stepIds,
-        IReadOnlyList<SurgeryProcedureState>? performed,
-        string? onlyStepId,
-        SurgeryLayerStateData layerState,
-        SurgeryLayer layer,
-        string[]? excludeStepIds = null,
-        BodyPartSurgeryStepsPrototype? stepsConfig = null)
+    private void AddAvailableSteps(IReadOnlyList<string> availableStepIds, SurgeryLayer layer, string? onlyStepId = null)
     {
-        performed ??= [];
-        IReadOnlyList<ProtoId<SurgeryStepPrototype>> steps = stepIds ?? [];
-        if (steps.Count == 0)
+        foreach (var stepId in availableStepIds)
         {
-            steps = layer switch
-            {
-                SurgeryLayer.Skin => [new ProtoId<SurgeryStepPrototype>("RetractSkin"), new ProtoId<SurgeryStepPrototype>("CloseIncision")],
-                SurgeryLayer.Tissue => [new ProtoId<SurgeryStepPrototype>("RetractTissue"), new ProtoId<SurgeryStepPrototype>("SawBones"), new ProtoId<SurgeryStepPrototype>("CloseTissue")],
-                _ => []
-            };
-        }
-
-        var skinOpenSteps = stepsConfig?.GetSkinOpenStepIds(_prototypes).ToHashSet() ?? new HashSet<string> { "RetractSkin" };
-        var skinCloseSteps = stepsConfig?.GetSkinCloseStepIds(_prototypes).ToHashSet() ?? new HashSet<string> { "CloseIncision" };
-        var tissueOpenSteps = stepsConfig?.GetTissueOpenStepIds(_prototypes).ToHashSet() ?? new HashSet<string> { "RetractTissue" };
-        var tissueCloseSteps = stepsConfig?.GetTissueCloseStepIds(_prototypes).ToHashSet() ?? new HashSet<string> { "CloseTissue" };
-
-        foreach (var stepId in steps)
-        {
-            var id = stepId.ToString();
-            if (excludeStepIds != null && excludeStepIds.Contains(id))
+            if (onlyStepId != null && stepId != onlyStepId)
                 continue;
-            if (onlyStepId != null && id != onlyStepId)
+            if (!_prototypes.TryIndex<SurgeryStepPrototype>(stepId, out var step))
                 continue;
-            // Skip performed steps, except for cyclical layers: when closed, show open steps again (allows re-opening)
-            var isPerformed = performed.Any(p => p.StepId == id && p.Performed);
-            if (isPerformed)
-            {
-                var showAnyway = (layer == SurgeryLayer.Skin && skinOpenSteps.Contains(id) && !layerState.SkinOpen)
-                    || (layer == SurgeryLayer.Tissue && tissueOpenSteps.Contains(id) && !layerState.TissueOpen);
-                if (!showAnyway)
-                    continue;
-            }
-            if (skinCloseSteps.Contains(id) && !layerState.SkinOpen)
+            if (step.Layer != layer)
                 continue;
-            if (tissueCloseSteps.Contains(id) && !layerState.TissueOpen)
-                continue;
-            if (!_prototypes.TryIndex(stepId, out SurgeryStepPrototype? step))
-                continue;
-            var name = step.Name != null ? Loc.GetString(step.Name) : id;
-            AddStepButton(id, name, null);
+            var name = step.Name != null ? Loc.GetString(step.Name) : stepId;
+            AddStepButton(stepId, name, null);
         }
     }
 

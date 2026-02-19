@@ -18,15 +18,18 @@ public sealed class LimbDetachmentEffectsSystem : EntitySystem
 {
     private static readonly string[] LimbCategories = ["ArmLeft", "ArmRight", "LegLeft", "LegRight"];
     private static readonly string[] HandCategories = ["HandLeft", "HandRight"];
+    private static readonly string[] FootCategories = ["FootLeft", "FootRight"];
 
     private static readonly IReadOnlyDictionary<string, HumanoidVisualLayers[]> CategoryToLayers = new Dictionary<string, HumanoidVisualLayers[]>
     {
         ["ArmLeft"] = [HumanoidVisualLayers.LArm, HumanoidVisualLayers.LHand],
         ["ArmRight"] = [HumanoidVisualLayers.RArm, HumanoidVisualLayers.RHand],
-        ["LegLeft"] = [HumanoidVisualLayers.LLeg, HumanoidVisualLayers.LFoot],
-        ["LegRight"] = [HumanoidVisualLayers.RLeg, HumanoidVisualLayers.RFoot],
+        ["LegLeft"] = [HumanoidVisualLayers.LLeg],
+        ["LegRight"] = [HumanoidVisualLayers.RLeg],
         ["HandLeft"] = [HumanoidVisualLayers.LHand],
         ["HandRight"] = [HumanoidVisualLayers.RHand],
+        ["FootLeft"] = [HumanoidVisualLayers.LFoot],
+        ["FootRight"] = [HumanoidVisualLayers.RFoot],
     };
 
     [Dependency] private readonly BodySystem _body = default!;
@@ -51,7 +54,7 @@ public sealed class LimbDetachmentEffectsSystem : EntitySystem
         {
             body = args.Container.Owner;
         }
-        else if (args.Container.ID == "body_part_organs" &&
+        else if ((args.Container.ID == "body_part_organs" || args.Container.ID == "limb_organs") &&
                  TryComp<BodyPartComponent>(args.Container.Owner, out var bodyPart) &&
                  bodyPart.Body is { } bodyUid)
         {
@@ -70,7 +73,7 @@ public sealed class LimbDetachmentEffectsSystem : EntitySystem
         if (!CategoryToLayers.TryGetValue(categoryStr, out var layers))
             return;
 
-        if (!LimbCategories.Contains(categoryStr) && !HandCategories.Contains(categoryStr))
+        if (!LimbCategories.Contains(categoryStr) && !HandCategories.Contains(categoryStr) && !FootCategories.Contains(categoryStr))
             return;
 
         if (LifeStage(body) >= EntityLifeStage.Terminating)
@@ -94,7 +97,7 @@ public sealed class LimbDetachmentEffectsSystem : EntitySystem
         {
             body = args.Container.Owner;
         }
-        else if (args.Container.ID == "body_part_organs" &&
+        else if ((args.Container.ID == "body_part_organs" || args.Container.ID == "limb_organs") &&
                  TryComp<BodyPartComponent>(args.Container.Owner, out var bodyPart) &&
                  bodyPart.Body is { } bodyUid)
         {
@@ -113,7 +116,7 @@ public sealed class LimbDetachmentEffectsSystem : EntitySystem
         if (!CategoryToLayers.TryGetValue(categoryStr, out var layers))
             return;
 
-        if (!LimbCategories.Contains(categoryStr) && !HandCategories.Contains(categoryStr))
+        if (!LimbCategories.Contains(categoryStr) && !HandCategories.Contains(categoryStr) && !FootCategories.Contains(categoryStr))
             return;
 
         if (LifeStage(body) >= EntityLifeStage.Terminating)

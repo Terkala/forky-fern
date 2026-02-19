@@ -2,6 +2,9 @@
 - type: surgeryStep
   id: CreateIncision
   layer: Skin
+  prerequisites:
+    - type: RequireLayerClosed
+      layer: Skin
   name: health-analyzer-surgery-step-create-incision
   penalty: 1
   procedureTypeIndex: 0
@@ -17,6 +20,9 @@
 - type: surgeryStep
   id: RetractSkin
   layer: Skin
+  prerequisites:
+    - type: RequireLayerClosed
+      layer: Skin
   name: health-analyzer-surgery-step-retract-skin
   penalty: 1
   procedureTypeIndex: 0
@@ -33,6 +39,9 @@
 - type: surgeryStep
   id: CloseIncision
   layer: Skin
+  prerequisites:
+    - type: RequireLayerOpen
+      layer: Skin
   name: health-analyzer-surgery-step-close-incision
   penalty: 0
   procedureTypeIndex: 0
@@ -49,6 +58,9 @@
 - type: surgeryStep
   id: RetractTissue
   layer: Tissue
+  prerequisites:
+    - type: RequireLayerOpen
+      layer: Skin
   name: health-analyzer-surgery-step-retract-tissue
   penalty: 1
   procedureTypeIndex: 1
@@ -64,6 +76,9 @@
 - type: surgeryStep
   id: ClampBleeders
   layer: Tissue
+  prerequisites:
+    - type: RequireLayerOpen
+      layer: Skin
   name: health-analyzer-surgery-step-clamp-bleeders
   penalty: 0
   procedureTypeIndex: 1
@@ -76,6 +91,11 @@
 - type: surgeryStep
   id: SawBones
   layer: Tissue
+  prerequisites:
+    - type: RequireLayerOpen
+      layer: Skin
+    - type: RequireStepPerformed
+      step: RetractTissue
   name: health-analyzer-surgery-step-saw-bones
   penalty: 8
   procedureTypeIndex: 2
@@ -93,6 +113,9 @@
 - type: surgeryStep
   id: CloseTissue
   layer: Tissue
+  prerequisites:
+    - type: RequireLayerOpen
+      layer: Tissue
   name: health-analyzer-surgery-step-close-tissue
   penalty: 0
   procedureTypeIndex: 1
@@ -109,6 +132,9 @@
 - type: surgeryStep
   id: RemoveOrgan
   layer: Organ
+  prerequisites:
+    - type: RequireLayerOpen
+      layer: Organ
   name: health-analyzer-surgery-step-remove-organ
   penalty: 0
   procedureTypeIndex: 6
@@ -118,6 +144,9 @@
 - type: surgeryStep
   id: InsertOrgan
   layer: Organ
+  prerequisites:
+    - type: RequireLayerOpen
+      layer: Organ
   name: health-analyzer-surgery-step-insert-organ
   penalty: 0
   procedureTypeIndex: 7
@@ -127,6 +156,9 @@
 - type: surgeryStep
   id: DetachLimb
   layer: Organ
+  prerequisites:
+    - type: RequireLayerOpen
+      layer: Organ
   name: health-analyzer-surgery-step-detach-limb
   penalty: 0
   procedureTypeIndex: 8
@@ -142,6 +174,9 @@
 - type: surgeryStep
   id: AttachLimb
   layer: Organ
+  prerequisites:
+    - type: RequireLayerOpen
+      layer: Organ
   name: health-analyzer-surgery-step-attach-limb
   penalty: 0
   procedureTypeIndex: 9

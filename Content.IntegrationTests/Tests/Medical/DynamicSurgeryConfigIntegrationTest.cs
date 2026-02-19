@@ -284,4 +284,84 @@ public sealed class DynamicSurgeryConfigIntegrationTest
         });
         await pair.CleanReturnAsync();
     }
+
+    [Test]
+    public async Task CanPerformStep_RetractSkin_AvailableAfterCloseIncision()
+    {
+        await using var pair = await PoolManager.GetServerClient(new PoolSettings { DummyTicker = false });
+        var server = pair.Server;
+        await server.WaitIdleAsync();
+
+        var entityManager = server.ResolveDependency<IEntityManager>();
+        var surgeryLayer = entityManager.System<SurgeryLayerSystem>();
+        var handsSystem = entityManager.System<SharedHandsSystem>();
+        var mapData = await pair.CreateTestMap();
+
+        EntityUid patient = default;
+        EntityUid torso = default;
+
+        await server.WaitPost(() =>
+        {
+            var surgeon = entityManager.SpawnEntity("MobHuman", mapData.GridCoords);
+            patient = entityManager.SpawnEntity("MobHuman", mapData.GridCoords);
+            var analyzer = entityManager.SpawnEntity("HandheldHealthAnalyzer", mapData.GridCoords);
+            var scalpel = entityManager.SpawnEntity("Scalpel", mapData.GridCoords);
+            torso = GetTorso(entityManager, patient);
+            handsSystem.TryPickupAnyHand(surgeon, analyzer, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(surgeon, scalpel, checkActionBlocker: false);
+
+            var reqEv = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, "RetractSkin", SurgeryLayer.Skin, false);
+            entityManager.EventBus.RaiseLocalEvent(patient, ref reqEv);
+            Assert.That(reqEv.Valid, Is.True);
+        });
+        await pair.RunTicksSync(150);
+
+        await server.WaitPost(() =>
+        {
+            var surgeon = entityManager.SpawnEntity("MobHuman", mapData.GridCoords);
+            var analyzer = entityManager.SpawnEntity("HandheldHealthAnalyzer", mapData.GridCoords);
+            var hemostat = entityManager.SpawnEntity("Hemostat", mapData.GridCoords);
+            handsSystem.TryPickupAnyHand(surgeon, analyzer, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(surgeon, hemostat, checkActionBlocker: false);
+            var reqEv = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, "CloseIncision", SurgeryLayer.Skin, false);
+            entityManager.EventBus.RaiseLocalEvent(patient, ref reqEv);
+            Assert.That(reqEv.Valid, Is.True);
+        });
+        await pair.RunTicksSync(150);
+
+        await server.WaitAssertion(() =>
+        {
+            var layerComp = entityManager.GetComponent<SurgeryLayerComponent>(torso);
+            var stepsConfig = surgeryLayer.GetStepsConfig(patient, torso)!;
+            Assert.That(surgeryLayer.CanPerformStep("RetractSkin", SurgeryLayer.Skin, layerComp, stepsConfig), Is.True,
+                "RetractSkin should be available again after closing incision");
+        });
+        await pair.CleanReturnAsync();
+    }
+
+    [Test]
+    public async Task GetAvailableSteps_ReturnsCorrectStepsForState()
+    {
+        await using var pair = await PoolManager.GetServerClient(new PoolSettings { DummyTicker = false });
+        var server = pair.Server;
+        await server.WaitIdleAsync();
+
+        var entityManager = server.ResolveDependency<IEntityManager>();
+        var surgeryLayer = entityManager.System<SurgeryLayerSystem>();
+        var mapData = await pair.CreateTestMap();
+
+        EntityUid patient = default;
+        EntityUid torso = default;
+
+        await server.WaitAssertion(() =>
+        {
+            patient = entityManager.SpawnEntity("MobHuman", mapData.GridCoords);
+            torso = GetTorso(entityManager, patient);
+
+            var available = surgeryLayer.GetAvailableSteps(patient, torso);
+            Assert.That(available, Does.Contain("RetractSkin"), "RetractSkin should be available when skin closed");
+            Assert.That(available, Does.Not.Contain("CloseIncision"), "CloseIncision should not be available when skin closed");
+        });
+        await pair.CleanReturnAsync();
+    }
 }

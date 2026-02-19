@@ -100,6 +100,11 @@ public struct SurgeryLayerStateData
     public bool TissueOpen;
     public bool OrganOpen;
 
+    /// <summary>
+    /// Server-computed list of step IDs that can be performed. Client displays these.
+    /// </summary>
+    public List<string> AvailableStepIds;
+
     public SurgeryLayerStateData()
     {
         SkinProcedures = new();
@@ -107,6 +112,7 @@ public struct SurgeryLayerStateData
         OrganProcedures = new();
         Organs = new();
         EmptySlots = new();
+        AvailableStepIds = new();
     }
 
     public bool SkinRetracted => SkinOpen;

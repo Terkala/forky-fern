@@ -77,102 +77,143 @@ public sealed class SurgeryLayerSystem : EntitySystem
     }
 
     /// <summary>
-    /// Returns whether the given step can be performed based on config-driven prerequisites.
+    /// Returns whether the given step can be performed based on declarative prerequisites.
     /// </summary>
     public bool CanPerformStep(string stepId, SurgeryLayer layer, SurgeryLayerComponent layerComp, BodyPartSurgeryStepsPrototype stepsConfig)
     {
-        var performedList = layer switch
-        {
-            SurgeryLayer.Skin => layerComp.PerformedSkinSteps,
-            SurgeryLayer.Tissue => layerComp.PerformedTissueSteps,
-            SurgeryLayer.Organ => layerComp.PerformedOrganSteps,
-            _ => null
-        };
-        if (performedList == null)
+        if (!_prototypes.TryIndex<SurgeryStepPrototype>(stepId, out var step))
+            return false;
+        if (step.Layer != layer)
             return false;
 
-        if (layer == SurgeryLayer.Skin)
-        {
-            var skinOpen = stepsConfig.GetSkinOpenStepIds(_prototypes).ToList();
-            var skinClose = stepsConfig.GetSkinCloseStepIds(_prototypes).ToList();
-            var skinClosed = skinClose.Any(s => performedList.Contains(s));
-            var idx = skinOpen.IndexOf(stepId);
-            if (idx >= 0)
-            {
-                // When layer is closed, allow open steps again (cyclical: close -> open -> close -> ...)
-                if (skinClosed)
-                {
-                    for (var i = 0; i < idx; i++)
-                        if (!performedList.Contains(skinOpen[i]))
-                            return false;
-                    return true;
-                }
-                if (performedList.Contains(stepId))
-                    return false;
-                for (var i = 0; i < idx; i++)
-                    if (!performedList.Contains(skinOpen[i]))
-                        return false;
-                return true;
-            }
-            idx = skinClose.IndexOf(stepId);
-            if (idx >= 0)
-            {
-                if (!skinOpen.All(s => performedList.Contains(s)))
-                    return false;
-                for (var i = 0; i < idx; i++)
-                    if (!performedList.Contains(skinClose[i]))
-                        return false;
-                return true;
-            }
-        }
+        if (!IsStepAllowedForBodyPart(stepId, layer, stepsConfig))
+            return false;
 
-        if (layer == SurgeryLayer.Tissue)
-        {
-            var tissueOpen = stepsConfig.GetTissueOpenStepIds(_prototypes).ToList();
-            var tissueClose = stepsConfig.GetTissueCloseStepIds(_prototypes).ToList();
-            var tissueClosed = tissueClose.Any(s => performedList.Contains(s));
-            var idx = tissueOpen.IndexOf(stepId);
-            if (idx >= 0)
-            {
-                if (!IsSkinOpen(layerComp, stepsConfig))
-                    return false;
-                // When tissue layer is closed, allow open steps again (cyclical)
-                if (tissueClosed)
-                {
-                    for (var i = 0; i < idx; i++)
-                        if (!performedList.Contains(tissueOpen[i]))
-                            return false;
-                    return true;
-                }
-                if (performedList.Contains(stepId))
-                    return false;
-                if (tissueClose.Any(s => performedList.Contains(s)))
-                    return false;
-                for (var i = 0; i < idx; i++)
-                    if (!performedList.Contains(tissueOpen[i]))
-                        return false;
-                return true;
-            }
-            idx = tissueClose.IndexOf(stepId);
-            if (idx >= 0)
-            {
-                if (!IsTissueOpen(layerComp, stepsConfig))
-                    return false;
-                for (var i = 0; i < idx; i++)
-                    if (!performedList.Contains(tissueClose[i]))
-                        return false;
-                return true;
-            }
-        }
+        return EvaluatePrerequisites(step.Prerequisites, layerComp, stepsConfig);
+    }
 
-        if (layer == SurgeryLayer.Organ)
+    /// <summary>
+    /// Returns whether the step is in this body part's catalog (from stepsConfig).
+    /// </summary>
+    public bool IsStepAllowedForBodyPart(string stepId, SurgeryLayer layer, BodyPartSurgeryStepsPrototype stepsConfig)
+    {
+        return layer switch
         {
-            if (!stepsConfig.OrganSteps.Any(s => s.ToString() == stepId))
+            SurgeryLayer.Skin => stepsConfig.GetSkinOpenStepIds(_prototypes).Contains(stepId)
+                || stepsConfig.GetSkinCloseStepIds(_prototypes).Contains(stepId),
+            SurgeryLayer.Tissue => stepsConfig.GetTissueOpenStepIds(_prototypes).Contains(stepId)
+                || stepsConfig.GetTissueCloseStepIds(_prototypes).Contains(stepId),
+            SurgeryLayer.Organ => stepsConfig.OrganSteps.Any(s => s.ToString() == stepId),
+            _ => false
+        };
+    }
+
+    private bool EvaluatePrerequisites(IReadOnlyList<StepPrerequisite> prereqs, SurgeryLayerComponent comp, BodyPartSurgeryStepsPrototype config)
+    {
+        foreach (var p in prereqs)
+        {
+            if (!EvaluateOne(p, comp, config))
                 return false;
-            return IsOrganLayerOpen(layerComp, stepsConfig);
         }
+        return true;
+    }
 
-        return false;
+    private bool EvaluateOne(StepPrerequisite p, SurgeryLayerComponent comp, BodyPartSurgeryStepsPrototype config)
+    {
+        switch (p.Type)
+        {
+            case StepPrerequisiteType.RequireLayerOpen:
+                if (p.Layer is not { } layer)
+                    return false;
+                return IsLayerOpen(comp, config, layer);
+            case StepPrerequisiteType.RequireLayerClosed:
+                if (p.Layer is not { } layerClosed)
+                    return false;
+                return !IsLayerOpen(comp, config, layerClosed);
+            case StepPrerequisiteType.RequireStepPerformed:
+                if (string.IsNullOrEmpty(p.StepId))
+                    return false;
+                if (!_prototypes.TryIndex<SurgeryStepPrototype>(p.StepId, out var reqStep))
+                    return false;
+                var performedList = reqStep.Layer switch
+                {
+                    SurgeryLayer.Skin => comp.PerformedSkinSteps,
+                    SurgeryLayer.Tissue => comp.PerformedTissueSteps,
+                    SurgeryLayer.Organ => comp.PerformedOrganSteps,
+                    _ => null
+                };
+                return performedList != null && performedList.Contains(p.StepId);
+            default:
+                return false;
+        }
+    }
+
+    private bool IsLayerOpen(SurgeryLayerComponent comp, BodyPartSurgeryStepsPrototype config, SurgeryLayer layer)
+    {
+        return layer switch
+        {
+            SurgeryLayer.Skin => IsSkinOpen(comp, config),
+            SurgeryLayer.Tissue => IsTissueOpen(comp, config),
+            SurgeryLayer.Organ => IsOrganLayerOpen(comp, config),
+            _ => false
+        };
+    }
+
+    /// <summary>
+    /// Returns the list of step IDs that can be performed on this body part.
+    /// </summary>
+    public IReadOnlyList<string> GetAvailableSteps(EntityUid body, EntityUid bodyPart, SurgeryLayer? filterLayer = null)
+    {
+        var stepsConfig = GetStepsConfig(body, bodyPart);
+        if (stepsConfig == null)
+            return Array.Empty<string>();
+
+        var layerComp = CompOrNull<SurgeryLayerComponent>(bodyPart);
+        if (layerComp == null)
+            return Array.Empty<string>();
+
+        var allSteps = GetAllStepsForBodyPart(stepsConfig);
+        var result = new List<string>();
+        foreach (var stepId in allSteps)
+        {
+            if (!_prototypes.TryIndex<SurgeryStepPrototype>(stepId, out var step))
+                continue;
+            if (filterLayer.HasValue && step.Layer != filterLayer.Value)
+                continue;
+            if (CanPerformStep(stepId, step.Layer, layerComp, stepsConfig))
+                result.Add(stepId);
+        }
+        return result;
+    }
+
+    private IEnumerable<string> GetAllStepsForBodyPart(BodyPartSurgeryStepsPrototype config)
+    {
+        var skinOpen = config.GetSkinOpenStepIds(_prototypes);
+        var skinClose = config.GetSkinCloseStepIds(_prototypes);
+        var tissueOpen = config.GetTissueOpenStepIds(_prototypes);
+        var tissueClose = config.GetTissueCloseStepIds(_prototypes);
+        var organ = config.OrganSteps.Select(s => s.ToString());
+        return skinOpen.Concat(skinClose).Concat(tissueOpen).Concat(tissueClose).Concat(organ).Distinct();
+    }
+
+    /// <summary>
+    /// Returns available steps for an empty limb slot (e.g. after DetachLimb).
+    /// Only AttachLimb is relevant; no layer opening is required.
+    /// </summary>
+    public IReadOnlyList<string> GetAvailableStepsForEmptySlot(EntityUid body, string categoryId)
+    {
+        if (!TryComp<HumanoidAppearanceComponent>(body, out var humanoid))
+            return Array.Empty<string>();
+
+        var category = new ProtoId<OrganCategoryPrototype>(categoryId);
+        var stepsConfig = GetStepsConfig(humanoid.Species, category);
+        if (stepsConfig == null)
+            return Array.Empty<string>();
+
+        if (!stepsConfig.OrganSteps.Any(s => s.ToString() == "AttachLimb"))
+            return Array.Empty<string>();
+
+        return new[] { "AttachLimb" };
     }
 
     /// <summary>
