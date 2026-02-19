@@ -107,8 +107,44 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
     private void UpdateIntegrityView()
     {
         IntegrityLabel.Text = _state.IntegrityTotal.HasValue && _state.IntegrityMax.HasValue
-            ? $"{_state.IntegrityTotal}/{_state.IntegrityMax}"
+            ? (_state.IntegrityMax.Value - _state.IntegrityTotal.Value).ToString()
             : Loc.GetString("health-analyzer-window-entity-unknown-value-text");
+
+        IntegrityPenaltiesList.RemoveAllChildren();
+        var entries = _state.IntegrityPenaltyEntries;
+        if (entries == null || entries.Count == 0)
+        {
+            var emptyLabel = new Label
+            {
+                Text = Loc.GetString("health-analyzer-integrity-no-penalties"),
+                StyleClasses = { "LabelSubText" }
+            };
+            IntegrityPenaltiesList.AddChild(emptyLabel);
+            return;
+        }
+        foreach (var entry in entries)
+        {
+            AddIntegrityPenaltyEntry(IntegrityPenaltiesList, entry, 0);
+        }
+    }
+
+    private void AddIntegrityPenaltyEntry(BoxContainer parent, IntegrityPenaltyDisplayEntry entry, int indentLevel)
+    {
+        var desc = entry.Description.StartsWith("health-analyzer-") ? Loc.GetString(entry.Description) : entry.Description;
+        var label = new Label
+        {
+            Text = $"{desc}: -{entry.Amount}",
+            StyleClasses = { "LabelSubText" },
+            Margin = new Thickness(indentLevel * 15, 0, 0, 0)
+        };
+        parent.AddChild(label);
+        if (entry.Children != null)
+        {
+            foreach (var child in entry.Children)
+            {
+                AddIntegrityPenaltyEntry(parent, child, indentLevel + 1);
+            }
+        }
     }
 
     private void UpdateSurgeryView(bool autoSelectDeepest = true)
@@ -235,16 +271,16 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
 
         if (_selectedLayer == SurgeryLayer.Skin)
         {
-            AddAvailableSteps(availableStepIds, SurgeryLayer.Skin);
+            AddAvailableSteps(availableStepIds, SurgeryLayer.Skin, layerState: layerState);
         }
         if (_selectedLayer == SurgeryLayer.Tissue)
         {
-            AddAvailableSteps(availableStepIds, SurgeryLayer.Tissue);
+            AddAvailableSteps(availableStepIds, SurgeryLayer.Tissue, layerState: layerState);
         }
         if (_selectedLayer == SurgeryLayer.Organ)
         {
             if (!layerState.OrganOpen && layerState.TissueOpen)
-                AddAvailableSteps(availableStepIds, SurgeryLayer.Tissue, onlyStepId: "SawBones");
+                AddAvailableSteps(availableStepIds, SurgeryLayer.Tissue, onlyStepId: "SawBones", layerState: layerState);
 
             if (layerState.OrganOpen)
             {
@@ -311,7 +347,7 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
         }
     }
 
-    private void AddAvailableSteps(IReadOnlyList<string> availableStepIds, SurgeryLayer layer, string? onlyStepId = null)
+    private void AddAvailableSteps(IReadOnlyList<string> availableStepIds, SurgeryLayer layer, string? onlyStepId = null, SurgeryLayerStateData? layerState = null)
     {
         foreach (var stepId in availableStepIds)
         {
@@ -321,9 +357,25 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
                 continue;
             if (step.Layer != layer)
                 continue;
-            var name = step.Name != null ? Loc.GetString(step.Name) : stepId;
+            var name = GetStepDisplayName(stepId, step, layerState);
             AddStepButton(stepId, name, null);
         }
+    }
+
+    private string GetStepDisplayName(string stepId, SurgeryStepPrototype step, SurgeryLayerStateData? layerState)
+    {
+        if (step.Name == null)
+            return stepId;
+        if (stepId == "CloseIncision" && layerState?.SkinRetracted == true)
+            return Loc.GetString("health-analyzer-surgery-step-mend-skin");
+        if (stepId == "CloseTissue" && layerState.HasValue)
+        {
+            if (layerState.Value.BonesSawed)
+                return Loc.GetString("health-analyzer-surgery-step-mend-bones");
+            if (layerState.Value.TissueRetracted)
+                return Loc.GetString("health-analyzer-surgery-step-mend-tissue");
+        }
+        return Loc.GetString(step.Name);
     }
 
     private void AddStepButton(string stepId, string buttonText, NetEntity? organ = null)

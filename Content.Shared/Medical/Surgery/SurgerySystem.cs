@@ -285,7 +285,7 @@ public sealed class SurgerySystem : EntitySystem
                 var penaltyEv = new IntegrityPenaltyTotalRequestEvent(ent.Owner);
                 RaiseLocalEvent(ent.Owner, ref penaltyEv);
                 var usage = TryComp<IntegrityUsageComponent>(ent.Owner, out var usageComp) ? usageComp.Usage : 0;
-                const int maxIntegrity = 6;
+                var maxIntegrity = TryComp<IntegrityCapacityComponent>(ent.Owner, out var cap) ? cap.MaxIntegrity : 6;
                 if (usage + penaltyEv.Total + costEv.Cost > maxIntegrity)
                 {
                     args.RejectReason = "integrity-over-capacity";
@@ -532,13 +532,45 @@ public sealed class SurgerySystem : EntitySystem
         if (performedList == null || performedList.Contains(args.StepId))
             return;
 
+        var stepsConfig = _surgeryLayer.GetStepsConfig(args.Target, ent.Owner);
+        var closeStepIds = args.Layer switch
         {
-            performedList.Add(args.StepId);
-            Dirty(ent, layerComp);
+            SurgeryLayer.Skin => stepsConfig?.GetSkinCloseStepIds(_prototypes),
+            SurgeryLayer.Tissue => stepsConfig?.GetTissueCloseStepIds(_prototypes),
+            _ => null
+        };
 
-            var penaltyEv = new SurgeryPenaltyAppliedEvent(ent.Owner, args.Step.Penalty);
-            RaiseLocalEvent(ent.Owner, ref penaltyEv);
+        if (closeStepIds != null && closeStepIds.Contains(args.StepId))
+        {
+            var openStepIds = args.Layer switch
+            {
+                SurgeryLayer.Skin => stepsConfig!.GetSkinOpenStepIds(_prototypes),
+                SurgeryLayer.Tissue => stepsConfig!.GetTissueOpenStepIds(_prototypes),
+                _ => Array.Empty<string>()
+            };
+
+            var penaltyToRemove = 0;
+            foreach (var openId in openStepIds)
+            {
+                if (!performedList.Contains(openId))
+                    continue;
+                if (_prototypes.TryIndex<SurgeryStepPrototype>(openId, out var openStep))
+                    penaltyToRemove += openStep.Penalty;
+                performedList.Remove(openId);
+            }
+
+            if (penaltyToRemove > 0)
+            {
+                var removeEv = new SurgeryPenaltyRemovedEvent(ent.Owner, penaltyToRemove);
+                RaiseLocalEvent(ent.Owner, ref removeEv);
+            }
         }
+
+        performedList.Add(args.StepId);
+        Dirty(ent, layerComp);
+
+        var penaltyEv = new SurgeryPenaltyAppliedEvent(ent.Owner, args.Step.Penalty);
+        RaiseLocalEvent(ent.Owner, ref penaltyEv);
 
         args.Handled = true;
     }

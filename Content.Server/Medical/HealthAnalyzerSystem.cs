@@ -52,6 +52,7 @@ using Content.Shared.Medical.Integrity.Components;
 using Content.Shared.Medical.Surgery;
 using Content.Shared.Medical.Surgery.Components;
 using Content.Shared.Medical.Surgery.Events;
+using Content.Shared.Medical.Surgery.Prototypes;
 using Content.Shared.MedicalScanner;
 using Content.Shared.Mobs.Components;
 using Content.Shared.Popups;
@@ -366,7 +367,48 @@ public sealed class HealthAnalyzerSystem : EntitySystem
             RaiseLocalEvent(entity, ref totalEv);
             var usage = TryComp<IntegrityUsageComponent>(entity, out var usageComp) ? usageComp.Usage : 0;
             state.IntegrityTotal = totalEv.Total + usage;
-            state.IntegrityMax = 6;
+            state.IntegrityMax = TryComp<IntegrityCapacityComponent>(entity, out var cap) ? cap.MaxIntegrity : 6;
+
+            state.IntegrityPenaltyEntries ??= new List<IntegrityPenaltyDisplayEntry>();
+            state.IntegrityPenaltyEntries.Clear();
+            if (usage > 0)
+                state.IntegrityPenaltyEntries.Add(new IntegrityPenaltyDisplayEntry { Description = "health-analyzer-integrity-usage", Amount = usage });
+            foreach (var organ in _body.GetAllOrgans(entity))
+            {
+                if (!TryComp<IntegrityPenaltyComponent>(organ, out var penalty) || penalty.Penalty <= 0)
+                    continue;
+
+                var desc = TryComp<OrganComponent>(organ, out var organComp) && organComp.Category is { } cat
+                    ? cat.ToString()
+                    : Identity.Name(organ, EntityManager);
+
+                if (TryComp<SurgeryLayerComponent>(organ, out var layerComp))
+                {
+                    var children = new List<IntegrityPenaltyDisplayEntry>();
+                    foreach (var stepId in layerComp.PerformedSkinSteps.Concat(layerComp.PerformedTissueSteps).Concat(layerComp.PerformedOrganSteps))
+                    {
+                        if (!_prototypes.TryIndex<SurgeryStepPrototype>(stepId, out var step) || step.Penalty <= 0)
+                            continue;
+                        var stepName = step.Name?.Id ?? stepId;
+                        children.Add(new IntegrityPenaltyDisplayEntry { Description = stepName, Amount = step.Penalty });
+                    }
+                    state.IntegrityPenaltyEntries.Add(new IntegrityPenaltyDisplayEntry
+                    {
+                        Description = desc ?? "?",
+                        Amount = penalty.Penalty,
+                        Children = children.Count > 0 ? children : null
+                    });
+                }
+                else
+                {
+                    state.IntegrityPenaltyEntries.Add(new IntegrityPenaltyDisplayEntry { Description = desc ?? "?", Amount = penalty.Penalty });
+                }
+            }
+            if (TryComp<IntegritySurgeryComponent>(entity, out var surgeryComp))
+            {
+                foreach (var entry in surgeryComp.Entries)
+                    state.IntegrityPenaltyEntries.Add(new IntegrityPenaltyDisplayEntry { Description = entry.Reason, Amount = entry.Amount });
+            }
 
             foreach (var part in query.Parts)
             {

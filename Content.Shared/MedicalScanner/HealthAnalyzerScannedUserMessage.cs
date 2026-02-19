@@ -41,12 +41,14 @@ public struct HealthAnalyzerUiState
     public List<NetEntity> BodyParts;
     public int? IntegrityTotal;
     public int? IntegrityMax;
+    public List<IntegrityPenaltyDisplayEntry> IntegrityPenaltyEntries;
     public List<SurgeryLayerStateData> BodyPartLayerState;
 
     public HealthAnalyzerUiState()
     {
         Mode = HealthAnalyzerMode.Health;
         BodyParts = new List<NetEntity>();
+        IntegrityPenaltyEntries = new List<IntegrityPenaltyDisplayEntry>();
         BodyPartLayerState = new List<SurgeryLayerStateData>();
     }
 
@@ -60,6 +62,7 @@ public struct HealthAnalyzerUiState
         Unrevivable = unrevivable;
         Mode = HealthAnalyzerMode.Health;
         BodyParts = new List<NetEntity>();
+        IntegrityPenaltyEntries = new List<IntegrityPenaltyDisplayEntry>();
         BodyPartLayerState = new List<SurgeryLayerStateData>();
     }
 }
@@ -70,6 +73,17 @@ public enum HealthAnalyzerMode : byte
     Health,
     Integrity,
     Surgery
+}
+
+[Serializable, NetSerializable]
+public struct IntegrityPenaltyDisplayEntry
+{
+    public string Description;
+    public int Amount;
+    /// <summary>
+    /// Nested entries for hierarchical display (e.g. limb with retracted skin -1, retracted tissue -1).
+    /// </summary>
+    public List<IntegrityPenaltyDisplayEntry>? Children;
 }
 
 [Serializable, NetSerializable]
