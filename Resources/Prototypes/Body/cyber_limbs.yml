@@ -4,7 +4,8 @@
   name: left cyber arm
   components:
   - type: Sprite
-    sprite: Mobs/Species/Human/parts.rsi
+    sprite: _EinsteinEngines/Mobs/Species/Cybernetics/bishop/bishop_main.rsi
+    state: l_arm-combined-hand
   - type: Organ
     category: ArmLeft
     integrityCost: 1
@@ -12,6 +13,18 @@
     containerId: limb_organs
     slots: []
   - type: CyberLimb
+  - type: Storage
+    maxItemSize: Normal
+    grid:
+    - 0,0,2,1
+  - type: ContainerContainer
+    containers:
+      storagebase: !type:Container
+        ents: []
+  - type: UserInterface
+    interfaces:
+      enum.StorageUiKey.Key:
+        type: StorageBoundUserInterface
 
 - type: entity
   parent: OrganBaseArmRight
@@ -19,7 +32,8 @@
   name: right cyber arm
   components:
   - type: Sprite
-    sprite: Mobs/Species/Human/parts.rsi
+    sprite: _EinsteinEngines/Mobs/Species/Cybernetics/bishop/bishop_main.rsi
+    state: r_arm-combined-hand
   - type: Organ
     category: ArmRight
     integrityCost: 1
@@ -27,6 +41,18 @@
     containerId: limb_organs
     slots: []
   - type: CyberLimb
+  - type: Storage
+    maxItemSize: Normal
+    grid:
+    - 0,0,2,1
+  - type: ContainerContainer
+    containers:
+      storagebase: !type:Container
+        ents: []
+  - type: UserInterface
+    interfaces:
+      enum.StorageUiKey.Key:
+        type: StorageBoundUserInterface
 
 - type: entity
   parent: OrganBaseLegLeft
@@ -34,7 +60,8 @@
   name: left cyber leg
   components:
   - type: Sprite
-    sprite: Mobs/Species/Human/parts.rsi
+    sprite: _EinsteinEngines/Mobs/Species/Cybernetics/bishop/bishop_main.rsi
+    state: l_leg-combined-foot
   - type: Organ
     category: LegLeft
     integrityCost: 1
@@ -42,6 +69,18 @@
     containerId: limb_organs
     slots: []
   - type: CyberLimb
+  - type: Storage
+    maxItemSize: Normal
+    grid:
+    - 0,0,2,1
+  - type: ContainerContainer
+    containers:
+      storagebase: !type:Container
+        ents: []
+  - type: UserInterface
+    interfaces:
+      enum.StorageUiKey.Key:
+        type: StorageBoundUserInterface
 
 - type: entity
   parent: OrganBaseLegRight
@@ -49,7 +88,8 @@
   name: right cyber leg
   components:
   - type: Sprite
-    sprite: Mobs/Species/Human/parts.rsi
+    sprite: _EinsteinEngines/Mobs/Species/Cybernetics/bishop/bishop_main.rsi
+    state: r_leg-combined-foot
   - type: Organ
     category: LegRight
     integrityCost: 1
@@ -57,3 +97,15 @@
     containerId: limb_organs
     slots: []
   - type: CyberLimb
+  - type: Storage
+    maxItemSize: Normal
+    grid:
+    - 0,0,2,1
+  - type: ContainerContainer
+    containers:
+      storagebase: !type:Container
+        ents: []
+  - type: UserInterface
+    interfaces:
+      enum.StorageUiKey.Key:
+        type: StorageBoundUserInterface
