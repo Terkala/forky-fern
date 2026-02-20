@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2023 DrSmugleaf <DrSmugleaf@users.noreply.github.com>
 // SPDX-License-Identifier: MIT
 
+using Content.Shared.Damage;
 using Content.Shared.FixedPoint;
 
 namespace Content.Client.Damage;
@@ -123,7 +124,7 @@ public sealed partial class DamageVisualsComponent : Component
     public bool Disabled = false;
     public bool Valid = true;
     public FixedPoint2 LastDamageThreshold = FixedPoint2.Zero;
-    public readonly Dictionary<object, bool> DisabledLayers = new();
+    public readonly Dictionary<object, DamageOverlayLayerState> DisabledLayers = new();
     public readonly Dictionary<object, string> LayerMapKeyStates = new();
     public readonly Dictionary<string, FixedPoint2> LastThresholdPerGroup = new();
     public string TopMostLayerKey = default!;

@@ -1,6 +1,7 @@
 using Content.Shared.Body;
 using Content.Shared.Body.Components;
 using Content.Shared.Cybernetics.Components;
+using Content.Shared.Damage;
 using Content.Shared.Humanoid;
 
 namespace Content.Shared.Cybernetics.Systems;
@@ -54,7 +55,7 @@ public sealed class CyberLimbAppearanceSystem : EntitySystem
         {
             foreach (var (layer, _) in layers)
             {
-                _appearance.SetData(body, layer, true, appearance);
+                _appearance.SetData(body, layer, DamageOverlayLayerState.BloodDisabled, appearance);
             }
         }
     }
@@ -81,12 +82,7 @@ public sealed class CyberLimbAppearanceSystem : EntitySystem
             Dirty(body, humanoid);
         }
 
-        if (TryComp<AppearanceComponent>(body, out var appearance))
-        {
-            foreach (var (layer, _) in layers)
-            {
-                _appearance.SetData(body, layer, false, appearance);
-            }
-        }
+        // Do not set damage overlay appearance data on remove - LimbDetachmentEffectsSystem
+        // sets AllDisabled when the organ is removed; we must not overwrite that.
     }
 }

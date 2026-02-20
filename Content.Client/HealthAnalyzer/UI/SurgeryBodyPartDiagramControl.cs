@@ -125,7 +125,9 @@ public sealed class SurgeryBodyPartDiagramControl : Control
         var prevTarget = _targetEntity;
         _targetEntity = target;
         _bodyPartLayerState = bodyPartLayerState ?? new List<SurgeryLayerStateData>();
-        _selectedBodyPart = null;
+        // Only clear selection when target changes; preserve when refreshing same patient
+        if (prevTarget != target || target == null)
+            _selectedBodyPart = null;
 
         if (target == null || !_entManager.TryGetEntity(target, out var patient))
         {

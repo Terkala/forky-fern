@@ -1,5 +1,6 @@
 using Content.Shared.Body;
 using Content.Shared.Body.Components;
+using Content.Shared.Damage;
 using Content.Shared.Humanoid;
 using Content.Shared.Medical.Surgery.Components;
 using Content.Shared.Movement.Events;
@@ -34,6 +35,7 @@ public sealed class LimbDetachmentEffectsSystem : EntitySystem
     };
 
     [Dependency] private readonly BodySystem _body = default!;
+    [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
     [Dependency] private readonly SharedHumanoidAppearanceSystem _humanoid = default!;
     [Dependency] private readonly MovementSpeedModifierSystem _movementSpeed = default!;
     [Dependency] private readonly SharedStunSystem _stun = default!;
@@ -89,6 +91,14 @@ public sealed class LimbDetachmentEffectsSystem : EntitySystem
             _humanoid.SetLayersVisibility((body, humanoid), layers, false);
         }
 
+        if (TryComp<AppearanceComponent>(body, out var appearance))
+        {
+            foreach (var layer in layers)
+            {
+                _appearance.SetData(body, layer, DamageOverlayLayerState.AllDisabled, appearance);
+            }
+        }
+
         if (categoryStr is "LegLeft" or "LegRight")
         {
             UpdateLegMovement(body);
@@ -133,6 +143,14 @@ public sealed class LimbDetachmentEffectsSystem : EntitySystem
         if (TryComp<HumanoidAppearanceComponent>(body, out var humanoid))
         {
             _humanoid.SetLayersVisibility((body, humanoid), layers, true);
+        }
+
+        if (TryComp<AppearanceComponent>(body, out var appearance))
+        {
+            foreach (var layer in layers)
+            {
+                _appearance.SetData(body, layer, DamageOverlayLayerState.AllEnabled, appearance);
+            }
         }
 
         if (categoryStr is "LegLeft" or "LegRight")
