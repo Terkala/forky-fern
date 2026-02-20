@@ -19,11 +19,14 @@ public sealed class SurgeryLayerSystem : EntitySystem
 
     /// <summary>
     /// Resolves BodyPartSurgeryStepsPrototype for the given species and organ category.
+    /// Excludes CyberLimb* configs (they are only used via StepsConfigId on the body part).
     /// </summary>
     public BodyPartSurgeryStepsPrototype? GetStepsConfig(ProtoId<Humanoid.Prototypes.SpeciesPrototype> speciesId, ProtoId<OrganCategoryPrototype> organCategory)
     {
         foreach (var proto in _prototypes.EnumeratePrototypes<BodyPartSurgeryStepsPrototype>())
         {
+            if (proto.ID.StartsWith("CyberLimb"))
+                continue;
             if (proto.SpeciesId == speciesId && proto.OrganCategory == organCategory)
                 return proto;
         }
@@ -32,11 +35,17 @@ public sealed class SurgeryLayerSystem : EntitySystem
 
     /// <summary>
     /// Resolves steps config for a body part. Uses SurgeryBodyPartComponent if present, else body's species and part's OrganComponent.
+    /// When StepsConfigId is set (e.g. for cyber limbs), resolves that prototype directly.
     /// </summary>
     public BodyPartSurgeryStepsPrototype? GetStepsConfig(EntityUid body, EntityUid bodyPart)
     {
         if (TryComp<SurgeryBodyPartComponent>(bodyPart, out var surgeryBodyPart))
+        {
+            if (surgeryBodyPart.StepsConfigId is { } stepsConfigId &&
+                _prototypes.TryIndex(stepsConfigId, out BodyPartSurgeryStepsPrototype? stepsConfig))
+                return stepsConfig;
             return GetStepsConfig(surgeryBodyPart.SpeciesId, surgeryBodyPart.OrganCategory);
+        }
 
         if (!TryComp<HumanoidAppearanceComponent>(body, out var humanoid) || !TryComp<OrganComponent>(bodyPart, out var organ) || organ.Category is not { } category)
             return null;

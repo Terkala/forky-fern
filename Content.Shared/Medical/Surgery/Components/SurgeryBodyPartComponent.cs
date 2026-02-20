@@ -1,5 +1,6 @@
 using Content.Shared.Body;
 using Content.Shared.Humanoid.Prototypes;
+using Content.Shared.Medical.Surgery.Prototypes;
 using Robust.Shared.GameStates;
 using Robust.Shared.Prototypes;
 
@@ -24,4 +25,10 @@ public sealed partial class SurgeryBodyPartComponent : Component
     /// </summary>
     [DataField, AutoNetworkedField]
     public ProtoId<OrganCategoryPrototype> OrganCategory;
+
+    /// <summary>
+    /// When set, overrides species+category lookup for surgery steps (e.g. CyberLimbArmLeft for attach/detach only).
+    /// </summary>
+    [DataField, AutoNetworkedField]
+    public ProtoId<BodyPartSurgeryStepsPrototype>? StepsConfigId;
 }

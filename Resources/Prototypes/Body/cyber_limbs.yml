@@ -3,6 +3,10 @@
   id: OrganCyberArmLeft
   name: left cyber arm
   components:
+  - type: HandOrgan
+    handID: left
+    data:
+      location: Left
   - type: Sprite
     sprite: _EinsteinEngines/Mobs/Species/Cybernetics/bishop/bishop_main.rsi
     state: l_arm-combined-hand
@@ -25,12 +29,18 @@
     interfaces:
       enum.StorageUiKey.Key:
         type: StorageBoundUserInterface
+      enum.CyberArmSelectUiKey.Key:
+        type: CyberArmSelectMenuBoundUserInterface
 
 - type: entity
   parent: OrganBaseArmRight
   id: OrganCyberArmRight
   name: right cyber arm
   components:
+  - type: HandOrgan
+    handID: right
+    data:
+      location: Right
   - type: Sprite
     sprite: _EinsteinEngines/Mobs/Species/Cybernetics/bishop/bishop_main.rsi
     state: r_arm-combined-hand
@@ -53,6 +63,8 @@
     interfaces:
       enum.StorageUiKey.Key:
         type: StorageBoundUserInterface
+      enum.CyberArmSelectUiKey.Key:
+        type: CyberArmSelectMenuBoundUserInterface
 
 - type: entity
   parent: OrganBaseLegLeft

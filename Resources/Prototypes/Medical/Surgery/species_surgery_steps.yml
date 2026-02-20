@@ -104,3 +104,44 @@
   tissueOpenSteps: [RetractTissue, ClampBleeders, MoveNerves, SawBones]
   tissueCloseSteps: [MendMuscles, UnclampBloodVessels, MendNerves, CloseTissue]
   organSteps: [RemoveOrgan, InsertOrgan]
+
+# Cyber limbs: attach/detach only, no skin/tissue steps
+- type: bodyPartSurgerySteps
+  id: CyberLimbArmLeft
+  species: Human
+  organCategory: ArmLeft
+  skinOpenSteps: []
+  skinCloseSteps: []
+  tissueOpenSteps: []
+  tissueCloseSteps: []
+  organSteps: [DetachLimb, AttachLimb]
+
+- type: bodyPartSurgerySteps
+  id: CyberLimbArmRight
+  species: Human
+  organCategory: ArmRight
+  skinOpenSteps: []
+  skinCloseSteps: []
+  tissueOpenSteps: []
+  tissueCloseSteps: []
+  organSteps: [DetachLimb, AttachLimb]
+
+- type: bodyPartSurgerySteps
+  id: CyberLimbLegLeft
+  species: Human
+  organCategory: LegLeft
+  skinOpenSteps: []
+  skinCloseSteps: []
+  tissueOpenSteps: []
+  tissueCloseSteps: []
+  organSteps: [DetachLimb, AttachLimb]
+
+- type: bodyPartSurgerySteps
+  id: CyberLimbLegRight
+  species: Human
+  organCategory: LegRight
+  skinOpenSteps: []
+  skinCloseSteps: []
+  tissueOpenSteps: []
+  tissueCloseSteps: []
+  organSteps: [DetachLimb, AttachLimb]

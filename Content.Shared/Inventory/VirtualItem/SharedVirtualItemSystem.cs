@@ -93,11 +93,15 @@ public abstract class SharedVirtualItemSystem : EntitySystem
         if (args.Handled)
             return;
 
-        // if the user is holding the real item the virtual item points to,
-        // we allow them to use it in the interaction
         foreach (var held in _handsSystem.EnumerateHeld(args.User))
         {
             if (held == ent.Comp.BlockingEntity)
+            {
+                args.Used = ent.Comp.BlockingEntity;
+                return;
+            }
+
+            if (held == ent.Owner)
             {
                 args.Used = ent.Comp.BlockingEntity;
                 return;

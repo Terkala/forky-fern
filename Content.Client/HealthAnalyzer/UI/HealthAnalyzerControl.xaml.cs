@@ -165,12 +165,23 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
             UpdateSurgerySteps();
         };
 
-        if (_state.BodyParts.Count > 0)
+        if (_state.BodyParts.Count > 0 || (_state.BodyPartLayerState?.Any(s => s.BodyPart == _state.TargetEntity) ?? false))
         {
             var selectionValid = _selectedBodyPart.HasValue
                 && (_state.BodyParts.Contains(_selectedBodyPart.Value) || _selectedBodyPart.Value == _state.TargetEntity);
             if (!selectionValid)
-                _selectedBodyPart = _state.BodyParts[0];
+            {
+                var prevCategoryId = _prevLayerStateForSelectedPart?.CategoryId;
+                var matchingEntry = !string.IsNullOrEmpty(prevCategoryId) && _state.BodyPartLayerState != null
+                    ? _state.BodyPartLayerState.FirstOrDefault(s => s.CategoryId == prevCategoryId)
+                    : default(SurgeryLayerStateData);
+                if (matchingEntry.CategoryId == prevCategoryId)
+                    _selectedBodyPart = matchingEntry.BodyPart;
+                else if (_state.BodyParts.Count > 0)
+                    _selectedBodyPart = _state.BodyParts[0];
+                else
+                    _selectedBodyPart = _state.TargetEntity;
+            }
         }
         else
         {

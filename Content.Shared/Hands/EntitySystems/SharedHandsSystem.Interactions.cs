@@ -13,6 +13,7 @@
 // SPDX-License-Identifier: MIT
 
 using System.Linq;
+using Content.Shared.Cybernetics.Events;
 using Content.Shared.Examine;
 using Content.Shared.Hands.Components;
 using Content.Shared.IdentityManagement;
@@ -77,8 +78,27 @@ public abstract partial class SharedHandsSystem : EntitySystem
 
     private void HandleActivateItemInHand(RequestActivateInHandEvent msg, EntitySessionEventArgs args)
     {
-        if (args.SenderSession.AttachedEntity != null)
-            TryActivateItemInHand(args.SenderSession.AttachedEntity.Value, null, msg.HandName);
+        if (args.SenderSession.AttachedEntity == null)
+            return;
+
+        var user = args.SenderSession.AttachedEntity.Value;
+        HandsComponent? handsComp = null;
+        if (!Resolve(user, ref handsComp, false))
+            return;
+
+        var hand = msg.HandName;
+        if (!TryGetHand((user, handsComp), hand, out _))
+            hand = handsComp.ActiveHandId;
+
+        if (!TryGetHeldItem((user, handsComp), hand, out _))
+        {
+            var ev = new EmptyHandActivateEvent(user, hand);
+            RaiseLocalEvent(user, ref ev);
+            if (ev.Handled)
+                return;
+        }
+
+        TryActivateItemInHand(user, null, msg.HandName);
     }
 
     private void HandleInteractUsingInHand(RequestHandInteractUsingEvent msg, EntitySessionEventArgs args)

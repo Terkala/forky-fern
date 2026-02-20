@@ -6,6 +6,7 @@ using Content.Shared.Movement.Events;
 using Content.Shared.Movement.Systems;
 using Content.Shared.Stunnable;
 using Robust.Shared.Containers;
+using Robust.Shared.Timing;
 
 namespace Content.Shared.Medical.Surgery;
 
@@ -24,8 +25,8 @@ public sealed class LimbDetachmentEffectsSystem : EntitySystem
     {
         ["ArmLeft"] = [HumanoidVisualLayers.LArm, HumanoidVisualLayers.LHand],
         ["ArmRight"] = [HumanoidVisualLayers.RArm, HumanoidVisualLayers.RHand],
-        ["LegLeft"] = [HumanoidVisualLayers.LLeg],
-        ["LegRight"] = [HumanoidVisualLayers.RLeg],
+        ["LegLeft"] = [HumanoidVisualLayers.LLeg, HumanoidVisualLayers.LFoot],
+        ["LegRight"] = [HumanoidVisualLayers.RLeg, HumanoidVisualLayers.RFoot],
         ["HandLeft"] = [HumanoidVisualLayers.LHand],
         ["HandRight"] = [HumanoidVisualLayers.RHand],
         ["FootLeft"] = [HumanoidVisualLayers.LFoot],
@@ -36,6 +37,7 @@ public sealed class LimbDetachmentEffectsSystem : EntitySystem
     [Dependency] private readonly SharedHumanoidAppearanceSystem _humanoid = default!;
     [Dependency] private readonly MovementSpeedModifierSystem _movementSpeed = default!;
     [Dependency] private readonly SharedStunSystem _stun = default!;
+    [Dependency] private readonly IGameTiming _timing = default!;
 
     public override void Initialize()
     {
@@ -49,6 +51,9 @@ public sealed class LimbDetachmentEffectsSystem : EntitySystem
 
     private void OnOrganRemovedFromBody(Entity<OrganComponent> ent, ref EntGotRemovedFromContainerMessage args)
     {
+        if (_timing.ApplyingState)
+            return;
+
         EntityUid body;
         if (args.Container.ID == BodyComponent.ContainerID)
         {
@@ -92,6 +97,9 @@ public sealed class LimbDetachmentEffectsSystem : EntitySystem
 
     private void OnOrganInsertedIntoBody(Entity<OrganComponent> ent, ref EntGotInsertedIntoContainerMessage args)
     {
+        if (_timing.ApplyingState)
+            return;
+
         EntityUid body;
         if (args.Container.ID == BodyComponent.ContainerID)
         {
