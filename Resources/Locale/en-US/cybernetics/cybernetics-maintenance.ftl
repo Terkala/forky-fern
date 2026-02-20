@@ -1,0 +1,9 @@
+cyber-maintenance-expose = You unscrew the access panel.
+cyber-maintenance-open = You remove the bolts holding the panel.
+cyber-maintenance-insert-wire = You insert a wire.
+cyber-maintenance-close = You replace the bolts on the access panel.
+cyber-maintenance-secure = You lock the access panel.
+cyber-maintenance-complete = Cyber maintenance complete.
+cyber-maintenance-panel-closed = The access panel must be open to insert wires.
+cyber-maintenance-insufficient-wires = You need more wires.
+cyber-maintenance-no-wires-needed = No more wires needed; maintenance is complete.

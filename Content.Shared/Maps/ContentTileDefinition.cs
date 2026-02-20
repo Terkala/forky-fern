@@ -160,6 +160,11 @@ namespace Content.Shared.Maps
         /// </summary>
         [DataField("indestructible")] public bool Indestructible = false;
 
+        /// <summary>
+        /// Whether this tile provides a sterile surface for surgery (reduces unsanitary penalty).
+        /// </summary>
+        [DataField("sterileSurgerySurface")] public bool SterileSurgerySurface { get; private set; }
+
         public void AssignTileId(ushort id)
         {
             TileId = id;

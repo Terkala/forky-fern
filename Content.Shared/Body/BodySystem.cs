@@ -85,15 +85,18 @@ public sealed partial class BodySystem : EntitySystem
             bodyPart.Body = ent;
             Dirty(args.Entity, bodyPart);
 
-            // Re-attached limbs: keep organ layer open (RetractSkin, RetractTissue, SawBones) so user can
-            // immediately attach hand/foot. Clear organ steps so limb can be amputated again later.
+            // Re-attached limbs: keep skin and tissue layers fully open so user can immediately attach hand/foot.
+            // Clear organ steps so limb can be amputated again later.
             if (_surgeryLayerQuery.TryComp(args.Entity, out var surgeryLayer) &&
                 (surgeryLayer.PerformedSkinSteps.Count > 0 || surgeryLayer.PerformedTissueSteps.Count > 0 || surgeryLayer.PerformedOrganSteps.Count > 0))
             {
                 surgeryLayer.PerformedSkinSteps.Clear();
+                surgeryLayer.PerformedSkinSteps.Add("CreateIncision");
                 surgeryLayer.PerformedSkinSteps.Add("RetractSkin");
                 surgeryLayer.PerformedTissueSteps.Clear();
                 surgeryLayer.PerformedTissueSteps.Add("RetractTissue");
+                surgeryLayer.PerformedTissueSteps.Add("ClampBleeders");
+                surgeryLayer.PerformedTissueSteps.Add("MoveNerves");
                 surgeryLayer.PerformedTissueSteps.Add("SawBones");
                 surgeryLayer.PerformedOrganSteps.Clear();
                 Dirty(args.Entity, surgeryLayer);

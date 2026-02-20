@@ -8,60 +8,60 @@
   id: HumanTorso
   species: Human
   organCategory: Torso
-  skinOpenSteps: [RetractSkin]
-  skinCloseSteps: [CloseIncision]
-  tissueOpenSteps: [RetractTissue, SawBones]
-  tissueCloseSteps: [CloseTissue]
+  skinOpenSteps: [CreateIncision, RetractSkin]
+  skinCloseSteps: [SealSkin, CloseIncision]
+  tissueOpenSteps: [RetractTissue, ClampBleeders, MoveNerves, SawBones]
+  tissueCloseSteps: [MendMuscles, UnclampBloodVessels, MendNerves, CloseTissue]
   organSteps: [RemoveOrgan, InsertOrgan]
 
 - type: bodyPartSurgerySteps
   id: HumanHead
   species: Human
   organCategory: Head
-  skinOpenSteps: [RetractSkin]
-  skinCloseSteps: [CloseIncision]
-  tissueOpenSteps: [RetractTissue, SawBones]
-  tissueCloseSteps: [CloseTissue]
+  skinOpenSteps: [CreateIncision, RetractSkin]
+  skinCloseSteps: [SealSkin, CloseIncision]
+  tissueOpenSteps: [RetractTissue, ClampBleeders, MoveNerves, SawBones]
+  tissueCloseSteps: [MendMuscles, UnclampBloodVessels, MendNerves, CloseTissue]
   organSteps: [RemoveOrgan, InsertOrgan]
 
 - type: bodyPartSurgerySteps
   id: HumanArmLeft
   species: Human
   organCategory: ArmLeft
-  skinOpenSteps: [RetractSkin]
-  skinCloseSteps: [CloseIncision]
-  tissueOpenSteps: [RetractTissue, SawBones]
-  tissueCloseSteps: [CloseTissue]
+  skinOpenSteps: [CreateIncision, RetractSkin]
+  skinCloseSteps: [SealSkin, CloseIncision]
+  tissueOpenSteps: [RetractTissue, ClampBleeders, MoveNerves, SawBones]
+  tissueCloseSteps: [MendMuscles, UnclampBloodVessels, MendNerves, CloseTissue]
   organSteps: [RemoveOrgan, InsertOrgan, DetachLimb, AttachLimb]
 
 - type: bodyPartSurgerySteps
   id: HumanArmRight
   species: Human
   organCategory: ArmRight
-  skinOpenSteps: [RetractSkin]
-  skinCloseSteps: [CloseIncision]
-  tissueOpenSteps: [RetractTissue, SawBones]
-  tissueCloseSteps: [CloseTissue]
+  skinOpenSteps: [CreateIncision, RetractSkin]
+  skinCloseSteps: [SealSkin, CloseIncision]
+  tissueOpenSteps: [RetractTissue, ClampBleeders, MoveNerves, SawBones]
+  tissueCloseSteps: [MendMuscles, UnclampBloodVessels, MendNerves, CloseTissue]
   organSteps: [RemoveOrgan, InsertOrgan, DetachLimb, AttachLimb]
 
 - type: bodyPartSurgerySteps
   id: HumanLegLeft
   species: Human
   organCategory: LegLeft
-  skinOpenSteps: [RetractSkin]
-  skinCloseSteps: [CloseIncision]
-  tissueOpenSteps: [RetractTissue, SawBones]
-  tissueCloseSteps: [CloseTissue]
+  skinOpenSteps: [CreateIncision, RetractSkin]
+  skinCloseSteps: [SealSkin, CloseIncision]
+  tissueOpenSteps: [RetractTissue, ClampBleeders, MoveNerves, SawBones]
+  tissueCloseSteps: [MendMuscles, UnclampBloodVessels, MendNerves, CloseTissue]
   organSteps: [RemoveOrgan, InsertOrgan, DetachLimb, AttachLimb]
 
 - type: bodyPartSurgerySteps
   id: HumanLegRight
   species: Human
   organCategory: LegRight
-  skinOpenSteps: [RetractSkin]
-  skinCloseSteps: [CloseIncision]
-  tissueOpenSteps: [RetractTissue, SawBones]
-  tissueCloseSteps: [CloseTissue]
+  skinOpenSteps: [CreateIncision, RetractSkin]
+  skinCloseSteps: [SealSkin, CloseIncision]
+  tissueOpenSteps: [RetractTissue, ClampBleeders, MoveNerves, SawBones]
+  tissueCloseSteps: [MendMuscles, UnclampBloodVessels, MendNerves, CloseTissue]
   organSteps: [RemoveOrgan, InsertOrgan, DetachLimb, AttachLimb]
 
 # Hands and feet - no DetachLimb (entire limb or nothing)
@@ -69,38 +69,38 @@
   id: HumanHandLeft
   species: Human
   organCategory: HandLeft
-  skinOpenSteps: [RetractSkin]
-  skinCloseSteps: [CloseIncision]
-  tissueOpenSteps: [RetractTissue, SawBones]
-  tissueCloseSteps: [CloseTissue]
+  skinOpenSteps: [CreateIncision, RetractSkin]
+  skinCloseSteps: [SealSkin, CloseIncision]
+  tissueOpenSteps: [RetractTissue, ClampBleeders, MoveNerves, SawBones]
+  tissueCloseSteps: [MendMuscles, UnclampBloodVessels, MendNerves, CloseTissue]
   organSteps: [RemoveOrgan, InsertOrgan]
 
 - type: bodyPartSurgerySteps
   id: HumanHandRight
   species: Human
   organCategory: HandRight
-  skinOpenSteps: [RetractSkin]
-  skinCloseSteps: [CloseIncision]
-  tissueOpenSteps: [RetractTissue, SawBones]
-  tissueCloseSteps: [CloseTissue]
+  skinOpenSteps: [CreateIncision, RetractSkin]
+  skinCloseSteps: [SealSkin, CloseIncision]
+  tissueOpenSteps: [RetractTissue, ClampBleeders, MoveNerves, SawBones]
+  tissueCloseSteps: [MendMuscles, UnclampBloodVessels, MendNerves, CloseTissue]
   organSteps: [RemoveOrgan, InsertOrgan]
 
 - type: bodyPartSurgerySteps
   id: HumanFootLeft
   species: Human
   organCategory: FootLeft
-  skinOpenSteps: [RetractSkin]
-  skinCloseSteps: [CloseIncision]
-  tissueOpenSteps: [RetractTissue, SawBones]
-  tissueCloseSteps: [CloseTissue]
+  skinOpenSteps: [CreateIncision, RetractSkin]
+  skinCloseSteps: [SealSkin, CloseIncision]
+  tissueOpenSteps: [RetractTissue, ClampBleeders, MoveNerves, SawBones]
+  tissueCloseSteps: [MendMuscles, UnclampBloodVessels, MendNerves, CloseTissue]
   organSteps: [RemoveOrgan, InsertOrgan]
 
 - type: bodyPartSurgerySteps
   id: HumanFootRight
   species: Human
   organCategory: FootRight
-  skinOpenSteps: [RetractSkin]
-  skinCloseSteps: [CloseIncision]
-  tissueOpenSteps: [RetractTissue, SawBones]
-  tissueCloseSteps: [CloseTissue]
+  skinOpenSteps: [CreateIncision, RetractSkin]
+  skinCloseSteps: [SealSkin, CloseIncision]
+  tissueOpenSteps: [RetractTissue, ClampBleeders, MoveNerves, SawBones]
+  tissueCloseSteps: [MendMuscles, UnclampBloodVessels, MendNerves, CloseTissue]
   organSteps: [RemoveOrgan, InsertOrgan]

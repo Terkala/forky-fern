@@ -19,4 +19,14 @@ public record struct SurgeryRequestEvent(
 {
     public bool Valid;
     public string? RejectReason;
+
+    /// <summary>
+    /// Set by SurgerySystem when valid and an improvised tool was used.
+    /// </summary>
+    public bool UsedImprovisedTool;
+
+    /// <summary>
+    /// The tool entity used when valid (for improvised popup name).
+    /// </summary>
+    public EntityUid? ToolUsed;
 }

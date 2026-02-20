@@ -51,14 +51,14 @@ public sealed class IntegrityPenaltyIntegrationTest
         {
             var human = entityManager.SpawnEntity("MobHuman", mapData.GridCoords);
 
-            var applyEv = new IntegrityPenaltyAppliedEvent(human, 2, "dirty room", SurgeryProcedureType.DirtyRoom);
+            var applyEv = new IntegrityPenaltyAppliedEvent(human, 2, "dirty room", IntegrityPenaltyCategory.DirtyRoom);
             entityManager.EventBus.RaiseLocalEvent(human, ref applyEv);
 
             var totalEv = new IntegrityPenaltyTotalRequestEvent(human);
             entityManager.EventBus.RaiseLocalEvent(human, ref totalEv);
             Assert.That(totalEv.Total, Is.EqualTo(2), "Total penalty should be 2 after applying");
 
-            var clearEv = new IntegrityPenaltyClearedEvent(human, SurgeryProcedureType.DirtyRoom);
+            var clearEv = new IntegrityPenaltyClearedEvent(human, IntegrityPenaltyCategory.DirtyRoom);
             entityManager.EventBus.RaiseLocalEvent(human, ref clearEv);
 
             totalEv = new IntegrityPenaltyTotalRequestEvent(human);
@@ -129,7 +129,7 @@ public sealed class IntegrityPenaltyIntegrationTest
             var surgeryApplyEv = new SurgeryPenaltyAppliedEvent(torso, 2);
             entityManager.EventBus.RaiseLocalEvent(torso, ref surgeryApplyEv);
 
-            var integrityApplyEv = new IntegrityPenaltyAppliedEvent(human, 3, "improper tools", SurgeryProcedureType.ImproperTools);
+            var integrityApplyEv = new IntegrityPenaltyAppliedEvent(human, 3, "improper tools", IntegrityPenaltyCategory.ImproperTools);
             entityManager.EventBus.RaiseLocalEvent(human, ref integrityApplyEv);
 
             var totalEv = new IntegrityPenaltyTotalRequestEvent(human);

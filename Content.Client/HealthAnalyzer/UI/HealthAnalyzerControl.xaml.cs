@@ -366,15 +366,6 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
     {
         if (step.Name == null)
             return stepId;
-        if (stepId == "CloseIncision" && layerState?.SkinRetracted == true)
-            return Loc.GetString("health-analyzer-surgery-step-mend-skin");
-        if (stepId == "CloseTissue" && layerState.HasValue)
-        {
-            if (layerState.Value.BonesSawed)
-                return Loc.GetString("health-analyzer-surgery-step-mend-bones");
-            if (layerState.Value.TissueRetracted)
-                return Loc.GetString("health-analyzer-surgery-step-mend-tissue");
-        }
         return Loc.GetString(step.Name);
     }
 

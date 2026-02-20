@@ -112,7 +112,7 @@ public sealed class IntegrityUsageIntegrationTest
             handsSystem.TryPickupAnyHand(surgeon, analyzer, checkActionBlocker: false);
             handsSystem.TryPickupAnyHand(surgeon, scalpel, checkActionBlocker: false);
 
-            var penaltyEv = new IntegrityPenaltyAppliedEvent(patient, 6, "test", SurgeryProcedureType.DirtyRoom);
+            var penaltyEv = new IntegrityPenaltyAppliedEvent(patient, 6, "test", IntegrityPenaltyCategory.DirtyRoom);
             entityManager.EventBus.RaiseLocalEvent(patient, ref penaltyEv);
         });
 

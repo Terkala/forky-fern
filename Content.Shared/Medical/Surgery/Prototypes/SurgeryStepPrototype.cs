@@ -34,10 +34,24 @@ public sealed partial class SurgeryStepPrototype : IPrototype
     public List<string> ImprovisedToolTags { get; private set; } = new();
 
     /// <summary>
+    /// When true, any held item with MeleeWeapon that deals Blunt damage can be used as improvised tool.
+    /// Takes precedence over ImprovisedToolTags for tool selection. Speed scales by ImprovisedBluntSpeedBaseline/blunt.
+    /// </summary>
+    [DataField]
+    public bool ImprovisedToolRequiresBluntDamage { get; private set; }
+
+    /// <summary>
     /// Multiplier for DoAfterDelay when using an improvised tool (e.g. 1.5 = 50% longer).
     /// </summary>
     [DataField]
     public float ImprovisedDelayMultiplier { get; private set; } = 1.5f;
+
+    /// <summary>
+    /// When set and using an improvised BluntTool, delay is scaled by baseline/blunt (e.g. 20 blunt = 1x speed).
+    /// Null means use ImprovisedDelayMultiplier instead.
+    /// </summary>
+    [DataField]
+    public float? ImprovisedBluntSpeedBaseline { get; private set; }
 
     [DataField]
     public float DoAfterDelay { get; private set; } = 2f;
@@ -66,4 +80,11 @@ public sealed partial class SurgeryStepPrototype : IPrototype
     /// </summary>
     [DataField]
     public List<StepPrerequisite> Prerequisites { get; private set; } = new();
+
+    /// <summary>
+    /// For close steps: the open step ID this step undoes. When performed, only this step is removed from performed.
+    /// Null = legacy behavior (remove all open steps when any close step done).
+    /// </summary>
+    [DataField]
+    public string? UndoesStep { get; private set; }
 }

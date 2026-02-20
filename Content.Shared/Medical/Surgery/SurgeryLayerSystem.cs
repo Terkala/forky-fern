@@ -161,6 +161,7 @@ public sealed class SurgeryLayerSystem : EntitySystem
 
     /// <summary>
     /// Returns the list of step IDs that can be performed on this body part.
+    /// First steps of skin and tissue layers are always available when their layer is accessible, so surgery never gets locked.
     /// </summary>
     public IReadOnlyList<string> GetAvailableSteps(EntityUid body, EntityUid bodyPart, SurgeryLayer? filterLayer = null)
     {
@@ -180,9 +181,37 @@ public sealed class SurgeryLayerSystem : EntitySystem
                 continue;
             if (filterLayer.HasValue && step.Layer != filterLayer.Value)
                 continue;
+            if (IsStepPerformed((bodyPart, layerComp), stepId))
+                continue;
             if (CanPerformStep(stepId, step.Layer, layerComp, stepsConfig))
                 result.Add(stepId);
         }
+
+        // Safeguard: ensure first steps are always available when layer is accessible, so surgery never gets locked
+        if (result.Count == 0)
+        {
+            var skinOpen = stepsConfig.GetSkinOpenStepIds(_prototypes);
+            var skinClose = stepsConfig.GetSkinCloseStepIds(_prototypes);
+            var tissueOpen = stepsConfig.GetTissueOpenStepIds(_prototypes);
+            var skinIsOpen = skinOpen.All(s => layerComp.PerformedSkinSteps.Contains(s))
+                && !skinClose.Any(s => layerComp.PerformedSkinSteps.Contains(s));
+
+            if (!skinIsOpen && skinOpen.Count > 0)
+            {
+                var firstSkinStep = skinOpen[0];
+                if (!IsStepPerformed((bodyPart, layerComp), firstSkinStep)
+                    && (!filterLayer.HasValue || _prototypes.TryIndex<SurgeryStepPrototype>(firstSkinStep, out var s) && s.Layer == filterLayer.Value))
+                    result.Add(firstSkinStep);
+            }
+            else if (skinIsOpen && tissueOpen.Count > 0)
+            {
+                var firstTissueStep = tissueOpen[0];
+                if (!IsStepPerformed((bodyPart, layerComp), firstTissueStep)
+                    && (!filterLayer.HasValue || _prototypes.TryIndex<SurgeryStepPrototype>(firstTissueStep, out var s) && s.Layer == filterLayer.Value))
+                    result.Add(firstTissueStep);
+            }
+        }
+
         return result;
     }
 

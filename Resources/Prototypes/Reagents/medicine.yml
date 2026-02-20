@@ -292,6 +292,22 @@
              Cellular: -2
 
 - type: reagent
+  id: Immunosuppressant
+  name: reagent-name-immunosuppressant
+  group: Medicine
+  desc: reagent-desc-immunosuppressant
+  physicalDesc: reagent-physical-desc-translucent
+  flavor: medicine
+  color: "#8B7355"
+  metabolisms:
+    Medicine:
+      metabolismRate: 0.5
+      effects:
+      - !type:AddIntegrityImmunityBoost
+        amount: 1
+        durationSeconds: 60
+
+- type: reagent
   id: Dermaline
   name: reagent-name-dermaline
   group: Medicine

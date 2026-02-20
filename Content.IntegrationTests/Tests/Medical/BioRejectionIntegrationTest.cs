@@ -65,7 +65,7 @@ public sealed class BioRejectionIntegrationTest
             entityManager.EventBus.RaiseLocalEvent(torso, ref insertEv);
             Assert.That(insertEv.Success, Is.True, "Insert biosynthetic heart should succeed");
 
-            var penaltyEv = new IntegrityPenaltyAppliedEvent(patient, capacity, "test", SurgeryProcedureType.DirtyRoom);
+            var penaltyEv = new IntegrityPenaltyAppliedEvent(patient, capacity, "test", IntegrityPenaltyCategory.DirtyRoom);
             entityManager.EventBus.RaiseLocalEvent(patient, ref penaltyEv);
 
             Assert.That(entityManager.HasComponent<IntegrityUsageComponent>(patient), Is.True);

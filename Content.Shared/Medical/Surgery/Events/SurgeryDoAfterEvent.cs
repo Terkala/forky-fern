@@ -15,16 +15,20 @@ public sealed partial class SurgeryDoAfterEvent : DoAfterEvent
     [DataField]
     public NetEntity? Organ { get; private set; }
 
+    [DataField]
+    public bool IsImprovised { get; private set; }
+
     private SurgeryDoAfterEvent()
     {
     }
 
-    public SurgeryDoAfterEvent(NetEntity bodyPart, string stepId, NetEntity? organ = null)
+    public SurgeryDoAfterEvent(NetEntity bodyPart, string stepId, NetEntity? organ = null, bool isImprovised = false)
     {
         BodyPart = bodyPart;
         StepId = stepId;
         Organ = organ;
+        IsImprovised = isImprovised;
     }
 
-    public override DoAfterEvent Clone() => new SurgeryDoAfterEvent(BodyPart, StepId, Organ);
+    public override DoAfterEvent Clone() => new SurgeryDoAfterEvent(BodyPart, StepId, Organ, IsImprovised);
 }

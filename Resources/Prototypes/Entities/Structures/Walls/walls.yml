@@ -732,6 +732,9 @@
   id: WallReinforcedRust
   suffix: rusted
   components:
+  - type: Tag
+    tags:
+    - RustyWall
   - type: Sprite
     sprite: Structures/Walls/solid_rust.rsi
   - type: Icon
@@ -1132,6 +1135,9 @@
   id: WallSolidRust
   suffix: rusted
   components:
+  - type: Tag
+    tags:
+    - RustyWall
   - type: Sprite
     sprite: Structures/Walls/solid_rust.rsi
   - type: Icon

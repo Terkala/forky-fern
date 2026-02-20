@@ -17,8 +17,8 @@ using Robust.Shared.Prototypes;
 namespace Content.IntegrationTests.Tests.Medical;
 
 /// <summary>
-/// Verifies that after amputating a leg, re-attaching it, and closing the incision,
-/// RetractSkin is available again (regression test for re-attached limb bug).
+/// Verifies that after amputating a leg, re-attaching it, and performing CloseIncision (Mend Skin),
+/// RetractSkin is available again (1:1 pairing: CloseIncision undoes RetractSkin, so it can be re-performed).
 /// </summary>
 [TestFixture]
 [TestOf(typeof(SurgeryLayerSystem))]
@@ -97,11 +97,14 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
         });
         await RunTicks(1);
 
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "CreateIncision", SurgeryLayer.Skin, false), analyzerNet);
+        await RunTicks(300);
+
         await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "RetractSkin", SurgeryLayer.Skin, false), analyzerNet);
-        await RunTicks(150);
+        await RunTicks(300);
 
         await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "RetractTissue", SurgeryLayer.Tissue, false), analyzerNet);
-        await RunTicks(150);
+        await RunTicks(300);
 
         await Server.WaitPost(() =>
         {
@@ -115,12 +118,34 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
                     break;
                 }
             }
+            HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(hemostatNet), checkActionBlocker: false);
+        });
+        await RunTicks(1);
+
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "ClampBleeders", SurgeryLayer.Tissue, false), analyzerNet);
+        await RunTicks(300);
+
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "MoveNerves", SurgeryLayer.Tissue, false), analyzerNet);
+        await RunTicks(300);
+
+        await Server.WaitPost(() =>
+        {
+            var hemostatUid = SEntMan.GetEntity(hemostatNet);
+            foreach (var hand in HandSys.EnumerateHands((SPlayer, Hands!)))
+            {
+                if (HandSys.TryGetHeldItem((SPlayer, Hands!), hand, out var held) && held == hemostatUid)
+                {
+                    HandSys.TrySetActiveHand((SPlayer, Hands!), hand);
+                    HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
+                    break;
+                }
+            }
             HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(sawNet), checkActionBlocker: false);
         });
         await RunTicks(1);
 
         await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "SawBones", SurgeryLayer.Tissue, false), analyzerNet);
-        await RunTicks(150);
+        await RunTicks(300);
 
         await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "DetachLimb", SurgeryLayer.Organ, false), analyzerNet);
         await RunTicks(300);
@@ -180,14 +205,17 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
             var layerComp = SEntMan.GetComponent<SurgeryLayerComponent>(leg);
             Assert.That(layerComp.PerformedSkinSteps, Does.Contain("CloseIncision"),
                 "CloseIncision should have been applied to re-attached leg");
-            Assert.That(layerComp.PerformedSkinSteps, Does.Contain("RetractSkin"),
-                "RetractSkin should still be in performed steps");
+            // With 1:1 pairing, CloseIncision undoes RetractSkin, so RetractSkin is removed from performed
+            Assert.That(layerComp.PerformedSkinSteps, Does.Not.Contain("RetractSkin"),
+                "RetractSkin should be removed by CloseIncision (1:1 pairing)");
+            Assert.That(layerComp.PerformedSkinSteps, Does.Contain("CreateIncision"),
+                "CreateIncision should remain (CloseIncision only undoes RetractSkin)");
 
             var surgeryLayer = SEntMan.System<SurgeryLayerSystem>();
             var stepsConfig = surgeryLayer.GetStepsConfig(patient, leg);
             Assert.That(stepsConfig, Is.Not.Null, "Re-attached leg should have steps config");
             Assert.That(surgeryLayer.CanPerformStep("RetractSkin", SurgeryLayer.Skin, layerComp, stepsConfig!), Is.True,
-                "RetractSkin should be available again after closing incision on re-attached limb");
+                "RetractSkin should be available again after CloseIncision (CreateIncision still performed)");
             Assert.That(surgeryLayer.GetAvailableSteps(patient, leg), Does.Contain("RetractSkin"),
                 "GetAvailableSteps should include RetractSkin");
         });

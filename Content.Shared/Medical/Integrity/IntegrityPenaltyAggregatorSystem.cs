@@ -55,7 +55,7 @@ public sealed class IntegrityPenaltyAggregatorSystem : EntitySystem
             return;
 
         var comp = EnsureComp<IntegritySurgeryComponent>(ent);
-        comp.Entries.Add(new IntegrityPenaltyEntry(args.Reason, args.ProcedureTypeIndex, args.Amount));
+        comp.Entries.Add(new IntegrityPenaltyEntry(args.Reason, args.Category, args.Amount, args.Children));
         Dirty(ent, comp);
     }
 
@@ -67,8 +67,8 @@ public sealed class IntegrityPenaltyAggregatorSystem : EntitySystem
         if (!TryComp<IntegritySurgeryComponent>(ent, out var comp))
             return;
 
-        var procedureTypeIndex = args.ProcedureTypeIndex;
-        comp.Entries.RemoveAll(e => e.ProcedureTypeIndex == procedureTypeIndex);
+        var category = args.Category;
+        comp.Entries.RemoveAll(e => e.Category == category);
         if (comp.Entries.Count == 0)
             RemComp<IntegritySurgeryComponent>(ent);
         else
@@ -91,9 +91,16 @@ public sealed class IntegrityPenaltyAggregatorSystem : EntitySystem
         if (TryComp<IntegritySurgeryComponent>(ent, out var surgeryComp))
         {
             foreach (var entry in surgeryComp.Entries)
-                total += entry.Amount;
+                total += SumEntryRecursive(entry);
         }
 
         args.Total = total;
+    }
+
+    private static int SumEntryRecursive(IntegrityPenaltyEntry entry)
+    {
+        if (entry.Children != null && entry.Children.Count > 0)
+            return entry.Amount;
+        return entry.Amount;
     }
 }

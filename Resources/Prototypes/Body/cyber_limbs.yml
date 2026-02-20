@@ -1,0 +1,59 @@
+- type: entity
+  parent: OrganBaseArmLeft
+  id: OrganCyberArmLeft
+  name: left cyber arm
+  components:
+  - type: Sprite
+    sprite: Mobs/Species/Human/parts.rsi
+  - type: Organ
+    category: ArmLeft
+    integrityCost: 1
+  - type: BodyPart
+    containerId: limb_organs
+    slots: []
+  - type: CyberLimb
+
+- type: entity
+  parent: OrganBaseArmRight
+  id: OrganCyberArmRight
+  name: right cyber arm
+  components:
+  - type: Sprite
+    sprite: Mobs/Species/Human/parts.rsi
+  - type: Organ
+    category: ArmRight
+    integrityCost: 1
+  - type: BodyPart
+    containerId: limb_organs
+    slots: []
+  - type: CyberLimb
+
+- type: entity
+  parent: OrganBaseLegLeft
+  id: OrganCyberLegLeft
+  name: left cyber leg
+  components:
+  - type: Sprite
+    sprite: Mobs/Species/Human/parts.rsi
+  - type: Organ
+    category: LegLeft
+    integrityCost: 1
+  - type: BodyPart
+    containerId: limb_organs
+    slots: []
+  - type: CyberLimb
+
+- type: entity
+  parent: OrganBaseLegRight
+  id: OrganCyberLegRight
+  name: right cyber leg
+  components:
+  - type: Sprite
+    sprite: Mobs/Species/Human/parts.rsi
+  - type: Organ
+    category: LegRight
+    integrityCost: 1
+  - type: BodyPart
+    containerId: limb_organs
+    slots: []
+  - type: CyberLimb

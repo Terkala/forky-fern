@@ -11,13 +11,13 @@ namespace Content.Shared.Medical.Integrity.Components;
 public sealed partial class IntegritySurgeryComponent : Component
 {
     /// <summary>
-    /// List of contextual penalties: (Reason, ProcedureTypeIndex, Amount).
+    /// List of contextual penalties: (Reason, Category, Amount).
     /// </summary>
     [DataField]
     public List<IntegrityPenaltyEntry> Entries { get; set; } = new();
 }
 
 /// <summary>
-/// A single contextual integrity penalty entry.
+/// A single contextual integrity penalty entry. May have nested children for hierarchical display (e.g. body part -> step -> improvised tool).
 /// </summary>
-public readonly record struct IntegrityPenaltyEntry(string Reason, SurgeryProcedureType ProcedureTypeIndex, int Amount);
+public readonly record struct IntegrityPenaltyEntry(string Reason, IntegrityPenaltyCategory Category, int Amount, List<IntegrityPenaltyEntry>? Children = null);

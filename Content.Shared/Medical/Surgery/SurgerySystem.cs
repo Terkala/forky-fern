@@ -14,6 +14,7 @@ using Content.Shared.Humanoid;
 using Content.Shared.Medical.Surgery.Prototypes;
 using Content.Shared.Popups;
 using Content.Shared.Tag;
+using Content.Shared.Weapons.Melee;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Containers;
 using Robust.Shared.Map;
@@ -35,6 +36,7 @@ public sealed class SurgerySystem : EntitySystem
     [Dependency] private readonly INetManager _net = default!;
     [Dependency] private readonly IPrototypeManager _prototypes = default!;
     [Dependency] private readonly SharedPopupSystem _popup = default!;
+    [Dependency] private readonly SharedMeleeWeaponSystem _melee = default!;
     [Dependency] private readonly SurgeryLayerSystem _surgeryLayer = default!;
     [Dependency] private readonly TagSystem _tag = default!;
 
@@ -92,6 +94,19 @@ public sealed class SurgerySystem : EntitySystem
                 {
                     tool = held;
                     break;
+                }
+            }
+            if (!tool.HasValue && step.ImprovisedToolRequiresBluntDamage)
+            {
+                foreach (var held in _hands.EnumerateHeld((args.User, null)))
+                {
+                    var damage = _melee.GetDamage(held, args.User);
+                    if (damage.DamageDict.TryGetValue("Blunt", out var blunt) && blunt.Float() > 0)
+                    {
+                        tool = held;
+                        isImprovised = true;
+                        break;
+                    }
                 }
             }
             if (!tool.HasValue && step.ImprovisedToolTags.Count > 0)
@@ -215,6 +230,20 @@ public sealed class SurgerySystem : EntitySystem
                 args.RejectReason = "limb-not-in-hand";
                 return;
             }
+            var limbCostEv = new IntegrityCostRequestEvent(args.Organ.Value);
+            RaiseLocalEvent(args.Organ.Value, ref limbCostEv);
+            if (limbCostEv.Cost > 0)
+            {
+                var penaltyEv = new IntegrityPenaltyTotalRequestEvent(ent.Owner);
+                RaiseLocalEvent(ent.Owner, ref penaltyEv);
+                var usage = TryComp<IntegrityUsageComponent>(ent.Owner, out var usageComp) ? usageComp.Usage : 0;
+                var maxIntegrity = TryComp<IntegrityCapacityComponent>(ent.Owner, out var cap) ? cap.MaxIntegrity : 6;
+                if (usage + penaltyEv.Total + limbCostEv.Cost > maxIntegrity)
+                {
+                    args.RejectReason = "integrity-over-capacity";
+                    return;
+                }
+            }
         }
 
         if (args.StepId == "RemoveOrgan")
@@ -302,13 +331,37 @@ public sealed class SurgerySystem : EntitySystem
             return;
         }
 
+        args.UsedImprovisedTool = isImprovised;
+        args.ToolUsed = tool;
+
         // InsertOrgan/RemoveOrgan/AttachLimb: organ/limb is in hand - use it as DoAfter "used" for tracking
         if (args.StepId is "InsertOrgan" or "RemoveOrgan" or "AttachLimb" && args.Organ.HasValue)
             tool = args.Organ.Value;
 
-        var doAfterEv = new SurgeryDoAfterEvent(GetNetEntity(args.BodyPart), args.StepId, args.Organ.HasValue ? GetNetEntity(args.Organ.Value) : null);
+        var doAfterEv = new SurgeryDoAfterEvent(GetNetEntity(args.BodyPart), args.StepId, args.Organ.HasValue ? GetNetEntity(args.Organ.Value) : null, isImprovised);
         var isOrganStep = args.StepId is "InsertOrgan" or "RemoveOrgan" or "AttachLimb";
-        var delay = step.DoAfterDelay * (isImprovised ? step.ImprovisedDelayMultiplier : 1f);
+        var delayMultiplier = 1f;
+        if (isImprovised)
+        {
+            if (step.ImprovisedBluntSpeedBaseline is { } baseline && tool.HasValue)
+            {
+                var damage = _melee.GetDamage(tool.Value, args.User);
+                if (damage.DamageDict.TryGetValue("Blunt", out var bluntVal) && bluntVal.Float() > 0)
+                {
+                    var blunt = Math.Max(1f, bluntVal.Float());
+                    delayMultiplier = Math.Clamp(baseline / blunt, 0.5f, 3f);
+                }
+                else
+                {
+                    delayMultiplier = step.ImprovisedDelayMultiplier;
+                }
+            }
+            else
+            {
+                delayMultiplier = step.ImprovisedDelayMultiplier;
+            }
+        }
+        var delay = step.DoAfterDelay * delayMultiplier;
         var doAfterArgs = new DoAfterArgs(EntityManager, args.User, delay, doAfterEv, args.Target, args.Target, tool)
         {
             NeedHand = true,
@@ -375,6 +428,9 @@ public sealed class SurgerySystem : EntitySystem
             if (!completedEv.Handled)
                 return;
         }
+
+        var penaltyRequestEv = new UnsanitarySurgeryPenaltyRequestEvent(ent.Owner, bodyPart, args.StepId, step.Layer, args.IsImprovised, step);
+        RaiseLocalEvent(ent.Owner, ref penaltyRequestEv);
 
         if (step.Damage is { } damage && !damage.Empty)
             _damageable.TryChangeDamage(ent.Owner, damage, ignoreResistances: false, origin: args.User);
@@ -540,29 +596,46 @@ public sealed class SurgerySystem : EntitySystem
             _ => null
         };
 
-        if (closeStepIds != null && closeStepIds.Contains(args.StepId))
+        if (closeStepIds != null && closeStepIds.Contains(args.StepId) && _prototypes.TryIndex<SurgeryStepPrototype>(args.StepId, out var closeStep))
         {
-            var openStepIds = args.Layer switch
+            if (closeStep.UndoesStep != null)
             {
-                SurgeryLayer.Skin => stepsConfig!.GetSkinOpenStepIds(_prototypes),
-                SurgeryLayer.Tissue => stepsConfig!.GetTissueOpenStepIds(_prototypes),
-                _ => Array.Empty<string>()
-            };
-
-            var penaltyToRemove = 0;
-            foreach (var openId in openStepIds)
-            {
-                if (!performedList.Contains(openId))
-                    continue;
-                if (_prototypes.TryIndex<SurgeryStepPrototype>(openId, out var openStep))
-                    penaltyToRemove += openStep.Penalty;
-                performedList.Remove(openId);
+                // 1:1 pairing: only remove the paired open step
+                if (performedList.Contains(closeStep.UndoesStep) && _prototypes.TryIndex<SurgeryStepPrototype>(closeStep.UndoesStep, out var openStep))
+                {
+                    performedList.Remove(closeStep.UndoesStep);
+                    if (openStep.Penalty > 0)
+                    {
+                        var removeEv = new SurgeryPenaltyRemovedEvent(ent.Owner, openStep.Penalty);
+                        RaiseLocalEvent(ent.Owner, ref removeEv);
+                    }
+                }
             }
-
-            if (penaltyToRemove > 0)
+            else
             {
-                var removeEv = new SurgeryPenaltyRemovedEvent(ent.Owner, penaltyToRemove);
-                RaiseLocalEvent(ent.Owner, ref removeEv);
+                // Legacy: remove all open steps
+                var openStepIds = args.Layer switch
+                {
+                    SurgeryLayer.Skin => stepsConfig!.GetSkinOpenStepIds(_prototypes),
+                    SurgeryLayer.Tissue => stepsConfig!.GetTissueOpenStepIds(_prototypes),
+                    _ => Array.Empty<string>()
+                };
+
+                var penaltyToRemove = 0;
+                foreach (var openId in openStepIds)
+                {
+                    if (!performedList.Contains(openId))
+                        continue;
+                    if (_prototypes.TryIndex<SurgeryStepPrototype>(openId, out var openStep))
+                        penaltyToRemove += openStep.Penalty;
+                    performedList.Remove(openId);
+                }
+
+                if (penaltyToRemove > 0)
+                {
+                    var removeEv = new SurgeryPenaltyRemovedEvent(ent.Owner, penaltyToRemove);
+                    RaiseLocalEvent(ent.Owner, ref removeEv);
+                }
             }
         }
 

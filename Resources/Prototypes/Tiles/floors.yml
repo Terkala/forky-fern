@@ -69,6 +69,7 @@
     collection: FootstepFloor
   itemDrop: FloorTileItemSteel
   heatCapacity: 10000
+  sterileSurgerySurface: true
 
 - type: tile
   id: FloorSteelCheckerLight
@@ -323,6 +324,7 @@
     collection: FootstepTile
   itemDrop: FloorTileItemWhite
   heatCapacity: 10000
+  sterileSurgerySurface: true
 
 - type: tile
   id: FloorWhiteMini
@@ -2268,6 +2270,7 @@
   friction: 0.8
   itemDrop: FloorTileItemWhiteMarble
   heatCapacity: 10000
+  sterileSurgerySurface: true
 
 - type: tile
   id: FloorDarkMarble
