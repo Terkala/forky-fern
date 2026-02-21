@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 pathetic meowmeow <uhhadd@gmail.com>
 // SPDX-License-Identifier: MIT
 
+using Content.Shared.Medical.Surgery.Prototypes;
 using Robust.Shared.Prototypes;
 
 namespace Content.Shared.Body;
@@ -13,4 +14,16 @@ public sealed partial class OrganCategoryPrototype : IPrototype
 {
     [IdDataField]
     public string ID { get; private set; } = default!;
+
+    /// <summary>
+    /// Default removal procedures for organs in this category when OrganSurgeryProceduresComponent is absent.
+    /// </summary>
+    [DataField]
+    public List<ProtoId<SurgeryProcedurePrototype>>? DefaultRemovalProcedures { get; private set; }
+
+    /// <summary>
+    /// Default insertion procedures for organs in this category when OrganSurgeryProceduresComponent is absent.
+    /// </summary>
+    [DataField]
+    public List<ProtoId<SurgeryProcedurePrototype>>? DefaultInsertionProcedures { get; private set; }
 }

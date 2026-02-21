@@ -14,4 +14,5 @@ public record struct UnsanitarySurgeryPenaltyRequestEvent(
     string StepId,
     SurgeryLayer Layer,
     bool IsImprovised,
-    SurgeryStepPrototype Step);
+    SurgeryStepPrototype? Step,
+    SurgeryProcedurePrototype? Procedure);

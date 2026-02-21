@@ -4,6 +4,7 @@ using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Medical.Surgery;
 using Content.Shared.Medical.Surgery.Components;
 using Content.Shared.Medical.Surgery.Events;
+using Content.Shared.Medical.Surgery.Prototypes;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Prototypes;
 
@@ -33,18 +34,49 @@ public sealed class DynamicSurgeryEventIntegrationTest
         var handsSystem = entityManager.System<SharedHandsSystem>();
         var mapData = await pair.CreateTestMap();
 
+        EntityUid surgeon = default;
+        EntityUid patient = default;
+        EntityUid analyzer = default;
+        EntityUid torso = default;
+
         await server.WaitAssertion(() =>
         {
-            var surgeon = entityManager.SpawnEntity("MobHuman", mapData.GridCoords);
-            var patient = entityManager.SpawnEntity("MobHuman", mapData.GridCoords);
-            var analyzer = entityManager.SpawnEntity("HandheldHealthAnalyzer", mapData.GridCoords);
+            surgeon = entityManager.SpawnEntity("MobHuman", mapData.GridCoords);
+            patient = entityManager.SpawnEntity("MobHuman", mapData.GridCoords);
+            analyzer = entityManager.SpawnEntity("HandheldHealthAnalyzer", mapData.GridCoords);
             var scalpel = entityManager.SpawnEntity("Scalpel", mapData.GridCoords);
-            var torso = GetTorso(entityManager, patient);
+            var wirecutter = entityManager.SpawnEntity("Wirecutter", mapData.GridCoords);
+            var retractor = entityManager.SpawnEntity("Retractor", mapData.GridCoords);
+            torso = GetTorso(entityManager, patient);
 
             handsSystem.TryPickupAnyHand(surgeon, analyzer, checkActionBlocker: false);
             handsSystem.TryPickupAnyHand(surgeon, scalpel, checkActionBlocker: false);
 
-            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, "RetractSkin", SurgeryLayer.Skin, false);
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"CreateIncision", SurgeryLayer.Skin, false);
+            entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
+            Assert.That(ev.Valid, Is.True, "CreateIncision should succeed");
+        });
+        await pair.RunTicksSync(150);
+
+        await server.WaitPost(() =>
+        {
+            var wirecutter = entityManager.SpawnEntity("Wirecutter", mapData.GridCoords);
+            handsSystem.TryDrop(surgeon, targetDropLocation: null, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(surgeon, wirecutter, checkActionBlocker: false);
+
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"ClampVessels", SurgeryLayer.Skin, false);
+            entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
+            Assert.That(ev.Valid, Is.True, "ClampVessels should succeed");
+        });
+        await pair.RunTicksSync(150);
+
+        await server.WaitAssertion(() =>
+        {
+            var retractor = entityManager.SpawnEntity("Retractor", mapData.GridCoords);
+            handsSystem.TryDrop(surgeon, targetDropLocation: null, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(surgeon, retractor, checkActionBlocker: false);
+
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"RetractSkin", SurgeryLayer.Skin, false);
             entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
 
             Assert.That(ev.Valid, Is.True, "SurgeryRequestEvent valid implies SurgeryStepRequestEvent was raised on body part and passed validation");
@@ -66,18 +98,47 @@ public sealed class DynamicSurgeryEventIntegrationTest
         EntityUid patient = default;
         EntityUid torso = default;
 
+        EntityUid surgeon = default;
+        EntityUid analyzer = default;
+
         await server.WaitPost(() =>
         {
-            var surgeon = entityManager.SpawnEntity("MobHuman", mapData.GridCoords);
+            surgeon = entityManager.SpawnEntity("MobHuman", mapData.GridCoords);
             patient = entityManager.SpawnEntity("MobHuman", mapData.GridCoords);
-            var analyzer = entityManager.SpawnEntity("HandheldHealthAnalyzer", mapData.GridCoords);
+            analyzer = entityManager.SpawnEntity("HandheldHealthAnalyzer", mapData.GridCoords);
             var scalpel = entityManager.SpawnEntity("Scalpel", mapData.GridCoords);
+            var wirecutter = entityManager.SpawnEntity("Wirecutter", mapData.GridCoords);
+            var retractor = entityManager.SpawnEntity("Retractor", mapData.GridCoords);
             torso = GetTorso(entityManager, patient);
 
             handsSystem.TryPickupAnyHand(surgeon, analyzer, checkActionBlocker: false);
             handsSystem.TryPickupAnyHand(surgeon, scalpel, checkActionBlocker: false);
 
-            var reqEv = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, "RetractSkin", SurgeryLayer.Skin, false);
+            var reqEv = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"CreateIncision", SurgeryLayer.Skin, false);
+            entityManager.EventBus.RaiseLocalEvent(patient, ref reqEv);
+            Assert.That(reqEv.Valid, Is.True);
+        });
+        await pair.RunTicksSync(150);
+
+        await server.WaitPost(() =>
+        {
+            var wirecutter = entityManager.SpawnEntity("Wirecutter", mapData.GridCoords);
+            handsSystem.TryDrop(surgeon, targetDropLocation: null, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(surgeon, wirecutter, checkActionBlocker: false);
+
+            var reqEv = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"ClampVessels", SurgeryLayer.Skin, false);
+            entityManager.EventBus.RaiseLocalEvent(patient, ref reqEv);
+            Assert.That(reqEv.Valid, Is.True);
+        });
+        await pair.RunTicksSync(150);
+
+        await server.WaitPost(() =>
+        {
+            var retractor = entityManager.SpawnEntity("Retractor", mapData.GridCoords);
+            handsSystem.TryDrop(surgeon, targetDropLocation: null, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(surgeon, retractor, checkActionBlocker: false);
+
+            var reqEv = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"RetractSkin", SurgeryLayer.Skin, false);
             entityManager.EventBus.RaiseLocalEvent(patient, ref reqEv);
             Assert.That(reqEv.Valid, Is.True);
         });

@@ -87,24 +87,33 @@ public sealed class SurgeryLayerSystem : EntitySystem
 
     /// <summary>
     /// Returns whether the given step can be performed based on declarative prerequisites.
+    /// For organ procedures (removal/insertion), pass organ to check per-organ progress.
     /// </summary>
-    public bool CanPerformStep(string stepId, SurgeryLayer layer, SurgeryLayerComponent layerComp, BodyPartSurgeryStepsPrototype stepsConfig)
+    public bool CanPerformStep(string stepId, SurgeryLayer layer, SurgeryLayerComponent layerComp, BodyPartSurgeryStepsPrototype stepsConfig, EntityUid? bodyPart = null, EntityUid? organ = null)
     {
-        if (!_prototypes.TryIndex<SurgeryStepPrototype>(stepId, out var step))
-            return false;
-        if (step.Layer != layer)
-            return false;
-
-        if (!IsStepAllowedForBodyPart(stepId, layer, stepsConfig))
-            return false;
-
-        return EvaluatePrerequisites(step.Prerequisites, layerComp, stepsConfig);
+        if (_prototypes.TryIndex<SurgeryProcedurePrototype>(stepId, out var procedure))
+        {
+            if (procedure.Layer != layer)
+                return false;
+            if (!IsStepAllowedForBodyPart(stepId, layer, stepsConfig, bodyPart))
+                return false;
+            return EvaluatePrerequisites(procedure.Prerequisites, layerComp, stepsConfig, bodyPart, organ);
+        }
+        if (_prototypes.TryIndex<SurgeryStepPrototype>(stepId, out var step))
+        {
+            if (step.Layer != layer)
+                return false;
+            if (!IsStepAllowedForBodyPart(stepId, layer, stepsConfig, bodyPart))
+                return false;
+            return EvaluatePrerequisites(step.Prerequisites, layerComp, stepsConfig, bodyPart, organ);
+        }
+        return false;
     }
 
     /// <summary>
-    /// Returns whether the step is in this body part's catalog (from stepsConfig).
+    /// Returns whether the step is in this body part's catalog (from stepsConfig or organ procedures).
     /// </summary>
-    public bool IsStepAllowedForBodyPart(string stepId, SurgeryLayer layer, BodyPartSurgeryStepsPrototype stepsConfig)
+    public bool IsStepAllowedForBodyPart(string stepId, SurgeryLayer layer, BodyPartSurgeryStepsPrototype stepsConfig, EntityUid? bodyPart = null)
     {
         return layer switch
         {
@@ -112,22 +121,36 @@ public sealed class SurgeryLayerSystem : EntitySystem
                 || stepsConfig.GetSkinCloseStepIds(_prototypes).Contains(stepId),
             SurgeryLayer.Tissue => stepsConfig.GetTissueOpenStepIds(_prototypes).Contains(stepId)
                 || stepsConfig.GetTissueCloseStepIds(_prototypes).Contains(stepId),
-            SurgeryLayer.Organ => stepsConfig.OrganSteps.Any(s => s.ToString() == stepId),
+            SurgeryLayer.Organ => stepsConfig.OrganSteps.Any(s => s.ToString() == stepId)
+                || (bodyPart.HasValue && IsOrganProcedureInBodyPart(bodyPart.Value, stepId)),
             _ => false
         };
     }
 
-    private bool EvaluatePrerequisites(IReadOnlyList<StepPrerequisite> prereqs, SurgeryLayerComponent comp, BodyPartSurgeryStepsPrototype config)
+    private bool IsOrganProcedureInBodyPart(EntityUid bodyPart, string procedureId)
+    {
+        if (!TryComp<BodyPartComponent>(bodyPart, out var bodyPartComp) || bodyPartComp.Organs == null)
+            return false;
+        foreach (var organ in bodyPartComp.Organs.ContainedEntities)
+        {
+            if (TryComp<OrganSurgeryProceduresComponent>(organ, out var procs) &&
+                (procs.RemovalProcedures.Any(p => p.ToString() == procedureId) || procs.InsertionProcedures.Any(p => p.ToString() == procedureId)))
+                return true;
+        }
+        return false;
+    }
+
+    private bool EvaluatePrerequisites(IReadOnlyList<StepPrerequisite> prereqs, SurgeryLayerComponent comp, BodyPartSurgeryStepsPrototype config, EntityUid? bodyPart = null, EntityUid? organ = null)
     {
         foreach (var p in prereqs)
         {
-            if (!EvaluateOne(p, comp, config))
+            if (!EvaluateOne(p, comp, config, bodyPart, organ))
                 return false;
         }
         return true;
     }
 
-    private bool EvaluateOne(StepPrerequisite p, SurgeryLayerComponent comp, BodyPartSurgeryStepsPrototype config)
+    private bool EvaluateOne(StepPrerequisite p, SurgeryLayerComponent comp, BodyPartSurgeryStepsPrototype config, EntityUid? bodyPart = null, EntityUid? organ = null)
     {
         switch (p.Type)
         {
@@ -140,21 +163,74 @@ public sealed class SurgeryLayerSystem : EntitySystem
                     return false;
                 return !IsLayerOpen(comp, config, layerClosed);
             case StepPrerequisiteType.RequireStepPerformed:
-                if (string.IsNullOrEmpty(p.StepId))
+                var reqId = p.Procedure?.ToString() ?? p.StepId;
+                if (string.IsNullOrEmpty(reqId))
                     return false;
-                if (!_prototypes.TryIndex<SurgeryStepPrototype>(p.StepId, out var reqStep))
+                SurgeryLayer reqLayer;
+                if (p.Procedure.HasValue && _prototypes.TryIndex(p.Procedure.Value, out SurgeryProcedurePrototype? proc))
+                    reqLayer = proc.Layer;
+                else if (!string.IsNullOrEmpty(p.StepId) && _prototypes.TryIndex<SurgeryStepPrototype>(p.StepId, out var reqStep))
+                    reqLayer = reqStep.Layer;
+                else
                     return false;
-                var performedList = reqStep.Layer switch
+                if (reqLayer == SurgeryLayer.Organ && organ.HasValue)
+                {
+                    var organNet = GetNetEntity(organ.Value);
+                    if (IsProcedureInOrganRemoval(bodyPart, organ.Value, reqId))
+                        return GetOrganRemovalSteps(comp, organNet).Contains(reqId);
+                    if (IsProcedureInOrganInsertion(bodyPart, organ.Value, reqId))
+                        return GetOrganInsertSteps(comp, organNet).Contains(reqId);
+                }
+                var performedList = reqLayer switch
                 {
                     SurgeryLayer.Skin => comp.PerformedSkinSteps,
                     SurgeryLayer.Tissue => comp.PerformedTissueSteps,
                     SurgeryLayer.Organ => comp.PerformedOrganSteps,
                     _ => null
                 };
-                return performedList != null && performedList.Contains(p.StepId);
+                return performedList != null && performedList.Contains(reqId);
             default:
                 return false;
         }
+    }
+
+    private bool IsProcedureInOrganRemoval(EntityUid? bodyPart, EntityUid organ, string procedureId)
+    {
+        if (!bodyPart.HasValue || !TryComp<OrganSurgeryProceduresComponent>(organ, out var procs))
+            return false;
+        return procs.RemovalProcedures.Any(p => p.ToString() == procedureId);
+    }
+
+    private bool IsProcedureInOrganInsertion(EntityUid? bodyPart, EntityUid organ, string procedureId)
+    {
+        if (!bodyPart.HasValue || !TryComp<OrganSurgeryProceduresComponent>(organ, out var procs))
+            return false;
+        return procs.InsertionProcedures.Any(p => p.ToString() == procedureId);
+    }
+
+    private IReadOnlyList<string> GetOrganRemovalSteps(SurgeryLayerComponent comp, NetEntity organ)
+    {
+        var entry = comp.OrganRemovalProgress.FirstOrDefault(e => e.Organ == organ);
+        return entry?.Steps ?? new List<string>();
+    }
+
+    private IReadOnlyList<string> GetOrganInsertSteps(SurgeryLayerComponent comp, NetEntity organ)
+    {
+        var entry = comp.OrganInsertProgress.FirstOrDefault(e => e.Organ == organ);
+        return entry?.Steps ?? new List<string>();
+    }
+
+    private bool IsOrganProcedureFromOrganPrototype(EntityUid bodyPart, string stepId)
+    {
+        if (!TryComp<BodyPartComponent>(bodyPart, out var bodyPartComp) || bodyPartComp.Organs == null)
+            return false;
+        foreach (var organ in bodyPartComp.Organs.ContainedEntities)
+        {
+            if (TryComp<OrganSurgeryProceduresComponent>(organ, out var procs) &&
+                (procs.RemovalProcedures.Any(p => p.ToString() == stepId) || procs.InsertionProcedures.Any(p => p.ToString() == stepId)))
+                return true;
+        }
+        return false;
     }
 
     private bool IsLayerOpen(SurgeryLayerComponent comp, BodyPartSurgeryStepsPrototype config, SurgeryLayer layer)
@@ -182,17 +258,24 @@ public sealed class SurgeryLayerSystem : EntitySystem
         if (layerComp == null)
             return Array.Empty<string>();
 
-        var allSteps = GetAllStepsForBodyPart(stepsConfig);
+        var allSteps = GetAllStepsForBodyPart(body, bodyPart, stepsConfig);
         var result = new List<string>();
         foreach (var stepId in allSteps)
         {
-            if (!_prototypes.TryIndex<SurgeryStepPrototype>(stepId, out var step))
+            if (IsOrganProcedureFromOrganPrototype(bodyPart, stepId))
                 continue;
-            if (filterLayer.HasValue && step.Layer != filterLayer.Value)
+            SurgeryLayer stepLayer;
+            if (_prototypes.TryIndex<SurgeryProcedurePrototype>(stepId, out var procedure))
+                stepLayer = procedure.Layer;
+            else if (_prototypes.TryIndex<SurgeryStepPrototype>(stepId, out var step))
+                stepLayer = step.Layer;
+            else
+                continue;
+            if (filterLayer.HasValue && stepLayer != filterLayer.Value)
                 continue;
             if (IsStepPerformed((bodyPart, layerComp), stepId))
                 continue;
-            if (CanPerformStep(stepId, step.Layer, layerComp, stepsConfig))
+            if (CanPerformStep(stepId, stepLayer, layerComp, stepsConfig, bodyPart))
                 result.Add(stepId);
         }
 
@@ -209,14 +292,16 @@ public sealed class SurgeryLayerSystem : EntitySystem
             {
                 var firstSkinStep = skinOpen[0];
                 if (!IsStepPerformed((bodyPart, layerComp), firstSkinStep)
-                    && (!filterLayer.HasValue || _prototypes.TryIndex<SurgeryStepPrototype>(firstSkinStep, out var s) && s.Layer == filterLayer.Value))
+                    && (!filterLayer.HasValue || _prototypes.TryIndex<SurgeryProcedurePrototype>(firstSkinStep, out var sp) && sp.Layer == filterLayer.Value
+                        || _prototypes.TryIndex<SurgeryStepPrototype>(firstSkinStep, out var ss) && ss.Layer == filterLayer.Value))
                     result.Add(firstSkinStep);
             }
             else if (skinIsOpen && tissueOpen.Count > 0)
             {
                 var firstTissueStep = tissueOpen[0];
                 if (!IsStepPerformed((bodyPart, layerComp), firstTissueStep)
-                    && (!filterLayer.HasValue || _prototypes.TryIndex<SurgeryStepPrototype>(firstTissueStep, out var s) && s.Layer == filterLayer.Value))
+                    && (!filterLayer.HasValue || _prototypes.TryIndex<SurgeryProcedurePrototype>(firstTissueStep, out var tp) && tp.Layer == filterLayer.Value
+                        || _prototypes.TryIndex<SurgeryStepPrototype>(firstTissueStep, out var ts) && ts.Layer == filterLayer.Value))
                     result.Add(firstTissueStep);
             }
         }
@@ -224,13 +309,61 @@ public sealed class SurgeryLayerSystem : EntitySystem
         return result;
     }
 
-    private IEnumerable<string> GetAllStepsForBodyPart(BodyPartSurgeryStepsPrototype config)
+    /// <summary>
+    /// Returns the full ordered list of procedure/step IDs for the body part, optionally filtered by layer.
+    /// Used by UI to show all steps in fixed order with unavailable ones greyed out.
+    /// </summary>
+    public IReadOnlyList<string> GetAllStepsInOrder(EntityUid body, EntityUid bodyPart, SurgeryLayer? filterLayer = null)
+    {
+        var stepsConfig = GetStepsConfig(body, bodyPart);
+        if (stepsConfig == null)
+            return Array.Empty<string>();
+
+        var allSteps = GetAllStepsForBodyPart(body, bodyPart, stepsConfig).ToList();
+        if (!filterLayer.HasValue)
+            return allSteps;
+
+        var result = new List<string>();
+        foreach (var stepId in allSteps)
+        {
+            if (IsOrganProcedureFromOrganPrototype(bodyPart, stepId))
+                continue;
+            SurgeryLayer stepLayer;
+            if (_prototypes.TryIndex<SurgeryProcedurePrototype>(stepId, out var procedure))
+                stepLayer = procedure.Layer;
+            else if (_prototypes.TryIndex<SurgeryStepPrototype>(stepId, out var step))
+                stepLayer = step.Layer;
+            else
+                continue;
+            if (stepLayer == filterLayer.Value)
+                result.Add(stepId);
+        }
+        return result;
+    }
+
+    private IEnumerable<string> GetAllStepsForBodyPart(EntityUid body, EntityUid bodyPart, BodyPartSurgeryStepsPrototype config)
     {
         var skinOpen = config.GetSkinOpenStepIds(_prototypes);
         var skinClose = config.GetSkinCloseStepIds(_prototypes);
         var tissueOpen = config.GetTissueOpenStepIds(_prototypes);
         var tissueClose = config.GetTissueCloseStepIds(_prototypes);
-        var organ = config.OrganSteps.Select(s => s.ToString());
+        var organ = config.OrganSteps.Select(s => s.ToString()).ToList();
+
+        // Add organ removal/insertion procedures from organs in this body part
+        if (TryComp<BodyPartComponent>(bodyPart, out var bodyPartComp) && bodyPartComp.Organs != null)
+        {
+            foreach (var organEntity in bodyPartComp.Organs.ContainedEntities)
+            {
+                if (TryComp<OrganSurgeryProceduresComponent>(organEntity, out var organProcs))
+                {
+                    foreach (var proc in organProcs.RemovalProcedures)
+                        organ.Add(proc.ToString());
+                    foreach (var proc in organProcs.InsertionProcedures)
+                        organ.Add(proc.ToString());
+                }
+            }
+        }
+
         return skinOpen.Concat(skinClose).Concat(tissueOpen).Concat(tissueClose).Concat(organ).Distinct();
     }
 
@@ -295,11 +428,59 @@ public sealed class SurgeryLayerSystem : EntitySystem
             return;
         }
 
-        if (!CanPerformStep(args.StepId, args.Layer, ent.Comp, args.StepsConfig))
+        if (!CanPerformStep(args.ProcedureId.ToString(), args.Layer, ent.Comp, args.StepsConfig, ent.Owner, args.Organ))
         {
             args.Valid = false;
             args.RejectReason = "layer-not-open";
             return;
         }
+    }
+
+    /// <summary>
+    /// Returns available organ procedures as (stepId, organ) pairs for organ removal/insertion flows.
+    /// </summary>
+    public IReadOnlyList<(string StepId, NetEntity Organ)> GetAvailableOrganSteps(EntityUid body, EntityUid bodyPart)
+    {
+        var stepsConfig = GetStepsConfig(body, bodyPart);
+        if (stepsConfig == null)
+            return Array.Empty<(string, NetEntity)>();
+
+        var layerComp = CompOrNull<SurgeryLayerComponent>(bodyPart);
+        if (layerComp == null)
+            return Array.Empty<(string, NetEntity)>();
+
+        var result = new List<(string, NetEntity)>();
+        if (!TryComp<BodyPartComponent>(bodyPart, out var bodyPartComp) || bodyPartComp.Organs == null)
+            return result;
+
+        foreach (var organ in bodyPartComp.Organs.ContainedEntities)
+        {
+            var organNet = GetNetEntity(organ);
+            if (!TryComp<OrganSurgeryProceduresComponent>(organ, out var organProcs))
+                continue;
+            foreach (var proc in organProcs.RemovalProcedures)
+            {
+                var stepId = proc.ToString();
+                if (IsOrganStepPerformed(layerComp, stepId, organNet, forRemoval: true))
+                    continue;
+                if (CanPerformStep(stepId, SurgeryLayer.Organ, layerComp, stepsConfig, bodyPart, organ))
+                    result.Add((stepId, organNet));
+            }
+            foreach (var proc in organProcs.InsertionProcedures)
+            {
+                var stepId = proc.ToString();
+                if (IsOrganStepPerformed(layerComp, stepId, organNet, forRemoval: false))
+                    continue;
+                if (CanPerformStep(stepId, SurgeryLayer.Organ, layerComp, stepsConfig, bodyPart, organ))
+                    result.Add((stepId, organNet));
+            }
+        }
+        return result;
+    }
+
+    private bool IsOrganStepPerformed(SurgeryLayerComponent comp, string stepId, NetEntity organ, bool forRemoval)
+    {
+        var list = forRemoval ? GetOrganRemovalSteps(comp, organ) : GetOrganInsertSteps(comp, organ);
+        return list.Contains(stepId);
     }
 }

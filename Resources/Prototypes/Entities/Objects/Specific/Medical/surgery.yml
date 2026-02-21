@@ -46,6 +46,10 @@
   parent: BaseToolSurgery
   description: A surgical tool used to cauterize open wounds.
   components:
+  - type: Tag
+    tags:
+    - SurgeryTool
+    - HeatWeapon
   - type: Sprite
     sprite: Objects/Specific/Medical/Surgery/cautery.rsi
     state: cautery
@@ -180,6 +184,7 @@
   - type: Tag
     tags:
     - ManipulatingTool
+    - PryingTool
   - type: Sprite
     sprite: Objects/Specific/Medical/Surgery/scissors.rsi
     state: retractor
@@ -286,3 +291,22 @@
     attackRate: 1.5
   - type: Tool
     speedModifier: 2.0
+
+# Bone Gel
+
+- type: entity
+  name: bone gel
+  id: BoneGel
+  parent: BaseToolSurgery
+  description: Used to repair bone sections during surgery.
+  components:
+  - type: Tag
+    tags:
+    - SurgeryTool
+    - BoneGelTool
+  - type: Sprite
+    sprite: Objects/Specific/Medical/Surgery/bone-gel.rsi
+    state: bone-gel
+  - type: Item
+    sprite: Objects/Specific/Medical/Surgery/bone-gel.rsi
+    size: Small

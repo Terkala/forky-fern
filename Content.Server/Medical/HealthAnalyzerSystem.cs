@@ -140,7 +140,7 @@ public sealed class HealthAnalyzerSystem : EntitySystem
         var bodyPartUid = GetEntity(args.BodyPart);
         var user = args.Actor;
 
-        var ev = new SurgeryRequestEvent(uid.Owner, user, targetUid, bodyPartUid, args.StepId, args.Layer, args.IsImprovised,
+        var ev = new SurgeryRequestEvent(uid.Owner, user, targetUid, bodyPartUid, args.ProcedureId, args.Layer, args.IsImprovised,
             args.Organ.HasValue ? GetEntity(args.Organ.Value) : null);
         RaiseLocalEvent(targetUid, ref ev);
 
@@ -153,7 +153,7 @@ public sealed class HealthAnalyzerSystem : EntitySystem
         else if (!ev.Valid && ev.RejectReason != null && Exists(user))
         {
             string msg;
-            if (ev.RejectReason == "missing-tool" && _prototypes.TryIndex<SurgeryStepPrototype>(args.StepId, out var step) && !string.IsNullOrEmpty(step.RequiredToolTag))
+            if (ev.RejectReason == "missing-tool" && _prototypes.TryIndex<SurgeryStepPrototype>(args.ProcedureId.ToString(), out var step) && !string.IsNullOrEmpty(step.RequiredToolTag))
             {
                 var proper = Loc.GetString(GetToolTagLocaleKey(step.RequiredToolTag));
                 if (step.ImprovisedToolTags.Count > 0)
@@ -532,21 +532,14 @@ public sealed class HealthAnalyzerSystem : EntitySystem
                     }
                     else
                     {
-                        skinProcedures.Add(new SurgeryProcedureState { StepId = "CreateIncision", Performed = _surgeryLayer.IsStepPerformed((part, layer), "CreateIncision") });
-                        skinProcedures.Add(new SurgeryProcedureState { StepId = "RetractSkin", Performed = _surgeryLayer.IsStepPerformed((part, layer), "RetractSkin") });
-                        skinProcedures.Add(new SurgeryProcedureState { StepId = "SealSkin", Performed = _surgeryLayer.IsStepPerformed((part, layer), "SealSkin") });
-                        skinProcedures.Add(new SurgeryProcedureState { StepId = "CloseIncision", Performed = _surgeryLayer.IsStepPerformed((part, layer), "CloseIncision") });
-                        tissueProcedures.Add(new SurgeryProcedureState { StepId = "RetractTissue", Performed = _surgeryLayer.IsStepPerformed((part, layer), "RetractTissue") });
-                        tissueProcedures.Add(new SurgeryProcedureState { StepId = "ClampBleeders", Performed = _surgeryLayer.IsStepPerformed((part, layer), "ClampBleeders") });
-                        tissueProcedures.Add(new SurgeryProcedureState { StepId = "MoveNerves", Performed = _surgeryLayer.IsStepPerformed((part, layer), "MoveNerves") });
-                        tissueProcedures.Add(new SurgeryProcedureState { StepId = "SawBones", Performed = _surgeryLayer.IsStepPerformed((part, layer), "SawBones") });
-                        tissueProcedures.Add(new SurgeryProcedureState { StepId = "MendMuscles", Performed = _surgeryLayer.IsStepPerformed((part, layer), "MendMuscles") });
-                        tissueProcedures.Add(new SurgeryProcedureState { StepId = "UnclampBloodVessels", Performed = _surgeryLayer.IsStepPerformed((part, layer), "UnclampBloodVessels") });
-                        tissueProcedures.Add(new SurgeryProcedureState { StepId = "MendNerves", Performed = _surgeryLayer.IsStepPerformed((part, layer), "MendNerves") });
-                        tissueProcedures.Add(new SurgeryProcedureState { StepId = "CloseTissue", Performed = _surgeryLayer.IsStepPerformed((part, layer), "CloseTissue") });
+                        // No steps config: omit procedures; layer state remains closed
                     }
 
                     var availableStepIds = _surgeryLayer.GetAvailableSteps(entity, part).ToList();
+                    var availableOrganSteps = _surgeryLayer.GetAvailableOrganSteps(entity, part)
+                        .Select(x => new OrganStepAvailability { StepId = x.StepId, Organ = x.Organ }).ToList();
+                    var orderedSkinStepIds = _surgeryLayer.GetAllStepsInOrder(entity, part, SurgeryLayer.Skin).ToList();
+                    var orderedTissueStepIds = _surgeryLayer.GetAllStepsInOrder(entity, part, SurgeryLayer.Tissue).ToList();
 
                     var layerData = new SurgeryLayerStateData
                     {
@@ -558,7 +551,10 @@ public sealed class HealthAnalyzerSystem : EntitySystem
                         TissueOpen = tissueOpen,
                         OrganOpen = organOpen,
                         OrganProcedures = _surgeryLayer.GetPerformedSteps((part, layer), SurgeryLayer.Organ).Select(s => new SurgeryProcedureState { StepId = s, Performed = true }).ToList(),
-                        AvailableStepIds = availableStepIds
+                        AvailableStepIds = availableStepIds,
+                        OrderedSkinStepIds = orderedSkinStepIds,
+                        OrderedTissueStepIds = orderedTissueStepIds,
+                        AvailableOrganSteps = availableOrganSteps
                     };
                     if (TryComp<BodyPartComponent>(part, out var bodyPartComp) && bodyPartComp.Organs != null)
                     {
@@ -610,7 +606,8 @@ public sealed class HealthAnalyzerSystem : EntitySystem
                         TissueOpen = false,
                         OrganOpen = true, // Empty slot: no layers to open, ready for AttachLimb
                         OrganProcedures = new List<SurgeryProcedureState>(),
-                        AvailableStepIds = availableStepIds
+                        AvailableStepIds = availableStepIds,
+                        AvailableOrganSteps = new List<OrganStepAvailability>()
                     });
                 }
             }

@@ -1,4 +1,5 @@
 using Content.Shared.Medical.Surgery.Prototypes;
+using Robust.Shared.Prototypes;
 
 namespace Content.Shared.Medical.Surgery.Events;
 
@@ -11,10 +12,11 @@ public record struct SurgeryStepCompletedEvent(
     EntityUid User,
     EntityUid Target,
     EntityUid BodyPart,
-    string StepId,
+    ProtoId<SurgeryProcedurePrototype> ProcedureId,
     SurgeryLayer Layer,
     EntityUid? Organ,
-    SurgeryStepPrototype Step)
+    SurgeryStepPrototype? Step,
+    SurgeryProcedurePrototype? Procedure)
 {
     /// <summary>
     /// Set to true if the step was applied (e.g. added to performed list).

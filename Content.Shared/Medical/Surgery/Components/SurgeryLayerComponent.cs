@@ -1,7 +1,22 @@
 using System.Linq;
 using Robust.Shared.GameStates;
+using Robust.Shared.Network;
+using Robust.Shared.Serialization;
 
 namespace Content.Shared.Medical.Surgery.Components;
+
+/// <summary>
+/// Tracks organ-specific procedure progress for removal/insertion flows.
+/// </summary>
+[Serializable, NetSerializable]
+public sealed partial class OrganProgressEntry
+{
+    [DataField]
+    public NetEntity Organ { get; set; }
+
+    [DataField]
+    public List<string> Steps { get; set; } = new();
+}
 
 /// <summary>
 /// Tracks surgery layer state on a body part. Stores which steps have been performed per layer.
@@ -30,17 +45,31 @@ public sealed partial class SurgeryLayerComponent : Component
     public List<string> PerformedOrganSteps { get; set; } = new();
 
     /// <summary>
+    /// Per-organ removal procedure progress (e.g. OrganRemovalRetractor, OrganRemovalScalpel).
+    /// Cleared when organ is removed.
+    /// </summary>
+    [DataField, AutoNetworkedField]
+    public List<OrganProgressEntry> OrganRemovalProgress { get; set; } = new();
+
+    /// <summary>
+    /// Per-organ insertion procedure progress (e.g. OrganInsertHemostat, OrganInsertSearing).
+    /// Used for organs recently inserted that need mend steps.
+    /// </summary>
+    [DataField, AutoNetworkedField]
+    public List<OrganProgressEntry> OrganInsertProgress { get; set; } = new();
+
+    /// <summary>
     /// True if RetractSkin has been performed and not yet closed (skin layer open for tissue).
     /// </summary>
-    public bool SkinRetracted => PerformedSkinSteps.Contains("RetractSkin") && !PerformedSkinSteps.Contains("CloseIncision");
+    public bool SkinRetracted => PerformedSkinSteps.Contains("RetractSkin") && !PerformedSkinSteps.Contains("ReleaseRetractor");
 
     /// <summary>
     /// True if RetractTissue has been performed and not yet closed (tissue layer open for organ).
     /// </summary>
-    public bool TissueRetracted => PerformedTissueSteps.Contains("RetractTissue") && !PerformedTissueSteps.Contains("CloseTissue");
+    public bool TissueRetracted => PerformedTissueSteps.Contains("RetractTissue") && !PerformedTissueSteps.Any(s => s is "MaintainAlignment" or "SealBleedPoints" or "RepairBoneSection");
 
     /// <summary>
-    /// True if SawBones has been performed and tissue not closed (organ layer fully open).
+    /// True if last tissue open step (RetractTissue) has been performed and tissue not closed (organ layer fully open).
     /// </summary>
-    public bool BonesSawed => PerformedTissueSteps.Contains("SawBones") && !PerformedTissueSteps.Contains("CloseTissue");
+    public bool BonesSawed => PerformedTissueSteps.Contains("RetractTissue") && !PerformedTissueSteps.Any(s => s is "MaintainAlignment" or "SealBleedPoints" or "RepairBoneSection");
 }

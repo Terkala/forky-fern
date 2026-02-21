@@ -64,9 +64,9 @@ public sealed class UnsanitarySurgeryCalculationSystem : EntitySystem
             var bodyPartName = TryComp<OrganComponent>(args.BodyPart, out var organComp) && organComp.Category is { } cat
                 ? cat.ToString()
                 : Identity.Name(args.BodyPart, EntityManager);
-            var stepName = args.Step.Name?.Id ?? args.StepId;
+            var stepName = args.Procedure?.Name ?? args.Step?.Name?.Id ?? args.StepId;
             var improvisedAmount = 1;
-            var stepAmount = args.Step.Penalty;
+            var stepAmount = args.Procedure?.Penalty ?? args.Step?.Penalty ?? 0;
             var improvisedChild = new IntegrityPenaltyEntry("health-analyzer-integrity-improvised-tool", IntegrityPenaltyCategory.ImproperTools, improvisedAmount, null);
             var stepEntry = new IntegrityPenaltyEntry(stepName, IntegrityPenaltyCategory.ImproperTools, stepAmount, new List<IntegrityPenaltyEntry> { improvisedChild });
             var children = new List<IntegrityPenaltyEntry> { stepEntry };

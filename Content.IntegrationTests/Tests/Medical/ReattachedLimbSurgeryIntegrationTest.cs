@@ -42,16 +42,20 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
 
         var analyzerNet = NetEntity.Invalid;
         var scalpelNet = NetEntity.Invalid;
+        var wirecutterNet = NetEntity.Invalid;
         var sawNet = NetEntity.Invalid;
-        var hemostatNet = NetEntity.Invalid;
+        var cauteryNet = NetEntity.Invalid;
+        var retractorNet = NetEntity.Invalid;
         var legNet = NetEntity.Invalid;
 
         await Server.WaitPost(() =>
         {
             var analyzer = SEntMan.SpawnEntity("HandheldHealthAnalyzer", SEntMan.GetCoordinates(TargetCoords));
             var scalpel = SEntMan.SpawnEntity("Scalpel", SEntMan.GetCoordinates(TargetCoords));
+            var wirecutter = SEntMan.SpawnEntity("Wirecutter", SEntMan.GetCoordinates(TargetCoords));
             var saw = SEntMan.SpawnEntity("Saw", SEntMan.GetCoordinates(TargetCoords));
-            var hemostat = SEntMan.SpawnEntity("Hemostat", SEntMan.GetCoordinates(TargetCoords));
+            var cautery = SEntMan.SpawnEntity("Cautery", SEntMan.GetCoordinates(TargetCoords));
+            var retractor = SEntMan.SpawnEntity("Retractor", SEntMan.GetCoordinates(TargetCoords));
             var leg = GetLeg(SEntMan, patient);
 
             HandSys.TryPickupAnyHand(SPlayer, analyzer, checkActionBlocker: false);
@@ -59,8 +63,10 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
 
             analyzerNet = SEntMan.GetNetEntity(analyzer);
             scalpelNet = SEntMan.GetNetEntity(scalpel);
+            wirecutterNet = SEntMan.GetNetEntity(wirecutter);
             sawNet = SEntMan.GetNetEntity(saw);
-            hemostatNet = SEntMan.GetNetEntity(hemostat);
+            cauteryNet = SEntMan.GetNetEntity(cautery);
+            retractorNet = SEntMan.GetNetEntity(retractor);
             legNet = SEntMan.GetNetEntity(leg);
         });
 
@@ -100,10 +106,42 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
         await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "CreateIncision", SurgeryLayer.Skin, false), analyzerNet);
         await RunTicks(300);
 
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "RetractSkin", SurgeryLayer.Skin, false), analyzerNet);
+        await Server.WaitPost(() =>
+        {
+            var scalpelUid = SEntMan.GetEntity(scalpelNet);
+            foreach (var hand in HandSys.EnumerateHands((SPlayer, Hands!)))
+            {
+                if (HandSys.TryGetHeldItem((SPlayer, Hands!), hand, out var held) && held == scalpelUid)
+                {
+                    HandSys.TrySetActiveHand((SPlayer, Hands!), hand);
+                    HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
+                    break;
+                }
+            }
+            HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(wirecutterNet), checkActionBlocker: false);
+        });
+        await RunTicks(1);
+
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "ClampVessels", SurgeryLayer.Skin, false), analyzerNet);
         await RunTicks(300);
 
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "RetractTissue", SurgeryLayer.Tissue, false), analyzerNet);
+        await Server.WaitPost(() =>
+        {
+            var wirecutterUid = SEntMan.GetEntity(wirecutterNet);
+            foreach (var hand in HandSys.EnumerateHands((SPlayer, Hands!)))
+            {
+                if (HandSys.TryGetHeldItem((SPlayer, Hands!), hand, out var held) && held == wirecutterUid)
+                {
+                    HandSys.TrySetActiveHand((SPlayer, Hands!), hand);
+                    HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
+                    break;
+                }
+            }
+            HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(retractorNet), checkActionBlocker: false);
+        });
+        await RunTicks(1);
+
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "RetractSkin", SurgeryLayer.Skin, false), analyzerNet);
         await RunTicks(300);
 
         await Server.WaitPost(() =>
@@ -118,33 +156,49 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
                     break;
                 }
             }
-            HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(hemostatNet), checkActionBlocker: false);
+            HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(sawNet), checkActionBlocker: false);
         });
         await RunTicks(1);
 
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "ClampBleeders", SurgeryLayer.Tissue, false), analyzerNet);
-        await RunTicks(300);
-
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "MoveNerves", SurgeryLayer.Tissue, false), analyzerNet);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "CutBone", SurgeryLayer.Tissue, false), analyzerNet);
         await RunTicks(300);
 
         await Server.WaitPost(() =>
         {
-            var hemostatUid = SEntMan.GetEntity(hemostatNet);
+            var sawUid = SEntMan.GetEntity(sawNet);
             foreach (var hand in HandSys.EnumerateHands((SPlayer, Hands!)))
             {
-                if (HandSys.TryGetHeldItem((SPlayer, Hands!), hand, out var held) && held == hemostatUid)
+                if (HandSys.TryGetHeldItem((SPlayer, Hands!), hand, out var held) && held == sawUid)
                 {
                     HandSys.TrySetActiveHand((SPlayer, Hands!), hand);
                     HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
                     break;
                 }
             }
-            HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(sawNet), checkActionBlocker: false);
+            HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(cauteryNet), checkActionBlocker: false);
         });
         await RunTicks(1);
 
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "SawBones", SurgeryLayer.Tissue, false), analyzerNet);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "MarrowBleeding", SurgeryLayer.Tissue, false), analyzerNet);
+        await RunTicks(300);
+
+        await Server.WaitPost(() =>
+        {
+            var cauteryUid = SEntMan.GetEntity(cauteryNet);
+            foreach (var hand in HandSys.EnumerateHands((SPlayer, Hands!)))
+            {
+                if (HandSys.TryGetHeldItem((SPlayer, Hands!), hand, out var held) && held == cauteryUid)
+                {
+                    HandSys.TrySetActiveHand((SPlayer, Hands!), hand);
+                    HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
+                    break;
+                }
+            }
+            HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(retractorNet), checkActionBlocker: false);
+        });
+        await RunTicks(1);
+
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "RetractTissue", SurgeryLayer.Tissue, false), analyzerNet);
         await RunTicks(300);
 
         await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "DetachLimb", SurgeryLayer.Organ, false), analyzerNet);
@@ -173,28 +227,28 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
 
         await Server.WaitPost(() =>
         {
-            var hemostatUid = SEntMan.GetEntity(hemostatNet);
+            var retractorUid = SEntMan.GetEntity(retractorNet);
             foreach (var hand in HandSys.EnumerateHands((SPlayer, Hands!)))
             {
-                if (HandSys.TryGetHeldItem((SPlayer, Hands!), hand, out var held) && held == hemostatUid)
+                if (HandSys.TryGetHeldItem((SPlayer, Hands!), hand, out var held) && held == retractorUid)
                 {
                     HandSys.TrySetActiveHand((SPlayer, Hands!), hand);
                     break;
                 }
             }
-            if (HandSys.GetActiveItem((SPlayer, Hands!)) != hemostatUid)
-                HandSys.TryPickupAnyHand(SPlayer, hemostatUid, checkActionBlocker: false);
+            if (HandSys.GetActiveItem((SPlayer, Hands!)) != retractorUid)
+                HandSys.TryPickupAnyHand(SPlayer, retractorUid, checkActionBlocker: false);
         });
         await RunTicks(1);
 
-        // Apply CloseIncision via event (BUI/DoAfter flow can be flaky when body structure changes).
-        // This verifies the surgery layer logic: after CloseIncision on a re-attached limb,
+        // Apply ReleaseRetractor via event (BUI/DoAfter flow can be flaky when body structure changes).
+        // This verifies the surgery layer logic: after ReleaseRetractor on a re-attached limb,
         // RetractSkin should be available again.
         await Server.WaitPost(() =>
         {
             var leg = SEntMan.GetEntity(legNet);
-            var step = ProtoMan.Index(new ProtoId<SurgeryStepPrototype>("CloseIncision"));
-            var ev = new SurgeryStepCompletedEvent(SPlayer, patient, leg, "CloseIncision", SurgeryLayer.Skin, null, step);
+            var procedure = ProtoMan.Index(new ProtoId<SurgeryProcedurePrototype>("ReleaseRetractor"));
+            var ev = new SurgeryStepCompletedEvent(SPlayer, patient, leg, (ProtoId<SurgeryProcedurePrototype>)"ReleaseRetractor", SurgeryLayer.Skin, null, null, procedure);
             SEntMan.EventBus.RaiseLocalEvent(leg, ref ev);
         });
         await RunTicks(1);
@@ -203,19 +257,19 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
         {
             var leg = SEntMan.GetEntity(legNet);
             var layerComp = SEntMan.GetComponent<SurgeryLayerComponent>(leg);
-            Assert.That(layerComp.PerformedSkinSteps, Does.Contain("CloseIncision"),
-                "CloseIncision should have been applied to re-attached leg");
-            // With 1:1 pairing, CloseIncision undoes RetractSkin, so RetractSkin is removed from performed
+            Assert.That(layerComp.PerformedSkinSteps, Does.Contain("ReleaseRetractor"),
+                "ReleaseRetractor should have been applied to re-attached leg");
+            // With 1:1 pairing, ReleaseRetractor undoes RetractSkin, so RetractSkin is removed from performed
             Assert.That(layerComp.PerformedSkinSteps, Does.Not.Contain("RetractSkin"),
-                "RetractSkin should be removed by CloseIncision (1:1 pairing)");
+                "RetractSkin should be removed by ReleaseRetractor (1:1 pairing)");
             Assert.That(layerComp.PerformedSkinSteps, Does.Contain("CreateIncision"),
-                "CreateIncision should remain (CloseIncision only undoes RetractSkin)");
+                "CreateIncision should remain (ReleaseRetractor only undoes RetractSkin)");
 
             var surgeryLayer = SEntMan.System<SurgeryLayerSystem>();
             var stepsConfig = surgeryLayer.GetStepsConfig(patient, leg);
             Assert.That(stepsConfig, Is.Not.Null, "Re-attached leg should have steps config");
-            Assert.That(surgeryLayer.CanPerformStep("RetractSkin", SurgeryLayer.Skin, layerComp, stepsConfig!), Is.True,
-                "RetractSkin should be available again after CloseIncision (CreateIncision still performed)");
+            Assert.That(surgeryLayer.CanPerformStep("RetractSkin", SurgeryLayer.Skin, layerComp, stepsConfig!, leg), Is.True,
+                "RetractSkin should be available again after ReleaseRetractor (CreateIncision still performed)");
             Assert.That(surgeryLayer.GetAvailableSteps(patient, leg), Does.Contain("RetractSkin"),
                 "GetAvailableSteps should include RetractSkin");
         });

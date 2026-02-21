@@ -64,28 +64,123 @@ public sealed class SurgerySystem : EntitySystem
 
         var query = new BodyPartQueryEvent(ent.Owner);
         RaiseLocalEvent(ent.Owner, ref query);
-        var isAttachLimbToEmptySlot = args.StepId == "AttachLimb" && args.BodyPart == ent.Owner;
+        var isAttachLimbToEmptySlot = args.ProcedureId == "AttachLimb" && args.BodyPart == ent.Owner;
         if (!isAttachLimbToEmptySlot && !query.Parts.Contains(args.BodyPart))
         {
             args.RejectReason = "body-part-not-in-body";
             return;
         }
 
-        if (!_prototypes.TryIndex<SurgeryStepPrototype>(args.StepId, out var step))
+        SurgeryProcedurePrototype? procedure = null;
+        SurgeryStepPrototype? step = null;
+        if (_prototypes.TryIndex(args.ProcedureId, out var proc))
+        {
+            procedure = proc;
+            if (procedure.Layer != args.Layer)
+            {
+                args.RejectReason = "layer-mismatch";
+                return;
+            }
+        }
+        else if (_prototypes.TryIndex<SurgeryStepPrototype>(args.ProcedureId.ToString(), out var s))
+        {
+            step = s;
+            if (step.Layer != args.Layer)
+            {
+                args.RejectReason = "layer-mismatch";
+                return;
+            }
+        }
+        else
         {
             args.RejectReason = "unknown-step";
             return;
         }
 
-        if (step.Layer != args.Layer)
-        {
-            args.RejectReason = "layer-mismatch";
-            return;
-        }
+        var stepLayer = procedure?.Layer ?? step!.Layer;
 
         EntityUid? tool = null;
         var isImprovised = false;
-        if (!string.IsNullOrEmpty(step.RequiredToolTag))
+        if (procedure != null)
+        {
+            if (!procedure.RequiresTool)
+            {
+                // AttachLimb: limb in hand counts as "tool". DetachFoot: no tool needed.
+                if (args.ProcedureId == "AttachLimb" && args.Organ.HasValue)
+                {
+                    foreach (var held in _hands.EnumerateHeld((args.User, null)))
+                    {
+                        if (held == args.Organ.Value)
+                        {
+                            tool = held;
+                            break;
+                        }
+                    }
+                }
+                // If we still don't have a tool, that's ok for procedures like DetachFoot
+            }
+            else
+            {
+            var primaryTag = procedure.PrimaryTool.Tag;
+            foreach (var held in _hands.EnumerateHeld((args.User, null)))
+            {
+                if (_tag.HasTag(held, primaryTag))
+                {
+                    tool = held;
+                    break;
+                }
+            }
+            if (!tool.HasValue)
+            {
+                foreach (var improvised in procedure.ImprovisedTools)
+                {
+                    if (improvised.Tag.HasValue)
+                    {
+                        foreach (var held in _hands.EnumerateHeld((args.User, null)))
+                        {
+                            if (_tag.HasTag(held, improvised.Tag.Value))
+                            {
+                                tool = held;
+                                isImprovised = true;
+                                break;
+                            }
+                        }
+                    }
+                    else if (improvised.DamageType.HasValue)
+                    {
+                        var damageKey = improvised.DamageType.Value switch
+                        {
+                            ImprovisedDamageType.Slash => "Slash",
+                            ImprovisedDamageType.Heat => "Heat",
+                            ImprovisedDamageType.Blunt => "Blunt",
+                            _ => null
+                        };
+                        if (damageKey != null)
+                        {
+                            foreach (var held in _hands.EnumerateHeld((args.User, null)))
+                            {
+                                var damage = _melee.GetDamage(held, args.User);
+                                if (damage.DamageDict.TryGetValue(damageKey, out var val) && val.Float() > 0)
+                                {
+                                    tool = held;
+                                    isImprovised = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (tool.HasValue)
+                        break;
+                }
+            }
+            if (!tool.HasValue)
+            {
+                args.RejectReason = "missing-tool";
+                return;
+            }
+            }
+        }
+        else if (!string.IsNullOrEmpty(step!.RequiredToolTag))
         {
             var requiredTag = new ProtoId<TagPrototype>(step.RequiredToolTag);
             foreach (var held in _hands.EnumerateHeld((args.User, null)))
@@ -159,7 +254,7 @@ public sealed class SurgerySystem : EntitySystem
         else
         {
             layerComp = EnsureComp<SurgeryLayerComponent>(args.BodyPart);
-            var performedList = step.Layer switch
+            var performedList = stepLayer switch
             {
                 SurgeryLayer.Skin => layerComp.PerformedSkinSteps,
                 SurgeryLayer.Tissue => layerComp.PerformedTissueSteps,
@@ -167,9 +262,9 @@ public sealed class SurgerySystem : EntitySystem
                 _ => null
             };
             stepsConfig = _surgeryLayer.GetStepsConfig(ent.Owner, args.BodyPart);
-            if (performedList != null && performedList.Contains(args.StepId))
+            if (performedList != null && performedList.Contains(args.ProcedureId.ToString()))
             {
-                if (stepsConfig == null || !_surgeryLayer.CanPerformStep(args.StepId, step.Layer, layerComp, stepsConfig))
+                if (stepsConfig == null || !_surgeryLayer.CanPerformStep(args.ProcedureId.ToString(), stepLayer, layerComp, stepsConfig, args.BodyPart))
                 {
                     args.RejectReason = "already-done";
                     return;
@@ -184,13 +279,13 @@ public sealed class SurgerySystem : EntitySystem
         }
 
         if (!isAttachLimbToEmptySlot && layerComp != null &&
-            !_surgeryLayer.CanPerformStep(args.StepId, step.Layer, layerComp, stepsConfig))
+            !_surgeryLayer.CanPerformStep(args.ProcedureId.ToString(), stepLayer, layerComp, stepsConfig, args.BodyPart, args.Organ))
         {
             args.RejectReason = "layer-not-open";
             return;
         }
 
-        if (args.StepId == "DetachLimb")
+        if (args.ProcedureId == "DetachLimb")
         {
             if (!TryComp<OrganComponent>(args.BodyPart, out var limbOrgan) || limbOrgan.Category is not { } limbCategory)
             {
@@ -208,7 +303,7 @@ public sealed class SurgerySystem : EntitySystem
                 return;
             }
         }
-        else if (args.StepId == "AttachLimb")
+        else if (args.ProcedureId == "AttachLimb")
         {
             if (!args.Organ.HasValue || !Exists(args.Organ.Value))
             {
@@ -246,7 +341,13 @@ public sealed class SurgerySystem : EntitySystem
             }
         }
 
-        if (args.StepId == "RemoveOrgan")
+        var triggersOrganRemoval = procedure?.TriggersOrganRemoval ?? args.ProcedureId == "RemoveOrgan";
+        var stepId = args.ProcedureId.ToString();
+        var organForCheck = args.Organ;
+        var isOrganRemovalProc = procedure != null && organForCheck.HasValue && TryComp<OrganSurgeryProceduresComponent>(organForCheck.Value, out var organRemovalProcs)
+            && organRemovalProcs.RemovalProcedures.Any(p => p.ToString() == stepId);
+
+        if (triggersOrganRemoval || isOrganRemovalProc)
         {
             if (!args.Organ.HasValue || !Exists(args.Organ.Value))
             {
@@ -265,7 +366,23 @@ public sealed class SurgerySystem : EntitySystem
                 return;
             }
         }
-        else if (args.StepId == "InsertOrgan")
+        else if (procedure != null && stepId != "AttachLimb" && organForCheck.HasValue && TryComp<OrganSurgeryProceduresComponent>(organForCheck.Value, out var organInsertProcs) && organInsertProcs.InsertionProcedures.Any(p => p.ToString() == stepId))
+        {
+            // Organ insertion mend steps (OrganInsertHemostat, etc.) require the organ to already be in the body.
+            // AttachLimb is excluded: the limb is in hand, not in the body.
+            if (!Exists(organForCheck.Value))
+            {
+                args.RejectReason = "invalid-entity";
+                return;
+            }
+            if (!TryComp<BodyPartComponent>(args.BodyPart, out var bodyPartComp) || bodyPartComp.Organs == null ||
+                !bodyPartComp.Organs.ContainedEntities.Contains(organForCheck.Value))
+            {
+                args.RejectReason = "organ-not-in-body-part";
+                return;
+            }
+        }
+        else if (args.ProcedureId == "InsertOrgan")
         {
             if (!args.Organ.HasValue || !Exists(args.Organ.Value))
             {
@@ -323,7 +440,7 @@ public sealed class SurgerySystem : EntitySystem
             }
         }
 
-        var stepRequestEv = new SurgeryStepRequestEvent(args.User, ent.Owner, args.StepId, args.Layer, args.Organ, stepsConfig);
+        var stepRequestEv = new SurgeryStepRequestEvent(args.User, ent.Owner, args.ProcedureId, args.Layer, args.Organ, stepsConfig);
         RaiseLocalEvent(args.BodyPart, ref stepRequestEv);
         if (!stepRequestEv.Valid)
         {
@@ -334,34 +451,63 @@ public sealed class SurgerySystem : EntitySystem
         args.UsedImprovisedTool = isImprovised;
         args.ToolUsed = tool;
 
-        // InsertOrgan/RemoveOrgan/AttachLimb: organ/limb is in hand - use it as DoAfter "used" for tracking
-        if (args.StepId is "InsertOrgan" or "RemoveOrgan" or "AttachLimb" && args.Organ.HasValue)
+        // InsertOrgan/RemoveOrgan/AttachLimb/organ removal procedures: organ/limb is in hand - use it as DoAfter "used" for tracking.
+        // Organ removal procedures (Retractor/Scalpel/Hemostat) also get relaxed DoAfter break conditions since they target an organ in-body.
+        var isOrganStep = args.ProcedureId == "InsertOrgan" || args.ProcedureId == "AttachLimb" || triggersOrganRemoval || isOrganRemovalProc;
+        if (isOrganStep && args.Organ.HasValue)
             tool = args.Organ.Value;
 
-        var doAfterEv = new SurgeryDoAfterEvent(GetNetEntity(args.BodyPart), args.StepId, args.Organ.HasValue ? GetNetEntity(args.Organ.Value) : null, isImprovised);
-        var isOrganStep = args.StepId is "InsertOrgan" or "RemoveOrgan" or "AttachLimb";
+        var doAfterEv = new SurgeryDoAfterEvent(GetNetEntity(args.BodyPart), args.ProcedureId, args.Organ.HasValue ? GetNetEntity(args.Organ.Value) : null, isImprovised);
         var delayMultiplier = 1f;
-        if (isImprovised)
+        float baseDelay;
+        if (procedure != null)
         {
-            if (step.ImprovisedBluntSpeedBaseline is { } baseline && tool.HasValue)
+            baseDelay = procedure.PrimaryTool.DoAfterDelay;
+            if (isImprovised && tool.HasValue)
             {
-                var damage = _melee.GetDamage(tool.Value, args.User);
-                if (damage.DamageDict.TryGetValue("Blunt", out var bluntVal) && bluntVal.Float() > 0)
+                foreach (var improvised in procedure.ImprovisedTools)
                 {
-                    var blunt = Math.Max(1f, bluntVal.Float());
-                    delayMultiplier = Math.Clamp(baseline / blunt, 0.5f, 3f);
+                    if (improvised.DamageType == ImprovisedDamageType.Blunt && improvised.BluntSpeedBaseline is { } baseline)
+                    {
+                        var damage = _melee.GetDamage(tool.Value, args.User);
+                        if (damage.DamageDict.TryGetValue("Blunt", out var bluntVal) && bluntVal.Float() > 0)
+                        {
+                            var blunt = Math.Max(1f, bluntVal.Float());
+                            delayMultiplier = Math.Clamp(baseline / blunt, 0.5f, 3f);
+                        }
+                        else
+                            delayMultiplier = improvised.DelayMultiplier;
+                        break;
+                    }
+                    else if (improvised.DelayMultiplier > 0)
+                    {
+                        delayMultiplier = improvised.DelayMultiplier;
+                        break;
+                    }
                 }
-                else
-                {
-                    delayMultiplier = step.ImprovisedDelayMultiplier;
-                }
-            }
-            else
-            {
-                delayMultiplier = step.ImprovisedDelayMultiplier;
             }
         }
-        var delay = step.DoAfterDelay * delayMultiplier;
+        else
+        {
+            baseDelay = step!.DoAfterDelay;
+            if (isImprovised)
+            {
+                if (step.ImprovisedBluntSpeedBaseline is { } baseline && tool.HasValue)
+                {
+                    var damage = _melee.GetDamage(tool!.Value, args.User);
+                    if (damage.DamageDict.TryGetValue("Blunt", out var bluntVal) && bluntVal.Float() > 0)
+                    {
+                        var blunt = Math.Max(1f, bluntVal.Float());
+                        delayMultiplier = Math.Clamp(baseline / blunt, 0.5f, 3f);
+                    }
+                    else
+                        delayMultiplier = step.ImprovisedDelayMultiplier;
+                }
+                else
+                    delayMultiplier = step.ImprovisedDelayMultiplier;
+            }
+        }
+        var delay = baseDelay * delayMultiplier;
         var doAfterArgs = new DoAfterArgs(EntityManager, args.User, delay, doAfterEv, args.Target, args.Target, tool)
         {
             NeedHand = true,
@@ -387,15 +533,27 @@ public sealed class SurgerySystem : EntitySystem
             return;
 
         var bodyPart = GetEntity(args.BodyPart);
-        if (!Exists(bodyPart) || !_prototypes.TryIndex<SurgeryStepPrototype>(args.StepId, out var step))
+        if (!Exists(bodyPart))
             return;
 
-        var isAttachLimbToEmptySlot = args.StepId == "AttachLimb" && bodyPart == ent.Owner;
+        SurgeryProcedurePrototype? procedure = null;
+        SurgeryStepPrototype? step = null;
+        if (_prototypes.TryIndex(args.ProcedureId, out var proc))
+            procedure = proc;
+        else if (_prototypes.TryIndex<SurgeryStepPrototype>(args.ProcedureId.ToString(), out var s))
+            step = s;
+        else
+            return;
+
+        var stepLayer = procedure?.Layer ?? step!.Layer;
+        var isAttachLimbToEmptySlot = args.ProcedureId == "AttachLimb" && bodyPart == ent.Owner;
+
+        var organUid = args.Organ.HasValue ? GetEntity(args.Organ.Value) : (EntityUid?)null;
 
         if (!isAttachLimbToEmptySlot)
         {
             var layerComp = EnsureComp<SurgeryLayerComponent>(bodyPart);
-            var performedList = step.Layer switch
+            var performedList = stepLayer switch
             {
                 SurgeryLayer.Skin => layerComp.PerformedSkinSteps,
                 SurgeryLayer.Tissue => layerComp.PerformedTissueSteps,
@@ -404,47 +562,56 @@ public sealed class SurgerySystem : EntitySystem
             };
 
             var stepsConfig = _surgeryLayer.GetStepsConfig(ent.Owner, bodyPart);
-            if (performedList != null && performedList.Contains(args.StepId) && (stepsConfig == null || !_surgeryLayer.CanPerformStep(args.StepId, step.Layer, layerComp, stepsConfig)))
+            if (performedList != null && performedList.Contains(args.ProcedureId.ToString()) && (stepsConfig == null || !_surgeryLayer.CanPerformStep(args.ProcedureId.ToString(), stepLayer, layerComp, stepsConfig, bodyPart, organUid)))
                 return;
 
-            if (stepsConfig == null || !_surgeryLayer.CanPerformStep(args.StepId, step.Layer, layerComp, stepsConfig))
+            if (stepsConfig == null || !_surgeryLayer.CanPerformStep(args.ProcedureId.ToString(), stepLayer, layerComp, stepsConfig, bodyPart, organUid))
             {
                 _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-invalid-surgical-process"), args.User, args.User, PopupType.Medium);
                 return;
             }
         }
+        var stepIdForCheck = args.ProcedureId.ToString();
+        var triggersOrganRemoval = procedure?.TriggersOrganRemoval ?? false;
+        var isOrganProcedure = organUid.HasValue && TryComp<OrganSurgeryProceduresComponent>(organUid.Value, out var organProcsForStep)
+            && (organProcsForStep.RemovalProcedures.Any(p => p.ToString() == stepIdForCheck) || organProcsForStep.InsertionProcedures.Any(p => p.ToString() == stepIdForCheck));
+        var isOrganStep = args.ProcedureId == "RemoveOrgan" || args.ProcedureId == "InsertOrgan" || args.ProcedureId == "DetachLimb" || args.ProcedureId == "AttachLimb" || triggersOrganRemoval || isOrganProcedure;
 
-        var organUid = args.Organ.HasValue ? GetEntity(args.Organ.Value) : (EntityUid?)null;
-        var isOrganStep = args.StepId is "RemoveOrgan" or "InsertOrgan" or "DetachLimb" or "AttachLimb";
+        var penalty = procedure?.Penalty ?? step?.Penalty ?? 0;
+        var damage = procedure?.Damage ?? procedure?.PrimaryTool.Damage ?? step?.Damage;
+        var healAmount = procedure?.HealAmount ?? procedure?.PrimaryTool.HealAmount ?? step?.HealAmount;
+        var sound = procedure?.Sound ?? procedure?.PrimaryTool.Sound ?? step?.Sound;
 
         if (isOrganStep)
         {
-            ApplyOrganStep(ent, bodyPart, args.StepId, args.Organ, organUid, step, args.User);
+            ApplyOrganStep(ent, bodyPart, args.ProcedureId.ToString(), args.Organ, organUid, procedure, step, args.User);
         }
         else
         {
-            var completedEv = new SurgeryStepCompletedEvent(args.User, ent.Owner, bodyPart, args.StepId, step.Layer, organUid, step);
+            var completedEv = new SurgeryStepCompletedEvent(args.User, ent.Owner, bodyPart, args.ProcedureId, stepLayer, organUid, step, procedure);
             RaiseLocalEvent(bodyPart, ref completedEv);
             if (!completedEv.Handled)
                 return;
         }
 
-        var penaltyRequestEv = new UnsanitarySurgeryPenaltyRequestEvent(ent.Owner, bodyPart, args.StepId, step.Layer, args.IsImprovised, step);
+        var penaltyRequestEv = new UnsanitarySurgeryPenaltyRequestEvent(ent.Owner, bodyPart, args.ProcedureId.ToString(), stepLayer, args.IsImprovised, step, procedure);
         RaiseLocalEvent(ent.Owner, ref penaltyRequestEv);
 
-        if (step.Damage is { } damage && !damage.Empty)
-            _damageable.TryChangeDamage(ent.Owner, damage, ignoreResistances: false, origin: args.User);
+        if (damage is { } d && !d.Empty)
+            _damageable.TryChangeDamage(ent.Owner, d, ignoreResistances: false, origin: args.User);
 
-        if (step.HealAmount is { } healAmount && !healAmount.Empty)
-            _damageable.TryChangeDamage(ent.Owner, healAmount, ignoreResistances: true, origin: args.User);
+        if (healAmount is { } h && !h.Empty)
+            _damageable.TryChangeDamage(ent.Owner, h, ignoreResistances: true, origin: args.User);
 
-        if (step.Sound != null && _net.IsServer)
-            _audio.PlayPvs(step.Sound, ent.Owner);
+        if (sound != null && _net.IsServer)
+            _audio.PlayPvs(sound, ent.Owner);
     }
 
-    private void ApplyOrganStep(Entity<BodyComponent> ent, EntityUid bodyPart, string stepId, NetEntity? organNet, EntityUid? organUid, SurgeryStepPrototype step, EntityUid user)
+    private void ApplyOrganStep(Entity<BodyComponent> ent, EntityUid bodyPart, string stepId, NetEntity? organNet, EntityUid? organUid, SurgeryProcedurePrototype? procedure, SurgeryStepPrototype? step, EntityUid user)
     {
+        var penalty = procedure?.Penalty ?? step?.Penalty ?? 0;
         var isAttachLimbToEmptySlot = stepId == "AttachLimb" && bodyPart == ent.Owner;
+        var triggersOrganRemoval = procedure?.TriggersOrganRemoval ?? false;
         BodyPartComponent? bodyPartComp = null;
         SurgeryLayerComponent? layerComp = null;
 
@@ -459,9 +626,24 @@ public sealed class SurgerySystem : EntitySystem
             layerComp = EnsureComp<SurgeryLayerComponent>(bodyPart);
             if (layerComp.PerformedOrganSteps.Contains(stepId))
                 return;
+            if (organNet.HasValue && organUid.HasValue && TryComp<OrganSurgeryProceduresComponent>(organUid.Value, out var organProcs))
+            {
+                if (organProcs.RemovalProcedures.Any(p => p.ToString() == stepId))
+                {
+                    var entry = layerComp.OrganRemovalProgress.FirstOrDefault(e => e.Organ == organNet.Value);
+                    if (entry != null && entry.Steps.Contains(stepId))
+                        return;
+                }
+                else if (organProcs.InsertionProcedures.Any(p => p.ToString() == stepId))
+                {
+                    var entry = layerComp.OrganInsertProgress.FirstOrDefault(e => e.Organ == organNet.Value);
+                    if (entry != null && entry.Steps.Contains(stepId))
+                        return;
+                }
+            }
         }
 
-        if (stepId == "RemoveOrgan")
+        if (triggersOrganRemoval || stepId == "RemoveOrgan")
         {
             if (organUid is not { } organ || !Exists(organ))
             {
@@ -477,10 +659,15 @@ public sealed class SurgerySystem : EntitySystem
             RaiseLocalEvent(organ, ref removeEv);
             if (removeEv.Success)
             {
-                _hands.TryPickupAnyHand(user, organ, checkActionBlocker: false);
-                layerComp!.PerformedOrganSteps.Add(stepId);
-                Dirty(bodyPart, layerComp);
-                var penaltyEv = new SurgeryPenaltyAppliedEvent(bodyPart, step.Penalty);
+                if (!_hands.TryPickupAnyHand(user, organ, checkActionBlocker: false))
+                    Transform(organ).Coordinates = Transform(user).Coordinates;
+                if (triggersOrganRemoval)
+                    ClearOrganRemovalProgress(layerComp!, organNet!.Value);
+                else
+                    AddOrganRemovalProgress(layerComp!, organNet!.Value, stepId);
+                if (layerComp != null)
+                    Dirty(bodyPart, layerComp);
+                var penaltyEv = new SurgeryPenaltyAppliedEvent(bodyPart, penalty);
                 RaiseLocalEvent(bodyPart, ref penaltyEv);
             }
         }
@@ -509,8 +696,10 @@ public sealed class SurgerySystem : EntitySystem
             if (insertEv.Success)
             {
                 layerComp!.PerformedOrganSteps.Add(stepId);
+                if (organNet.HasValue)
+                    EnsureOrganInsertEntry(layerComp, organNet.Value);
                 Dirty(bodyPart, layerComp);
-                var penaltyEv = new SurgeryPenaltyAppliedEvent(bodyPart, step.Penalty);
+                var penaltyEv = new SurgeryPenaltyAppliedEvent(bodyPart, penalty);
                 RaiseLocalEvent(bodyPart, ref penaltyEv);
             }
             else
@@ -534,7 +723,7 @@ public sealed class SurgerySystem : EntitySystem
             {
                 layerComp!.PerformedOrganSteps.Add(stepId);
                 Dirty(bodyPart, layerComp);
-                var penaltyEv = new SurgeryPenaltyAppliedEvent(bodyPart, step.Penalty);
+                var penaltyEv = new SurgeryPenaltyAppliedEvent(bodyPart, penalty);
                 RaiseLocalEvent(bodyPart, ref penaltyEv);
             }
         }
@@ -563,11 +752,71 @@ public sealed class SurgerySystem : EntitySystem
                     layerComp!.PerformedOrganSteps.Add(stepId);
                     Dirty(bodyPart, layerComp);
                 }
-                var penaltyEv = new SurgeryPenaltyAppliedEvent(limb, step.Penalty);
+                var penaltyEv = new SurgeryPenaltyAppliedEvent(limb, penalty);
                 RaiseLocalEvent(limb, ref penaltyEv);
             }
             else
                 _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-slot-filled"), user, user, PopupType.Medium);
+        }
+        else if (procedure != null && layerComp != null && organUid.HasValue && organNet.HasValue)
+        {
+            if (TryComp<OrganSurgeryProceduresComponent>(organUid.Value, out var organProcs))
+            {
+                if (organProcs.RemovalProcedures.Any(p => p.ToString() == stepId))
+                {
+                    AddOrganRemovalProgress(layerComp, organNet.Value, stepId);
+                }
+                else if (organProcs.InsertionProcedures.Any(p => p.ToString() == stepId))
+                {
+                    AddOrganInsertProgress(layerComp, organNet.Value, stepId);
+                }
+            }
+            Dirty(bodyPart, layerComp);
+            if (penalty > 0)
+            {
+                var penaltyEv = new SurgeryPenaltyAppliedEvent(bodyPart, penalty);
+                RaiseLocalEvent(bodyPart, ref penaltyEv);
+            }
+        }
+    }
+
+    private static void AddOrganRemovalProgress(SurgeryLayerComponent comp, NetEntity organ, string stepId)
+    {
+        var entry = comp.OrganRemovalProgress.FirstOrDefault(e => e.Organ == organ);
+        if (entry == null)
+        {
+            comp.OrganRemovalProgress.Add(new OrganProgressEntry { Organ = organ, Steps = new List<string> { stepId } });
+        }
+        else
+        {
+            if (!entry.Steps.Contains(stepId))
+                entry.Steps.Add(stepId);
+        }
+    }
+
+    private static void ClearOrganRemovalProgress(SurgeryLayerComponent comp, NetEntity organ)
+    {
+        comp.OrganRemovalProgress.RemoveAll(e => e.Organ == organ);
+    }
+
+    private static void EnsureOrganInsertEntry(SurgeryLayerComponent comp, NetEntity organ)
+    {
+        if (comp.OrganInsertProgress.Any(e => e.Organ == organ))
+            return;
+        comp.OrganInsertProgress.Add(new OrganProgressEntry { Organ = organ, Steps = new List<string>() });
+    }
+
+    private static void AddOrganInsertProgress(SurgeryLayerComponent comp, NetEntity organ, string stepId)
+    {
+        var entry = comp.OrganInsertProgress.FirstOrDefault(e => e.Organ == organ);
+        if (entry == null)
+        {
+            comp.OrganInsertProgress.Add(new OrganProgressEntry { Organ = organ, Steps = new List<string> { stepId } });
+        }
+        else
+        {
+            if (!entry.Steps.Contains(stepId))
+                entry.Steps.Add(stepId);
         }
     }
 
@@ -585,7 +834,7 @@ public sealed class SurgerySystem : EntitySystem
             _ => null
         };
 
-        if (performedList == null || performedList.Contains(args.StepId))
+        if (performedList == null || performedList.Contains(args.ProcedureId.ToString()))
             return;
 
         var stepsConfig = _surgeryLayer.GetStepsConfig(args.Target, ent.Owner);
@@ -596,7 +845,7 @@ public sealed class SurgerySystem : EntitySystem
             _ => null
         };
 
-        if (closeStepIds != null && closeStepIds.Contains(args.StepId) && _prototypes.TryIndex<SurgeryStepPrototype>(args.StepId, out var closeStep))
+        if (closeStepIds != null && closeStepIds.Contains(args.ProcedureId.ToString()) && _prototypes.TryIndex<SurgeryStepPrototype>(args.ProcedureId.ToString(), out var closeStep))
         {
             if (closeStep.UndoesStep != null)
             {
@@ -639,10 +888,11 @@ public sealed class SurgerySystem : EntitySystem
             }
         }
 
-        performedList.Add(args.StepId);
+        performedList.Add(args.ProcedureId.ToString());
         Dirty(ent, layerComp);
 
-        var penaltyEv = new SurgeryPenaltyAppliedEvent(ent.Owner, args.Step.Penalty);
+        var penalty = args.Procedure?.Penalty ?? args.Step?.Penalty ?? 0;
+        var penaltyEv = new SurgeryPenaltyAppliedEvent(ent.Owner, penalty);
         RaiseLocalEvent(ent.Owner, ref penaltyEv);
 
         args.Handled = true;

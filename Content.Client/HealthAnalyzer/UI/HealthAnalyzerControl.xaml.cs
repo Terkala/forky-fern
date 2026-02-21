@@ -279,38 +279,39 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
             : default;
 
         var availableStepIds = layerState.AvailableStepIds ?? [];
+        var orderedSkinStepIds = layerState.OrderedSkinStepIds ?? [];
+        var orderedTissueStepIds = layerState.OrderedTissueStepIds ?? [];
 
         if (_selectedLayer == SurgeryLayer.Skin)
         {
-            AddAvailableSteps(availableStepIds, SurgeryLayer.Skin, layerState: layerState);
+            AddOrderedSteps(orderedSkinStepIds, availableStepIds, SurgeryLayer.Skin, layerState: layerState);
         }
         if (_selectedLayer == SurgeryLayer.Tissue)
         {
-            AddAvailableSteps(availableStepIds, SurgeryLayer.Tissue, layerState: layerState);
+            AddOrderedSteps(orderedTissueStepIds, availableStepIds, SurgeryLayer.Tissue, layerState: layerState);
         }
         if (_selectedLayer == SurgeryLayer.Organ)
         {
             if (!layerState.OrganOpen && layerState.TissueOpen)
-                AddAvailableSteps(availableStepIds, SurgeryLayer.Tissue, onlyStepId: "SawBones", layerState: layerState);
+                AddOrderedSteps(orderedTissueStepIds, availableStepIds, SurgeryLayer.Tissue, layerState: layerState);
 
             if (layerState.OrganOpen)
             {
-                if (availableStepIds.Contains("RemoveOrgan"))
+                var availableOrganSteps = layerState.AvailableOrganSteps ?? [];
+                foreach (var organStep in availableOrganSteps)
                 {
-                    foreach (var organData in layerState.Organs ?? [])
-                    {
-                        var organEntity = _entityManager.GetEntity(organData.Organ);
-                        var organName = _entityManager.TryGetComponent<MetaDataComponent>(organEntity, out var meta)
-                            ? meta.EntityName
-                            : Loc.GetString("health-analyzer-window-entity-unknown-text");
-                        AddStepButton("RemoveOrgan", Loc.GetString("health-analyzer-surgery-step-remove-organ-with-name", ("organName", organName)), organData.Organ);
-                    }
+                    var organEntity = _entityManager.GetEntity(organStep.Organ);
+                    var organName = _entityManager.TryGetComponent<MetaDataComponent>(organEntity, out var meta)
+                        ? meta.EntityName
+                        : Loc.GetString("health-analyzer-window-entity-unknown-text");
+                    var stepName = GetProcedureDisplayName(organStep.StepId, organName);
+                    AddStepButton(organStep.StepId, stepName, organStep.Organ);
                 }
 
                 var detachLimbCategories = new[] { "ArmLeft", "ArmRight", "LegLeft", "LegRight" };
                 if (availableStepIds.Contains("DetachLimb") && layerState.CategoryId != null && detachLimbCategories.Contains(layerState.CategoryId))
                 {
-                    AddStepButton("DetachLimb", Loc.GetString("health-analyzer-surgery-step-detach-limb"));
+                    AddStepButton("DetachLimb", GetProcedureDisplayNameWithTool("DetachLimb"));
                 }
 
                 if (availableStepIds.Contains("InsertOrgan") || availableStepIds.Contains("AttachLimb"))
@@ -335,11 +336,11 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
                                 var organName = _entityManager.TryGetComponent(held, out MetaDataComponent? heldMeta)
                                     ? heldMeta.EntityName
                                     : Loc.GetString("health-analyzer-window-entity-unknown-text");
-                                AddStepButton("InsertOrgan", Loc.GetString("health-analyzer-surgery-step-insert-organ-with-name", ("organName", organName)), _entityManager.GetNetEntity(held));
+                                AddStepButton("InsertOrgan", GetProcedureDisplayName("InsertOrgan", organName), _entityManager.GetNetEntity(held));
                             }
                             else if (availableStepIds.Contains("AttachLimb") && detachLimbCategories.Contains(categoryId) && !existingLimbCategories.Contains(categoryId))
                             {
-                                AddStepButton("AttachLimb", Loc.GetString("health-analyzer-surgery-step-attach-limb"), _entityManager.GetNetEntity(held));
+                                AddStepButton("AttachLimb", GetProcedureDisplayNameWithTool("AttachLimb"), _entityManager.GetNetEntity(held));
                             }
                         }
                     }
@@ -358,19 +359,137 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
         }
     }
 
-    private void AddAvailableSteps(IReadOnlyList<string> availableStepIds, SurgeryLayer layer, string? onlyStepId = null, SurgeryLayerStateData? layerState = null)
+    /// <summary>
+    /// Adds 3 paired step buttons per layer. Each button shows either the open step or its paired close step
+    /// based on current state; pressing performs the step and the UI updates to show the next.
+    /// </summary>
+    private void AddOrderedSteps(IReadOnlyList<string> orderedStepIds, IReadOnlyList<string> availableStepIds, SurgeryLayer layer, SurgeryLayerStateData? layerState = null)
     {
-        foreach (var stepId in availableStepIds)
+        if (orderedStepIds.Count < 6)
+            return;
+
+        var availableSet = availableStepIds.ToHashSet();
+        var performedSet = GetPerformedStepIds(layerState, layer).ToHashSet();
+
+        var openStepIds = new[] { orderedStepIds[0], orderedStepIds[1], orderedStepIds[2] };
+        var closeStepIds = new[] { orderedStepIds[5], orderedStepIds[4], orderedStepIds[3] };
+
+        for (var i = 0; i < 3; i++)
         {
-            if (onlyStepId != null && stepId != onlyStepId)
-                continue;
-            if (!_prototypes.TryIndex<SurgeryStepPrototype>(stepId, out var step))
-                continue;
-            if (step.Layer != layer)
-                continue;
-            var name = GetStepDisplayName(stepId, step, layerState);
-            AddStepButton(stepId, name, null);
+            var openStepId = openStepIds[i];
+            var closeStepId = closeStepIds[i];
+            var openPerformed = performedSet.Contains(openStepId);
+            var closePerformed = performedSet.Contains(closeStepId);
+
+            string stepId;
+            bool disabled;
+            if (!openPerformed)
+            {
+                stepId = openStepId;
+                disabled = !availableSet.Contains(openStepId);
+            }
+            else if (!closePerformed)
+            {
+                stepId = closeStepId;
+                disabled = !availableSet.Contains(closeStepId);
+            }
+            else
+            {
+                stepId = closeStepId;
+                disabled = true;
+            }
+
+            var displayName = GetProcedureDisplayNameWithTool(stepId);
+            AddStepButton(stepId, displayName, null, disabled: disabled);
         }
+    }
+
+    private static IEnumerable<string> GetPerformedStepIds(SurgeryLayerStateData? layerState, SurgeryLayer layer)
+    {
+        if (!layerState.HasValue)
+            yield break;
+
+        var state = layerState.Value;
+        var procedures = layer switch
+        {
+            SurgeryLayer.Skin => state.SkinProcedures,
+            SurgeryLayer.Tissue => state.TissueProcedures,
+            _ => null
+        };
+
+        if (procedures == null)
+            yield break;
+
+        foreach (var p in procedures)
+        {
+            if (p.Performed)
+                yield return p.StepId;
+        }
+    }
+
+    private string GetProcedureDisplayNameWithTool(string stepId)
+    {
+        if (!_prototypes.TryIndex<SurgeryProcedurePrototype>(stepId, out var procedure))
+            return stepId;
+
+        if (procedure.RequiresTool == false)
+            return Loc.GetString("health-analyzer-surgery-step-no-tool", ("step", Loc.GetString(procedure.Name ?? stepId)));
+
+        var baseName = procedure.Name != null ? Loc.GetString(procedure.Name) : stepId;
+        var toolName = GetToolShortName(procedure.PrimaryTool.Tag.ToString());
+        var improvisedName = GetImprovisedShortName(procedure, stepId);
+        return Loc.GetString("health-analyzer-surgery-step-with-tool",
+            ("step", baseName),
+            ("tool", toolName),
+            ("improvised", improvisedName));
+    }
+
+    private static string GetToolShortName(string tagId)
+    {
+        return tagId switch
+        {
+            "CuttingTool" => Loc.GetString("health-analyzer-surgery-tool-scalpel"),
+            "Wirecutter" => Loc.GetString("health-analyzer-surgery-tool-wirecutter"),
+            "PryingTool" => Loc.GetString("health-analyzer-surgery-tool-retractor"),
+            "SawingTool" => Loc.GetString("health-analyzer-surgery-tool-saw"),
+            "HeatWeapon" => Loc.GetString("health-analyzer-surgery-tool-cautery"),
+            "ManipulatingTool" => Loc.GetString("health-analyzer-surgery-tool-hemostat"),
+            "AnchoringTool" => Loc.GetString("health-analyzer-surgery-tool-wrench"),
+            "BoneGelTool" => Loc.GetString("health-analyzer-surgery-tool-bone-gel"),
+            "SurgeryTool" => Loc.GetString("health-analyzer-surgery-tool-retractor"),
+            "Screwdriver" => Loc.GetString("health-analyzer-surgery-tool-screwdriver"),
+            _ => tagId
+        };
+    }
+
+    private static string GetImprovisedShortName(SurgeryProcedurePrototype procedure, string stepId)
+    {
+        if (procedure.ImprovisedTools.Count == 0)
+            return "-";
+
+        var first = procedure.ImprovisedTools[0];
+        if (first.DamageType.HasValue)
+        {
+            var display = first.DamageType.Value switch
+            {
+                ImprovisedDamageType.Slash => Loc.GetString("health-analyzer-surgery-improvised-slash"),
+                ImprovisedDamageType.Heat => Loc.GetString("health-analyzer-surgery-improvised-heat"),
+                ImprovisedDamageType.Blunt => stepId is "RetractSkin" or "ReleaseRetractor" or "RetractTissue"
+                    ? Loc.GetString("health-analyzer-surgery-improvised-prying")
+                    : Loc.GetString("health-analyzer-surgery-improvised-blunt"),
+                _ => "-"
+            };
+            return display;
+        }
+
+        if (first.Tag.HasValue)
+        {
+            var tagStr = first.Tag.Value.ToString();
+            return stepId == "ClampVessels" && tagStr == "Wirecutter"
+                ? Loc.GetString("health-analyzer-surgery-tool-wirecutters")
+                : GetToolShortName(tagStr);
+        }
+        return "-";
     }
 
     private string GetStepDisplayName(string stepId, SurgeryStepPrototype step, SurgeryLayerStateData? layerState)
@@ -380,21 +499,55 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
         return Loc.GetString(step.Name);
     }
 
-    private void AddStepButton(string stepId, string buttonText, NetEntity? organ = null)
+    private string GetProcedureDisplayName(string stepId, string organName)
+    {
+        if (!_prototypes.TryIndex<SurgeryProcedurePrototype>(stepId, out var procedure) || procedure.Name == null)
+            return stepId;
+
+        // Feet use DetachFoot: show "Detach Foot (-/-)"
+        if (stepId == "DetachFoot")
+        {
+            return Loc.GetString("health-analyzer-surgery-step-no-tool",
+                ("step", Loc.GetString("health-analyzer-surgery-step-detach-foot")));
+        }
+
+        var baseName = Loc.GetString(procedure.Name);
+        var stepWithOrgan = $"{baseName} ({organName})";
+        var toolName = GetToolShortName(procedure.PrimaryTool.Tag.ToString());
+        var improvisedName = GetImprovisedShortName(procedure, stepId);
+        return Loc.GetString("health-analyzer-surgery-step-with-tool",
+            ("step", stepWithOrgan),
+            ("tool", toolName),
+            ("improvised", improvisedName));
+    }
+
+    private void AddStepButton(string stepId, string buttonText, NetEntity? organ = null, bool disabled = false)
     {
         var layer = _selectedLayer;
-        if (_prototypes.TryIndex<SurgeryStepPrototype>(stepId, out var step))
+        if (_prototypes.TryIndex<SurgeryProcedurePrototype>(stepId, out var procedure))
+            layer = procedure.Layer;
+        else if (_prototypes.TryIndex<SurgeryStepPrototype>(stepId, out var step))
             layer = step.Layer;
 
-        var btn = new Button { Text = buttonText };
+        var btn = new Button
+        {
+            Text = buttonText,
+            Disabled = disabled,
+            // Use Press mode so the action fires on mouse-down. On Windows, the first click on an
+            // unfocused window activates it and can consume the mouse-up; firing on mouse-down
+            // ensures the procedure runs on the first click.
+            Mode = BaseButton.ActionMode.Press
+        };
+        if (disabled)
+            btn.Modulate = Color.Gray;
         btn.OnPressed += _ =>
         {
-            if (_state.TargetEntity == null || !_selectedBodyPart.HasValue)
+            if (disabled || _state.TargetEntity == null || !_selectedBodyPart.HasValue)
                 return;
             OnSurgeryRequest?.Invoke(new SurgeryRequestBuiMessage(
                 _state.TargetEntity.Value,
                 _selectedBodyPart.Value,
-                stepId,
+                (ProtoId<SurgeryProcedurePrototype>)stepId,
                 layer,
                 false,
                 organ));

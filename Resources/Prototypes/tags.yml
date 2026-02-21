@@ -1537,7 +1537,19 @@
   id: BurningTool # Cauterize, welding steps
 
 - type: Tag
+  id: AnchoringTool # Wrench - reconnect vessels, surgery insertion steps
+
+- type: Tag
+  id: BoneGelTool # Bone gel consumable for tissue bone glue step
+
+- type: Tag
+  id: HeatWeapon # Cautery, welder - items that deal Heat damage for surgery
+
+- type: Tag
   id: ManipulatingTool # ClampBleeders, retractor steps
+
+- type: Tag
+  id: PryingTool # Crowbar, retractor - hold open, release steps
 
 - type: Tag
   id: BreakingTool # Bone-related steps

@@ -1,4 +1,5 @@
 using Content.Shared.Medical.Surgery;
+using Robust.Shared.Prototypes;
 
 namespace Content.Shared.Medical.Surgery.Prototypes;
 
@@ -39,7 +40,13 @@ public sealed partial class StepPrerequisite
     public SurgeryLayer? Layer { get; private set; }
 
     /// <summary>
-    /// For RequireStepPerformed: which step ID must be performed.
+    /// For RequireStepPerformed: which procedure must be performed (when using SurgeryProcedurePrototype).
+    /// </summary>
+    [DataField("procedure")]
+    public ProtoId<SurgeryProcedurePrototype>? Procedure { get; private set; }
+
+    /// <summary>
+    /// Legacy. For RequireStepPerformed: which step ID must be performed (when using SurgeryStepPrototype).
     /// </summary>
     [DataField("step")]
     public string? StepId { get; private set; }

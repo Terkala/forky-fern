@@ -10,6 +10,7 @@ using Content.Shared.Body.Components;
 using Content.Shared.Body.Events;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Medical.Surgery;
+using Content.Shared.Medical.Surgery.Prototypes;
 using Content.Shared.Medical.Surgery.Events;
 using Content.Shared.MedicalScanner;
 using Robust.Shared.GameObjects;
@@ -19,7 +20,7 @@ namespace Content.IntegrationTests.Tests.Medical;
 
 /// <summary>
 /// Integration tests for surgery bug fixes:
-/// - SawBones rejects scalpel (requires SawingTool, no improvised CuttingTool)
+/// - CutBone rejects scalpel (requires SawingTool, no improvised CuttingTool)
 /// - DetachLimb on leg detaches leg and foot as separate items
 /// </summary>
 [TestFixture]
@@ -37,11 +38,11 @@ public sealed class SurgeryFixesIntegrationTest : InteractionTest
     }
 
     /// <summary>
-    /// SawBones requires SawingTool. Scalpel has CuttingTool which was incorrectly allowed as improvised.
-    /// With the fix, SawBones with only scalpel should be rejected with missing-tool.
+    /// CutBone requires SawingTool. Scalpel has CuttingTool which was incorrectly allowed as improvised.
+    /// With the fix, CutBone with only scalpel should be rejected with missing-tool.
     /// </summary>
     [Test]
-    public async Task SawBones_WithScalpelOnly_Rejected()
+    public async Task CutBone_WithScalpelOnly_Rejected()
     {
         await using var pair = await PoolManager.GetServerClient(new PoolSettings
         {
@@ -78,10 +79,10 @@ public sealed class SurgeryFixesIntegrationTest : InteractionTest
 
         await pair.RunTicksSync(5);
 
-        // Open skin and tissue layers first (SawBones requires CreateIncision, RetractSkin, RetractTissue, ClampBleeders, MoveNerves)
+        // Open skin layer first (CutBone requires CreateIncision, ClampVessels, RetractSkin)
         await server.WaitPost(() =>
         {
-            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, "CreateIncision", SurgeryLayer.Skin, false);
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"CreateIncision", SurgeryLayer.Skin, false);
             entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
             Assert.That(ev.Valid, Is.True, "CreateIncision should succeed");
         });
@@ -89,47 +90,39 @@ public sealed class SurgeryFixesIntegrationTest : InteractionTest
 
         await server.WaitPost(() =>
         {
-            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, "RetractSkin", SurgeryLayer.Skin, false);
+            handsSystem.TryDrop(surgeon, scalpel, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(surgeon, entityManager.SpawnEntity("Wirecutter", mapData.GridCoords), checkActionBlocker: false);
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"ClampVessels", SurgeryLayer.Skin, false);
+            entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
+            Assert.That(ev.Valid, Is.True, "ClampVessels should succeed");
+        });
+        await pair.RunTicksSync(150);
+
+        await server.WaitPost(() =>
+        {
+            handsSystem.TryDrop(surgeon, targetDropLocation: null, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(surgeon, entityManager.SpawnEntity("Retractor", mapData.GridCoords), checkActionBlocker: false);
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"RetractSkin", SurgeryLayer.Skin, false);
             entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
             Assert.That(ev.Valid, Is.True, "RetractSkin should succeed");
         });
         await pair.RunTicksSync(150);
 
+        // Swap back to scalpel - CutBone requires SawingTool, scalpel has CuttingTool
         await server.WaitPost(() =>
         {
-            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, "RetractTissue", SurgeryLayer.Tissue, false);
-            entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
-            Assert.That(ev.Valid, Is.True, "RetractTissue should succeed");
+            handsSystem.TryDrop(surgeon, targetDropLocation: null, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(surgeon, scalpel, checkActionBlocker: false);
         });
-        await pair.RunTicksSync(150);
+        await pair.RunTicksSync(5);
 
-        var hemostat = EntityUid.Invalid;
-        await server.WaitPost(() =>
-        {
-            hemostat = entityManager.SpawnEntity("Hemostat", mapData.GridCoords);
-            handsSystem.TryDrop(surgeon, scalpel, checkActionBlocker: false);
-            handsSystem.TryPickupAnyHand(surgeon, hemostat, checkActionBlocker: false);
-            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, "ClampBleeders", SurgeryLayer.Tissue, false);
-            entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
-            Assert.That(ev.Valid, Is.True, "ClampBleeders should succeed");
-        });
-        await pair.RunTicksSync(150);
-
-        await server.WaitPost(() =>
-        {
-            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, "MoveNerves", SurgeryLayer.Tissue, false);
-            entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
-            Assert.That(ev.Valid, Is.True, "MoveNerves should succeed");
-        });
-        await pair.RunTicksSync(150);
-
-        // Try SawBones with only hemostat - should be rejected (hemostat has ManipulatingTool, SawBones requires SawingTool)
+        // Try CutBone with only scalpel - should be rejected (CutBone requires SawingTool)
         await server.WaitAssertion(() =>
         {
-            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, "SawBones", SurgeryLayer.Tissue, false);
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"CutBone", SurgeryLayer.Tissue, false);
             entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
 
-            Assert.That(ev.Valid, Is.False, "SawBones should be rejected when only holding hemostat");
+            Assert.That(ev.Valid, Is.False, "CutBone should be rejected when only holding scalpel");
             Assert.That(ev.RejectReason, Is.EqualTo("missing-tool"), "Reject reason should be missing-tool");
         });
 
@@ -137,10 +130,10 @@ public sealed class SurgeryFixesIntegrationTest : InteractionTest
     }
 
     /// <summary>
-    /// SawBones accepts any item with blunt damage (e.g. crowbar) as improvised tool with blunt-scaled speed.
+    /// CutBone accepts any item with blunt damage (e.g. crowbar) as improvised tool with blunt-scaled speed.
     /// </summary>
     [Test]
-    public async Task SawBones_WithCrowbar_Accepted()
+    public async Task CutBone_WithCrowbar_Accepted()
     {
         await using var pair = await PoolManager.GetServerClient(new PoolSettings
         {
@@ -179,10 +172,10 @@ public sealed class SurgeryFixesIntegrationTest : InteractionTest
 
         await pair.RunTicksSync(5);
 
-        // Open skin and tissue layers first
+        // Open skin layer first (CutBone requires CreateIncision, ClampVessels, RetractSkin)
         await server.WaitPost(() =>
         {
-            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, "CreateIncision", SurgeryLayer.Skin, false);
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"CreateIncision", SurgeryLayer.Skin, false);
             entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
             Assert.That(ev.Valid, Is.True, "CreateIncision should succeed");
         });
@@ -190,55 +183,39 @@ public sealed class SurgeryFixesIntegrationTest : InteractionTest
 
         await server.WaitPost(() =>
         {
-            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, "RetractSkin", SurgeryLayer.Skin, false);
+            handsSystem.TryDrop(surgeon, scalpel, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(surgeon, entityManager.SpawnEntity("Wirecutter", mapData.GridCoords), checkActionBlocker: false);
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"ClampVessels", SurgeryLayer.Skin, false);
+            entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
+            Assert.That(ev.Valid, Is.True, "ClampVessels should succeed");
+        });
+        await pair.RunTicksSync(150);
+
+        await server.WaitPost(() =>
+        {
+            handsSystem.TryDrop(surgeon, targetDropLocation: null, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(surgeon, entityManager.SpawnEntity("Retractor", mapData.GridCoords), checkActionBlocker: false);
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"RetractSkin", SurgeryLayer.Skin, false);
             entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
             Assert.That(ev.Valid, Is.True, "RetractSkin should succeed");
         });
         await pair.RunTicksSync(150);
 
+        // Swap retractor for crowbar
         await server.WaitPost(() =>
         {
-            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, "RetractTissue", SurgeryLayer.Tissue, false);
-            entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
-            Assert.That(ev.Valid, Is.True, "RetractTissue should succeed");
-        });
-        await pair.RunTicksSync(150);
-
-        var hemostat = EntityUid.Invalid;
-        await server.WaitPost(() =>
-        {
-            hemostat = entityManager.SpawnEntity("Hemostat", mapData.GridCoords);
-            handsSystem.TryDrop(surgeon, scalpel, checkActionBlocker: false);
-            handsSystem.TryPickupAnyHand(surgeon, hemostat, checkActionBlocker: false);
-            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, "ClampBleeders", SurgeryLayer.Tissue, false);
-            entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
-            Assert.That(ev.Valid, Is.True, "ClampBleeders should succeed");
-        });
-        await pair.RunTicksSync(150);
-
-        await server.WaitPost(() =>
-        {
-            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, "MoveNerves", SurgeryLayer.Tissue, false);
-            entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
-            Assert.That(ev.Valid, Is.True, "MoveNerves should succeed");
-        });
-        await pair.RunTicksSync(150);
-
-        // Swap hemostat for crowbar
-        await server.WaitPost(() =>
-        {
-            handsSystem.TryDrop(surgeon, hemostat, checkActionBlocker: false);
+            handsSystem.TryDrop(surgeon, targetDropLocation: null, checkActionBlocker: false);
             handsSystem.TryPickupAnyHand(surgeon, crowbar, checkActionBlocker: false);
         });
         await pair.RunTicksSync(5);
 
-        // SawBones with crowbar (BluntTool) should be accepted
+        // CutBone with crowbar (BluntTool) should be accepted as improvised
         await server.WaitAssertion(() =>
         {
-            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, "SawBones", SurgeryLayer.Tissue, false);
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"CutBone", SurgeryLayer.Tissue, false);
             entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
 
-            Assert.That(ev.Valid, Is.True, "SawBones should succeed when holding crowbar (deals blunt damage)");
+            Assert.That(ev.Valid, Is.True, "CutBone should succeed when holding crowbar (deals blunt damage)");
         });
 
         await pair.CleanReturnAsync();
@@ -257,16 +234,20 @@ public sealed class SurgeryFixesIntegrationTest : InteractionTest
 
         var analyzerNet = NetEntity.Invalid;
         var scalpelNet = NetEntity.Invalid;
+        var wirecutterNet = NetEntity.Invalid;
+        var retractorNet = NetEntity.Invalid;
         var sawNet = NetEntity.Invalid;
-        var hemostatNet = NetEntity.Invalid;
+        var cauteryNet = NetEntity.Invalid;
         var legNet = NetEntity.Invalid;
 
         await Server.WaitPost(() =>
         {
             var analyzer = SEntMan.SpawnEntity("HandheldHealthAnalyzer", SEntMan.GetCoordinates(TargetCoords));
             var scalpel = SEntMan.SpawnEntity("Scalpel", SEntMan.GetCoordinates(TargetCoords));
+            var wirecutter = SEntMan.SpawnEntity("Wirecutter", SEntMan.GetCoordinates(TargetCoords));
+            var retractor = SEntMan.SpawnEntity("Retractor", SEntMan.GetCoordinates(TargetCoords));
             var saw = SEntMan.SpawnEntity("Saw", SEntMan.GetCoordinates(TargetCoords));
-            var hemostat = SEntMan.SpawnEntity("Hemostat", SEntMan.GetCoordinates(TargetCoords));
+            var cautery = SEntMan.SpawnEntity("Cautery", SEntMan.GetCoordinates(TargetCoords));
             var leg = GetBodyPart(SEntMan, patient, "LegLeft");
 
             HandSys.TryPickupAnyHand(SPlayer, analyzer, checkActionBlocker: false);
@@ -274,8 +255,10 @@ public sealed class SurgeryFixesIntegrationTest : InteractionTest
 
             analyzerNet = SEntMan.GetNetEntity(analyzer);
             scalpelNet = SEntMan.GetNetEntity(scalpel);
+            wirecutterNet = SEntMan.GetNetEntity(wirecutter);
+            retractorNet = SEntMan.GetNetEntity(retractor);
             sawNet = SEntMan.GetNetEntity(saw);
-            hemostatNet = SEntMan.GetNetEntity(hemostat);
+            cauteryNet = SEntMan.GetNetEntity(cautery);
             legNet = SEntMan.GetNetEntity(leg);
         });
 
@@ -316,51 +299,49 @@ public sealed class SurgeryFixesIntegrationTest : InteractionTest
         await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "CreateIncision", SurgeryLayer.Skin, false), analyzerNet);
         await RunTicks(150);
 
+        await Server.WaitPost(() =>
+        {
+            HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
+            HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(wirecutterNet), checkActionBlocker: false);
+        });
+        await RunTicks(1);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "ClampVessels", SurgeryLayer.Skin, false), analyzerNet);
+        await RunTicks(150);
+
+        await Server.WaitPost(() =>
+        {
+            HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
+            HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(retractorNet), checkActionBlocker: false);
+        });
+        await RunTicks(1);
         await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "RetractSkin", SurgeryLayer.Skin, false), analyzerNet);
         await RunTicks(150);
 
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "RetractTissue", SurgeryLayer.Tissue, false), analyzerNet);
-        await RunTicks(150);
-
         await Server.WaitPost(() =>
         {
-            var scalpelUid = SEntMan.GetEntity(scalpelNet);
-            foreach (var hand in HandSys.EnumerateHands((SPlayer, Hands!)))
-            {
-                if (HandSys.TryGetHeldItem((SPlayer, Hands!), hand, out var held) && held == scalpelUid)
-                {
-                    HandSys.TrySetActiveHand((SPlayer, Hands!), hand);
-                    HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
-                    break;
-                }
-            }
-            HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(hemostatNet), checkActionBlocker: false);
-        });
-        await RunTicks(1);
-
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "ClampBleeders", SurgeryLayer.Tissue, false), analyzerNet);
-        await RunTicks(150);
-
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "MoveNerves", SurgeryLayer.Tissue, false), analyzerNet);
-        await RunTicks(150);
-
-        await Server.WaitPost(() =>
-        {
-            var hemostatUid = SEntMan.GetEntity(hemostatNet);
-            foreach (var hand in HandSys.EnumerateHands((SPlayer, Hands!)))
-            {
-                if (HandSys.TryGetHeldItem((SPlayer, Hands!), hand, out var held) && held == hemostatUid)
-                {
-                    HandSys.TrySetActiveHand((SPlayer, Hands!), hand);
-                    HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
-                    break;
-                }
-            }
+            HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
             HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(sawNet), checkActionBlocker: false);
         });
         await RunTicks(1);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "CutBone", SurgeryLayer.Tissue, false), analyzerNet);
+        await RunTicks(150);
 
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "SawBones", SurgeryLayer.Tissue, false), analyzerNet);
+        await Server.WaitPost(() =>
+        {
+            HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
+            HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(cauteryNet), checkActionBlocker: false);
+        });
+        await RunTicks(1);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "MarrowBleeding", SurgeryLayer.Tissue, false), analyzerNet);
+        await RunTicks(150);
+
+        await Server.WaitPost(() =>
+        {
+            HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
+            HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(retractorNet), checkActionBlocker: false);
+        });
+        await RunTicks(1);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "RetractTissue", SurgeryLayer.Tissue, false), analyzerNet);
         await RunTicks(150);
 
         await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "DetachLimb", SurgeryLayer.Organ, false), analyzerNet);

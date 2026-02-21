@@ -1,4 +1,6 @@
 using Content.Shared.DoAfter;
+using Content.Shared.Medical.Surgery.Prototypes;
+using Robust.Shared.Prototypes;
 using Robust.Shared.Serialization;
 
 namespace Content.Shared.Medical.Surgery.Events;
@@ -10,7 +12,7 @@ public sealed partial class SurgeryDoAfterEvent : DoAfterEvent
     public NetEntity BodyPart { get; private set; }
 
     [DataField(required: true)]
-    public string StepId { get; private set; } = default!;
+    public ProtoId<SurgeryProcedurePrototype> ProcedureId { get; private set; }
 
     [DataField]
     public NetEntity? Organ { get; private set; }
@@ -22,13 +24,13 @@ public sealed partial class SurgeryDoAfterEvent : DoAfterEvent
     {
     }
 
-    public SurgeryDoAfterEvent(NetEntity bodyPart, string stepId, NetEntity? organ = null, bool isImprovised = false)
+    public SurgeryDoAfterEvent(NetEntity bodyPart, ProtoId<SurgeryProcedurePrototype> procedureId, NetEntity? organ = null, bool isImprovised = false)
     {
         BodyPart = bodyPart;
-        StepId = stepId;
+        ProcedureId = procedureId;
         Organ = organ;
         IsImprovised = isImprovised;
     }
 
-    public override DoAfterEvent Clone() => new SurgeryDoAfterEvent(BodyPart, StepId, Organ, IsImprovised);
+    public override DoAfterEvent Clone() => new SurgeryDoAfterEvent(BodyPart, ProcedureId, Organ, IsImprovised);
 }

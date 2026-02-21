@@ -94,6 +94,13 @@ public struct OrganInBodyPartData
 }
 
 [Serializable, NetSerializable]
+public struct OrganStepAvailability
+{
+    public string StepId;
+    public NetEntity Organ;
+}
+
+[Serializable, NetSerializable]
 public struct SurgeryProcedureState
 {
     public string StepId;
@@ -119,6 +126,21 @@ public struct SurgeryLayerStateData
     /// </summary>
     public List<string> AvailableStepIds;
 
+    /// <summary>
+    /// Full ordered list of skin step IDs for display. Unavailable steps shown greyed.
+    /// </summary>
+    public List<string> OrderedSkinStepIds;
+
+    /// <summary>
+    /// Full ordered list of tissue step IDs for display. Unavailable steps shown greyed.
+    /// </summary>
+    public List<string> OrderedTissueStepIds;
+
+    /// <summary>
+    /// Organ-qualified steps (stepId, organ) for organ removal/insertion procedures.
+    /// </summary>
+    public List<OrganStepAvailability> AvailableOrganSteps;
+
     public SurgeryLayerStateData()
     {
         SkinProcedures = new();
@@ -127,6 +149,9 @@ public struct SurgeryLayerStateData
         Organs = new();
         EmptySlots = new();
         AvailableStepIds = new();
+        OrderedSkinStepIds = new();
+        OrderedTissueStepIds = new();
+        AvailableOrganSteps = new();
     }
 
     public bool SkinRetracted => SkinOpen;

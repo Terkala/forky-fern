@@ -1,4 +1,6 @@
 using Content.Shared.Medical.Surgery;
+using Content.Shared.Medical.Surgery.Prototypes;
+using Robust.Shared.Prototypes;
 
 namespace Content.Shared.Medical.Surgery.Events;
 
@@ -12,7 +14,7 @@ public record struct SurgeryRequestEvent(
     EntityUid User,
     EntityUid Target,
     EntityUid BodyPart,
-    string StepId,
+    ProtoId<SurgeryProcedurePrototype> ProcedureId,
     SurgeryLayer Layer,
     bool IsImprovised,
     EntityUid? Organ = null)

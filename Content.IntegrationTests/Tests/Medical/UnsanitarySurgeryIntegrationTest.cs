@@ -10,6 +10,7 @@ using Content.Shared.Medical.Integrity.Events;
 using Content.Shared.Medical.Surgery;
 using Content.Shared.Medical.Surgery.Components;
 using Content.Shared.Medical.Surgery.Events;
+using Content.Shared.Medical.Surgery.Prototypes;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Prototypes;
 
@@ -50,12 +51,17 @@ public sealed class UnsanitarySurgeryIntegrationTest
         EntityUid scalpel = default;
         EntityUid torso = default;
 
+        EntityUid wirecutter = default;
+        EntityUid retractor = default;
+
         await server.WaitPost(() =>
         {
             surgeon = entityManager.SpawnEntity("MobHuman", mapData.GridCoords);
             patient = entityManager.SpawnEntity("MobHuman", mapData.GridCoords);
             analyzer = entityManager.SpawnEntity("HandheldHealthAnalyzer", mapData.GridCoords);
             scalpel = entityManager.SpawnEntity("Scalpel", mapData.GridCoords);
+            wirecutter = entityManager.SpawnEntity("Wirecutter", mapData.GridCoords);
+            retractor = entityManager.SpawnEntity("Retractor", mapData.GridCoords);
             torso = GetTorso(entityManager, patient);
 
             handsSystem.TryPickupAnyHand(surgeon, analyzer, checkActionBlocker: false);
@@ -64,10 +70,9 @@ public sealed class UnsanitarySurgeryIntegrationTest
 
         await pair.RunTicksSync(5);
 
-        // CreateIncision must be performed first to open the skin layer before RetractSkin
         await server.WaitPost(() =>
         {
-            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, "CreateIncision", SurgeryLayer.Skin, false);
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"CreateIncision", SurgeryLayer.Skin, false);
             entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
             Assert.That(ev.Valid, Is.True, $"CreateIncision should be valid. RejectReason: {ev.RejectReason}");
         });
@@ -76,7 +81,20 @@ public sealed class UnsanitarySurgeryIntegrationTest
 
         await server.WaitPost(() =>
         {
-            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, "RetractSkin", SurgeryLayer.Skin, false);
+            handsSystem.TryDrop(surgeon, targetDropLocation: null, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(surgeon, wirecutter, checkActionBlocker: false);
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"ClampVessels", SurgeryLayer.Skin, false);
+            entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
+            Assert.That(ev.Valid, Is.True, $"ClampVessels should be valid. RejectReason: {ev.RejectReason}");
+        });
+
+        await pair.RunTicksSync(150);
+
+        await server.WaitPost(() =>
+        {
+            handsSystem.TryDrop(surgeon, targetDropLocation: null, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(surgeon, retractor, checkActionBlocker: false);
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"RetractSkin", SurgeryLayer.Skin, false);
             entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
             Assert.That(ev.Valid, Is.True, $"RetractSkin should be valid. RejectReason: {ev.RejectReason}");
         });

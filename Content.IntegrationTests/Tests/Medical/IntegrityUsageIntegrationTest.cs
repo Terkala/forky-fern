@@ -6,6 +6,7 @@ using Content.Shared.Medical.Integrity;
 using Content.Shared.Medical.Integrity.Components;
 using Content.Shared.Medical.Integrity.Events;
 using Content.Shared.Medical.Surgery;
+using Content.Shared.Medical.Surgery.Prototypes;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Medical.Surgery.Components;
 using Content.Shared.Medical.Surgery.Events;
@@ -120,7 +121,27 @@ public sealed class IntegrityUsageIntegrationTest
 
         await server.WaitPost(() =>
         {
-            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, "RetractSkin", SurgeryLayer.Skin, false);
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"CreateIncision", SurgeryLayer.Skin, false);
+            entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
+            Assert.That(ev.Valid, Is.True, "CreateIncision should succeed");
+        });
+        await pair.RunTicksSync(150);
+
+        await server.WaitPost(() =>
+        {
+            handsSystem.TryDrop(surgeon, targetDropLocation: null, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(surgeon, entityManager.SpawnEntity("Wirecutter", mapData.GridCoords), checkActionBlocker: false);
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"ClampVessels", SurgeryLayer.Skin, false);
+            entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
+            Assert.That(ev.Valid, Is.True, "ClampVessels should succeed");
+        });
+        await pair.RunTicksSync(150);
+
+        await server.WaitPost(() =>
+        {
+            handsSystem.TryDrop(surgeon, targetDropLocation: null, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(surgeon, entityManager.SpawnEntity("Retractor", mapData.GridCoords), checkActionBlocker: false);
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"RetractSkin", SurgeryLayer.Skin, false);
             entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
             Assert.That(ev.Valid, Is.True, "RetractSkin should succeed");
         });
@@ -128,7 +149,29 @@ public sealed class IntegrityUsageIntegrationTest
 
         await server.WaitPost(() =>
         {
-            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, "RetractTissue", SurgeryLayer.Tissue, false);
+            handsSystem.TryDrop(surgeon, targetDropLocation: null, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(surgeon, saw, checkActionBlocker: false);
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"CutBone", SurgeryLayer.Tissue, false);
+            entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
+            Assert.That(ev.Valid, Is.True, "CutBone should succeed");
+        });
+        await pair.RunTicksSync(150);
+
+        await server.WaitPost(() =>
+        {
+            handsSystem.TryDrop(surgeon, targetDropLocation: null, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(surgeon, entityManager.SpawnEntity("Cautery", mapData.GridCoords), checkActionBlocker: false);
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"MarrowBleeding", SurgeryLayer.Tissue, false);
+            entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
+            Assert.That(ev.Valid, Is.True, "MarrowBleeding should succeed");
+        });
+        await pair.RunTicksSync(150);
+
+        await server.WaitPost(() =>
+        {
+            handsSystem.TryDrop(surgeon, targetDropLocation: null, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(surgeon, entityManager.SpawnEntity("Retractor", mapData.GridCoords), checkActionBlocker: false);
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"RetractTissue", SurgeryLayer.Tissue, false);
             entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
             Assert.That(ev.Valid, Is.True, "RetractTissue should succeed");
         });
@@ -136,24 +179,14 @@ public sealed class IntegrityUsageIntegrationTest
 
         await server.WaitPost(() =>
         {
-            handsSystem.TryDrop(surgeon, targetDropLocation: null, checkActionBlocker: false);
-            handsSystem.TryPickupAnyHand(surgeon, saw, checkActionBlocker: false);
-            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, "SawBones", SurgeryLayer.Tissue, false);
-            entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
-            Assert.That(ev.Valid, Is.True, "SawBones should succeed");
-        });
-        await pair.RunTicksSync(150);
-
-        await server.WaitPost(() =>
-        {
-            handsSystem.TryDrop(surgeon, targetDropLocation: null, checkActionBlocker: false);
+            handsSystem.TryDrop(surgeon, analyzer, checkActionBlocker: false);
             handsSystem.TryPickupAnyHand(surgeon, biosyntheticHeart, checkActionBlocker: false);
         });
         await pair.RunTicksSync(5);
 
         await server.WaitAssertion(() =>
         {
-            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, "InsertOrgan", SurgeryLayer.Organ, false, biosyntheticHeart);
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"InsertOrgan", SurgeryLayer.Organ, false, biosyntheticHeart);
             entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
 
             Assert.That(ev.Valid, Is.False, "InsertOrgan should be rejected when over capacity");
