@@ -54,6 +54,9 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
             return;
 
         EnsureCyberneticsMaintenanceComponent((body, Comp<BodyComponent>(body)));
+
+        var ev = new CyberLimbAttachedToBodyEvent(body);
+        RaiseLocalEvent(body, ref ev);
     }
 
     private void OnCyberLimbRemoved(Entity<CyberLimbComponent> ent, ref EntGotRemovedFromContainerMessage args)
@@ -66,6 +69,9 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
             return;
 
         RecalcCyberneticsMaintenanceComponent((body, Comp<BodyComponent>(body)));
+
+        var ev = new CyberLimbDetachedFromBodyEvent(body);
+        RaiseLocalEvent(body, ref ev);
     }
 
     private void EnsureCyberneticsMaintenanceComponent(Entity<BodyComponent> body)
@@ -171,6 +177,8 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
             _popup.PopupEntity(Loc.GetString("cyber-maintenance-secure"), body, args.User);
         }
 
+        var ev = new CyberMaintenanceStateChangedEvent(body);
+        RaiseLocalEvent(body, ref ev);
         Dirty(ent, comp);
     }
 
@@ -187,6 +195,8 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
             comp.PanelOpen = true;
             ApplyPenaltyToCyberLimbs(body, 1);
             _popup.PopupEntity(Loc.GetString("cyber-maintenance-open"), body, args.User);
+            var ev = new CyberMaintenanceStateChangedEvent(body);
+            RaiseLocalEvent(body, ref ev);
         }
         else if (comp.PanelOpen)
         {
@@ -194,6 +204,8 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
             comp.WiresInsertedCount = 0;
             RemovePenaltyFromCyberLimbs(body, 1);
             _popup.PopupEntity(Loc.GetString("cyber-maintenance-close"), body, args.User);
+            var ev = new CyberMaintenanceStateChangedEvent(body, PanelClosed: true);
+            RaiseLocalEvent(body, ref ev);
         }
 
         Dirty(ent, comp);
@@ -237,9 +249,13 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
         {
             args.Repeat = false;
             _popup.PopupEntity(Loc.GetString("cyber-maintenance-complete"), body, args.User);
+            var ev = new CyberMaintenanceStateChangedEvent(body, RepairCompleted: true);
+            RaiseLocalEvent(body, ref ev);
         }
         else
         {
+            var ev = new CyberMaintenanceStateChangedEvent(body);
+            RaiseLocalEvent(body, ref ev);
             args.Repeat = Exists(used) && TryComp<StackComponent>(used, out var s) && s.Count > 0;
         }
     }

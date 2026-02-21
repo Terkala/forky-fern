@@ -2,6 +2,7 @@ using Content.Server.Stack;
 using Content.Shared.Body;
 using Content.Shared.Body.Components;
 using Content.Shared.Cybernetics.Components;
+using Content.Shared.Cybernetics.Events;
 using Content.Shared.Storage;
 using Content.Shared.Storage.Components;
 using Content.Shared.Storage.EntitySystems;
@@ -13,6 +14,7 @@ namespace Content.Server.Cybernetics.Systems;
 
 public sealed class CyberLimbStorageSystem : EntitySystem
 {
+    [Dependency] private readonly BodySystem _body = default!;
     [Dependency] private readonly SharedContainerSystem _container = default!;
     [Dependency] private readonly StackSystem _stack = default!;
     [Dependency] private readonly UserInterfaceSystem _ui = default!;
@@ -22,6 +24,7 @@ public sealed class CyberLimbStorageSystem : EntitySystem
         base.Initialize();
 
         SubscribeLocalEvent<CyberLimbComponent, StorageInteractAttemptEvent>(OnStorageInteractAttempt);
+        SubscribeLocalEvent<CyberneticsMaintenanceComponent, CyberMaintenanceStateChangedEvent>(OnMaintenanceStateChanged);
         SubscribeLocalEvent<StorageComponent, EntGotInsertedIntoContainerMessage>(OnStorageInserted);
         SubscribeLocalEvent<CyberLimbComponent, ContainerIsInsertingAttemptEvent>(OnContainerInsertAttempt, before: [typeof(SharedStorageSystem)]);
     }
@@ -37,7 +40,26 @@ public sealed class CyberLimbStorageSystem : EntitySystem
         if (!HasComp<BodyComponent>(container.Owner) || container.ID != BodyComponent.ContainerID)
             return;
 
+        var body = container.Owner;
+        if (TryComp<CyberneticsMaintenanceComponent>(body, out var maint) && maint.PanelOpen)
+            return;
+
         args.Cancelled = true;
+    }
+
+    private void OnMaintenanceStateChanged(Entity<CyberneticsMaintenanceComponent> ent, ref CyberMaintenanceStateChangedEvent args)
+    {
+        if (!args.PanelClosed)
+            return;
+
+        var body = ent.Owner;
+        foreach (var organ in _body.GetAllOrgans(body))
+        {
+            if (!HasComp<CyberLimbComponent>(organ))
+                continue;
+
+            _ui.CloseUi(organ, StorageComponent.StorageUiKey.Key);
+        }
     }
 
     private void OnStorageInserted(Entity<StorageComponent> ent, ref EntGotInsertedIntoContainerMessage args)
