@@ -173,8 +173,18 @@ public sealed class CyberLimbStatsIntegrationTest
         await server.WaitPost(() =>
         {
             handsSystem.TryDrop(technician, targetDropLocation: null, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(technician, screwdriver, checkActionBlocker: false);
             handsSystem.TryPickupAnyHand(technician, wireStack, checkActionBlocker: false);
             var ev = new InteractUsingEvent(technician, wireStack, patient, coords);
+            entityManager.EventBus.RaiseLocalEvent(patient, ev);
+        });
+        await pair.RunTicksSync(doAfterTicks);
+
+        await server.WaitPost(() =>
+        {
+            handsSystem.TryDrop(technician, targetDropLocation: null, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(technician, wrench, checkActionBlocker: false);
+            var ev = new InteractUsingEvent(technician, wrench, patient, coords);
             entityManager.EventBus.RaiseLocalEvent(patient, ev);
         });
         await pair.RunTicksSync(doAfterTicks);
@@ -182,8 +192,8 @@ public sealed class CyberLimbStatsIntegrationTest
         await server.WaitAssertion(() =>
         {
             var stats = entityManager.GetComponent<CyberLimbStatsComponent>(patient);
-            Assert.That(stats.ServiceTimeRemaining, Is.GreaterThanOrEqualTo(stats.ServiceTimeMax - TimeSpan.FromSeconds(2)),
-                "ServiceTimeRemaining should be reset to near ServiceTimeMax after wire repair (allow 2s drain tolerance)");
+            Assert.That(stats.ServiceTimeRemaining, Is.GreaterThanOrEqualTo(stats.ServiceTimeMax - TimeSpan.FromSeconds(25)),
+                "ServiceTimeRemaining should be reset to near ServiceTimeMax after wire repair (allow ~25s drain during test DoAfters)");
         });
 
         await pair.CleanReturnAsync();
@@ -278,7 +288,17 @@ public sealed class CyberLimbStatsIntegrationTest
         await server.WaitAssertion(() =>
         {
             var comp = entityManager.GetComponent<CyberneticsMaintenanceComponent>(patient);
-            Assert.That(comp.PanelExposed, Is.True, "Panel should be exposed after screwdriver");
+            Assert.That(comp.PanelOpen, Is.True, "Panel should be open after screwdriver");
+            Assert.That(comp.BoltsTight, Is.True, "Bolts should be tight");
+            storageSystem.OpenStorageUI(cyberArm, technician, silent: true);
+        });
+
+        await pair.RunTicksSync(5);
+
+        await server.WaitAssertion(() =>
+        {
+            Assert.That(userInterface.IsUiOpen(cyberArm, StorageComponent.StorageUiKey.Key, technician), Is.True,
+                "Storage UI should be open when panel is open and bolts are tight");
         });
 
         await server.WaitPost(() =>
@@ -293,28 +313,7 @@ public sealed class CyberLimbStatsIntegrationTest
         await server.WaitAssertion(() =>
         {
             var comp = entityManager.GetComponent<CyberneticsMaintenanceComponent>(patient);
-            Assert.That(comp.PanelOpen, Is.True, "Panel should be open after wrench");
-            storageSystem.OpenStorageUI(cyberArm, technician, silent: true);
-        });
-
-        await pair.RunTicksSync(5);
-
-        await server.WaitAssertion(() =>
-        {
-            Assert.That(userInterface.IsUiOpen(cyberArm, StorageComponent.StorageUiKey.Key, technician), Is.True,
-                "Storage UI should be open when panel is open");
-        });
-
-        await server.WaitPost(() =>
-        {
-            var ev = new InteractUsingEvent(technician, wrench, patient, coords);
-            entityManager.EventBus.RaiseLocalEvent(patient, ev);
-        });
-        await pair.RunTicksSync(150);
-
-        await server.WaitAssertion(() =>
-        {
-            Assert.That(entityManager.GetComponent<CyberneticsMaintenanceComponent>(patient).PanelOpen, Is.False);
+            Assert.That(comp.BoltsTight, Is.False, "Bolts should be loose after wrench");
             storageSystem.OpenStorageUI(cyberArm, technician, silent: true);
         });
 
@@ -323,7 +322,7 @@ public sealed class CyberLimbStatsIntegrationTest
         await server.WaitAssertion(() =>
         {
             Assert.That(userInterface.IsUiOpen(cyberArm, StorageComponent.StorageUiKey.Key, technician), Is.False,
-                "Storage UI should not open when panel is closed");
+                "Storage UI should not open when bolts are loose");
         });
 
         await pair.CleanReturnAsync();
@@ -379,22 +378,7 @@ public sealed class CyberLimbStatsIntegrationTest
         await server.WaitAssertion(() =>
         {
             var comp = entityManager.GetComponent<CyberneticsMaintenanceComponent>(patient);
-            Assert.That(comp.PanelExposed, Is.True, "Panel should be exposed after screwdriver");
-        });
-
-        await server.WaitPost(() =>
-        {
-            handsSystem.TryDrop(technician, targetDropLocation: null, checkActionBlocker: false);
-            handsSystem.TryPickupAnyHand(technician, wrench, checkActionBlocker: false);
-            var ev = new InteractUsingEvent(technician, wrench, patient, coords);
-            entityManager.EventBus.RaiseLocalEvent(patient, ev);
-        });
-        await pair.RunTicksSync(150);
-
-        await server.WaitAssertion(() =>
-        {
-            var comp = entityManager.GetComponent<CyberneticsMaintenanceComponent>(patient);
-            Assert.That(comp.PanelOpen, Is.True, "Panel should be open before opening storage UI");
+            Assert.That(comp.PanelOpen, Is.True, "Panel should be open after screwdriver");
             storageSystem.OpenStorageUI(cyberArm, technician, silent: true);
         });
 
@@ -408,7 +392,9 @@ public sealed class CyberLimbStatsIntegrationTest
 
         await server.WaitPost(() =>
         {
-            var ev = new InteractUsingEvent(technician, wrench, patient, coords);
+            handsSystem.TryDrop(technician, targetDropLocation: null, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(technician, screwdriver, checkActionBlocker: false);
+            var ev = new InteractUsingEvent(technician, screwdriver, patient, coords);
             entityManager.EventBus.RaiseLocalEvent(patient, ev);
         });
         await pair.RunTicksSync(150);

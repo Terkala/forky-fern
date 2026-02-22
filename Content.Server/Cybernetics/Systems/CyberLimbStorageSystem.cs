@@ -41,7 +41,7 @@ public sealed class CyberLimbStorageSystem : EntitySystem
             return;
 
         var body = container.Owner;
-        if (TryComp<CyberneticsMaintenanceComponent>(body, out var maint) && maint.PanelOpen)
+        if (TryComp<CyberneticsMaintenanceComponent>(body, out var maint) && maint.PanelOpen && maint.BoltsTight)
             return;
 
         args.Cancelled = true;
@@ -49,7 +49,7 @@ public sealed class CyberLimbStorageSystem : EntitySystem
 
     private void OnMaintenanceStateChanged(Entity<CyberneticsMaintenanceComponent> ent, ref CyberMaintenanceStateChangedEvent args)
     {
-        if (!args.PanelClosed)
+        if (!args.PanelClosed && !args.BoltsLoosened)
             return;
 
         var body = ent.Owner;

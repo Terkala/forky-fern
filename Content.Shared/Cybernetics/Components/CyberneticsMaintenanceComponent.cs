@@ -9,16 +9,20 @@ namespace Content.Shared.Cybernetics.Components;
 public sealed partial class CyberneticsMaintenanceComponent : Component
 {
     [DataField]
-    public bool PanelExposed { get; set; }
-
-    [DataField]
     public bool PanelOpen { get; set; }
 
     [DataField]
     public bool PanelSecured { get; set; } = true;
 
     /// <summary>
-    /// Number of wires inserted in the current repair session. Resets when panel is closed.
+    /// When true, storage is accessible. When false, bolts are loose and wire repair is required.
+    /// </summary>
+    [DataField]
+    public bool BoltsTight { get; set; } = true;
+
+    /// <summary>
+    /// Number of wires inserted in the current repair session. Persists when panel is closed early;
+    /// only resets when wrench tightens after all wires inserted (repair complete).
     /// </summary>
     [DataField]
     public int WiresInsertedCount { get; set; }

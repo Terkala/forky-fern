@@ -4,6 +4,7 @@ using Content.Shared.Body.Components;
 using Content.Shared.Cybernetics.Components;
 using Content.Shared.Cybernetics.Events;
 using Content.Shared.DoAfter;
+using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Interaction;
 using Content.Shared.Interaction.Events;
 using Content.Shared.Medical.Integrity.Events;
@@ -22,6 +23,7 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
 {
     [Dependency] private readonly BodySystem _body = default!;
     [Dependency] private readonly SharedDoAfterSystem _doAfter = default!;
+    [Dependency] private readonly SharedHandsSystem _hands = default!;
     [Dependency] private readonly SharedPopupSystem _popup = default!;
     [Dependency] private readonly SharedStackSystem _stack = default!;
     [Dependency] private readonly SharedToolSystem _tool = default!;
@@ -106,7 +108,7 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
 
         if (_tool.HasQuality(used, "Screwing"))
         {
-            if (comp.PanelSecured || (comp.PanelExposed && !comp.PanelOpen))
+            if (comp.PanelSecured || comp.PanelOpen)
             {
                 args.Handled = _tool.UseTool(used, user, body, ScrewdriverDelay, "Screwing", new CyberneticsScrewdriverDoAfterEvent());
             }
@@ -115,8 +117,17 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
 
         if (_tool.HasQuality(used, "Anchoring"))
         {
-            if ((comp.PanelExposed && !comp.PanelOpen) || comp.PanelOpen)
+            if (comp.PanelOpen)
             {
+                if (!comp.BoltsTight)
+                {
+                    var cyberCount = _body.GetAllOrgans(body).Count(o => HasComp<CyberLimbComponent>(o));
+                    if (comp.WiresInsertedCount < cyberCount)
+                    {
+                        _popup.PopupClient(Loc.GetString("cyber-maintenance-wires-must-be-replaced"), body, user);
+                        return;
+                    }
+                }
                 args.Handled = _tool.UseTool(used, user, body, WrenchDelay, "Anchoring", new CyberneticsWrenchDoAfterEvent());
             }
             return;
@@ -127,6 +138,11 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
             if (!comp.PanelOpen)
             {
                 _popup.PopupClient(Loc.GetString("cyber-maintenance-panel-closed"), body, user);
+                return;
+            }
+            if (comp.BoltsTight)
+            {
+                _popup.PopupClient(Loc.GetString("cyber-maintenance-bolts-must-be-loosened"), body, user);
                 return;
             }
 
@@ -143,7 +159,26 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
                 return;
             }
 
-            var doAfterArgs = new DoAfterArgs(EntityManager, user, TimeSpan.FromSeconds(WireInsertDelay), new CyberneticsWireInsertDoAfterEvent(), body, body, used)
+            EntityUid? screwdriver = null;
+            foreach (var held in _hands.EnumerateHeld(user))
+            {
+                if (held == used)
+                    continue;
+                if (_tool.HasQuality(held, "Screwing"))
+                {
+                    screwdriver = held;
+                    break;
+                }
+            }
+
+            if (screwdriver == null)
+            {
+                _popup.PopupClient(Loc.GetString("cyber-maintenance-need-screwdriver"), body, user);
+                return;
+            }
+
+            var isPrecision = _tool.HasQuality(screwdriver.Value, "PrecisionScrewing");
+            var doAfterArgs = new DoAfterArgs(EntityManager, user, TimeSpan.FromSeconds(WireInsertDelay), new CyberneticsWireInsertDoAfterEvent(isPrecision, GetNetEntity(screwdriver.Value)), body, body, used)
             {
                 BreakOnDropItem = true,
                 BreakOnMove = true,
@@ -164,20 +199,21 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
 
         if (comp.PanelSecured)
         {
-            comp.PanelExposed = true;
             comp.PanelSecured = false;
+            comp.PanelOpen = true;
+            comp.BoltsTight = true;
             ApplyPenaltyToCyberLimbs(body, 1);
-            _popup.PopupEntity(Loc.GetString("cyber-maintenance-expose"), body, args.User);
+            _popup.PopupEntity(Loc.GetString("cyber-maintenance-open-panel"), body, args.User);
         }
-        else if (comp.PanelExposed && !comp.PanelOpen)
+        else if (comp.PanelOpen)
         {
-            comp.PanelExposed = false;
             comp.PanelSecured = true;
+            comp.PanelOpen = false;
             RemovePenaltyFromCyberLimbs(body, 1);
-            _popup.PopupEntity(Loc.GetString("cyber-maintenance-secure"), body, args.User);
+            _popup.PopupEntity(Loc.GetString("cyber-maintenance-lock-panel"), body, args.User);
         }
 
-        var ev = new CyberMaintenanceStateChangedEvent(body);
+        var ev = new CyberMaintenanceStateChangedEvent(body, PanelClosed: comp.PanelSecured);
         RaiseLocalEvent(body, ref ev);
         Dirty(ent, comp);
     }
@@ -190,21 +226,31 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
         var comp = ent.Comp;
         var body = ent.Owner;
 
-        if (comp.PanelExposed && !comp.PanelOpen)
+        if (!comp.PanelOpen)
+            return;
+
+        if (comp.BoltsTight)
         {
-            comp.PanelOpen = true;
+            comp.BoltsTight = false;
             ApplyPenaltyToCyberLimbs(body, 1);
-            _popup.PopupEntity(Loc.GetString("cyber-maintenance-open"), body, args.User);
-            var ev = new CyberMaintenanceStateChangedEvent(body);
+            _popup.PopupEntity(Loc.GetString("cyber-maintenance-loosen-bolts"), body, args.User);
+            var ev = new CyberMaintenanceStateChangedEvent(body, BoltsLoosened: true);
             RaiseLocalEvent(body, ref ev);
         }
-        else if (comp.PanelOpen)
+        else
         {
-            comp.PanelOpen = false;
+            var cyberCount = _body.GetAllOrgans(body).Count(o => HasComp<CyberLimbComponent>(o));
+            if (comp.WiresInsertedCount < cyberCount)
+            {
+                _popup.PopupClient(Loc.GetString("cyber-maintenance-wires-must-be-replaced"), body, args.User);
+                return;
+            }
+
+            comp.BoltsTight = true;
             comp.WiresInsertedCount = 0;
             RemovePenaltyFromCyberLimbs(body, 1);
-            _popup.PopupEntity(Loc.GetString("cyber-maintenance-close"), body, args.User);
-            var ev = new CyberMaintenanceStateChangedEvent(body, PanelClosed: true);
+            _popup.PopupEntity(Loc.GetString("cyber-maintenance-tighten-bolts"), body, args.User);
+            var ev = new CyberMaintenanceStateChangedEvent(body, RepairCompleted: true);
             RaiseLocalEvent(body, ref ev);
         }
 
@@ -220,7 +266,7 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
         var body = ent.Owner;
         var used = args.Used;
 
-        if (!comp.PanelOpen)
+        if (!comp.PanelOpen || comp.BoltsTight)
             return;
 
         var cyberCount = _body.GetAllOrgans(body).Count(o => HasComp<CyberLimbComponent>(o));
@@ -245,11 +291,57 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
         comp.WiresInsertedCount++;
         Dirty(ent, comp);
 
+        // Use event value; fallback to screwdriver entity or re-check hands at completion (event data may be lost during DoAfter replication)
+        var isPrecision = args.IsPrecisionScrewing;
+        if (!isPrecision && args.ScrewdriverEntity is { } netScrewdriver)
+        {
+            if (TryGetEntity(netScrewdriver, out var screwdriverEnt) && _tool.HasQuality(screwdriverEnt.Value, "PrecisionScrewing"))
+                isPrecision = true;
+        }
+        if (!isPrecision)
+        {
+            foreach (var held in _hands.EnumerateHeld(args.User))
+            {
+                if (held == used)
+                    continue;
+                if (_tool.HasQuality(held, "Screwing"))
+                {
+                    isPrecision = _tool.HasQuality(held, "PrecisionScrewing");
+                    break;
+                }
+            }
+        }
+
+        if (isPrecision)
+        {
+            foreach (var organ in _body.GetAllOrgans(body))
+            {
+                if (HasComp<CyberLimbComponent>(organ) && HasComp<LowQualityMaintenancePenaltyComponent>(organ))
+                {
+                    var ev = new SurgeryPenaltyRemovedEvent(organ, 2);
+                    RaiseLocalEvent(organ, ref ev);
+                    RemComp<LowQualityMaintenancePenaltyComponent>(organ);
+                }
+            }
+        }
+        else
+        {
+            foreach (var organ in _body.GetAllOrgans(body))
+            {
+                if (HasComp<CyberLimbComponent>(organ))
+                {
+                    EnsureComp<LowQualityMaintenancePenaltyComponent>(organ);
+                    var ev = new SurgeryPenaltyAppliedEvent(organ, 2);
+                    RaiseLocalEvent(organ, ref ev);
+                }
+            }
+        }
+
         if (comp.WiresInsertedCount >= cyberCount)
         {
             args.Repeat = false;
-            _popup.PopupEntity(Loc.GetString("cyber-maintenance-complete"), body, args.User);
-            var ev = new CyberMaintenanceStateChangedEvent(body, RepairCompleted: true);
+            _popup.PopupEntity(Loc.GetString("cyber-maintenance-wires-complete"), body, args.User);
+            var ev = new CyberMaintenanceStateChangedEvent(body);
             RaiseLocalEvent(body, ref ev);
         }
         else

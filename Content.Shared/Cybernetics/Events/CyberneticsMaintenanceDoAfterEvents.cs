@@ -10,4 +10,23 @@ public sealed partial class CyberneticsScrewdriverDoAfterEvent : SimpleDoAfterEv
 public sealed partial class CyberneticsWrenchDoAfterEvent : SimpleDoAfterEvent;
 
 [Serializable, NetSerializable]
-public sealed partial class CyberneticsWireInsertDoAfterEvent : SimpleDoAfterEvent;
+public sealed partial class CyberneticsWireInsertDoAfterEvent : DoAfterEvent
+{
+    [DataField]
+    public bool IsPrecisionScrewing { get; private set; }
+
+    [DataField]
+    public NetEntity? ScrewdriverEntity { get; private set; }
+
+    private CyberneticsWireInsertDoAfterEvent()
+    {
+    }
+
+    public CyberneticsWireInsertDoAfterEvent(bool isPrecisionScrewing, NetEntity? screwdriverEntity = null)
+    {
+        IsPrecisionScrewing = isPrecisionScrewing;
+        ScrewdriverEntity = screwdriverEntity;
+    }
+
+    public override DoAfterEvent Clone() => new CyberneticsWireInsertDoAfterEvent(IsPrecisionScrewing, ScrewdriverEntity);
+}
