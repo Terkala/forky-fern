@@ -118,7 +118,7 @@ public sealed class CyberLimbInspectionIntegrationTest
 
             var total = ev.GetTotalMessage();
             var text = total.ToString();
-            Assert.That(text, Does.Contain("Screwdriver"), "Examine text should contain installed module name");
+            Assert.That(text, Does.Contain("screwdriver").IgnoreCase, "Examine text should contain installed module name");
             Assert.That(text, Does.Contain("Installed modules"), "Examine text should contain modules label");
         });
 

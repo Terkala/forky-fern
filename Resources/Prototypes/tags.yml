@@ -1549,6 +1549,9 @@
   id: ManipulatingTool # ClampBleeders, retractor steps
 
 - type: Tag
+  id: HemostatTool # ReconnectVessels - hemostat only (excludes retractor)
+
+- type: Tag
   id: PryingTool # Crowbar, retractor - hold open, release steps
 
 - type: Tag

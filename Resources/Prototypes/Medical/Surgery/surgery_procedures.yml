@@ -88,7 +88,7 @@
   name: health-analyzer-surgery-step-reconnect-vessels
   penalty: 0
   primaryTool:
-    tag: ManipulatingTool
+    tag: HemostatTool
     doAfterDelay: 2
     healAmount:
       types:
@@ -241,19 +241,19 @@
     - type: RequireStepPerformed
       procedure: CutBone
 
-# === Organ layer - removal (3 steps per organ) ===
+# === Organ layer - removal (4 steps per organ) ===
 
 - type: surgeryProcedure
-  id: OrganRemovalRetractor
+  id: OrganClampVessels
   layer: Organ
-  name: health-analyzer-surgery-step-organ-removal-retractor
+  name: health-analyzer-surgery-step-clamp-vessels
   penalty: 0
   primaryTool:
-    tag: Wirecutter
+    tag: ManipulatingTool
     doAfterDelay: 3
-    sound: /Audio/Weapons/bladeslice.ogg
+    sound: /Audio/Items/drill_hit.ogg
   improvisedTools:
-    - tag: ManipulatingTool
+    - tag: Wirecutter
       delayMultiplier: 1.5
   prerequisites:
     - type: RequireLayerOpen
@@ -274,7 +274,7 @@
       delayMultiplier: 1.5
   prerequisites:
     - type: RequireStepPerformed
-      procedure: OrganRemovalRetractor
+      procedure: OrganClampVessels
   triggersOrganRemoval: false
 
 - type: surgeryProcedure
@@ -292,7 +292,22 @@
   prerequisites:
     - type: RequireStepPerformed
       procedure: OrganRemovalScalpel
+  triggersOrganRemoval: false
+
+- type: surgeryProcedure
+  id: RemoveOrgan
+  layer: Organ
+  name: health-analyzer-surgery-step-remove-organ
+  penalty: 0
+  requiresTool: false
+  primaryTool:
+    tag: SurgeryTool
+    doAfterDelay: 1
+  improvisedTools: []
   triggersOrganRemoval: true
+  prerequisites:
+    - type: RequireStepPerformed
+      procedure: OrganRemovalHemostat
 
 # === Organ layer - insertion ===
 
@@ -301,6 +316,7 @@
   layer: Organ
   name: health-analyzer-surgery-step-insert-organ
   penalty: 0
+  requiresTool: false
   primaryTool:
     tag: SurgeryTool
     doAfterDelay: 3
@@ -387,7 +403,7 @@
         Slash: 3
     sound: /Audio/Weapons/bladeslice.ogg
   improvisedTools:
-    - tag: SurgeryTool
+    - damageType: Slash
       delayMultiplier: 1.5
   prerequisites:
     - type: RequireLayerOpen
@@ -416,15 +432,16 @@
   layer: Organ
   name: health-analyzer-surgery-step-detach-foot
   penalty: 0
-  requiresTool: false
   primaryTool:
-    tag: SurgeryTool
+    tag: CuttingTool
     doAfterDelay: 2
     damage:
       types:
         Slash: 2
     sound: /Audio/Weapons/bladeslice.ogg
-  improvisedTools: []
+  improvisedTools:
+    - damageType: Slash
+      delayMultiplier: 1.5
   triggersOrganRemoval: true
   prerequisites:
     - type: RequireLayerOpen

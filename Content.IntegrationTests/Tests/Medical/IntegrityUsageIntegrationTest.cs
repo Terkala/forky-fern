@@ -71,7 +71,7 @@ public sealed class IntegrityUsageIntegrationTest
     }
 
     [Test]
-    public async Task InsertOrgan_OverCapacity_Rejected()
+    public async Task InsertOrgan_OverCapacity_Succeeds()
     {
         await using var pair = await PoolManager.GetServerClient(new PoolSettings
         {
@@ -189,8 +189,7 @@ public sealed class IntegrityUsageIntegrationTest
             var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"InsertOrgan", SurgeryLayer.Organ, false, biosyntheticHeart);
             entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
 
-            Assert.That(ev.Valid, Is.False, "InsertOrgan should be rejected when over capacity");
-            Assert.That(ev.RejectReason, Is.EqualTo("integrity-over-capacity"));
+            Assert.That(ev.Valid, Is.True, "InsertOrgan should succeed even when over capacity; bio-rejection applies instead");
         });
 
         await pair.CleanReturnAsync();

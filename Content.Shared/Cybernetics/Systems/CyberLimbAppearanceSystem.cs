@@ -16,8 +16,14 @@ public sealed class CyberLimbAppearanceSystem : EntitySystem
     {
         ["ArmLeft"] = [(HumanoidVisualLayers.LArm, "MobCyberLArm"), (HumanoidVisualLayers.LHand, "MobCyberLHand")],
         ["ArmRight"] = [(HumanoidVisualLayers.RArm, "MobCyberRArm"), (HumanoidVisualLayers.RHand, "MobCyberRHand")],
-        ["LegLeft"] = [(HumanoidVisualLayers.LLeg, "MobCyberLLeg"), (HumanoidVisualLayers.LFoot, "MobCyberLFoot")],
-        ["LegRight"] = [(HumanoidVisualLayers.RLeg, "MobCyberRLeg"), (HumanoidVisualLayers.RFoot, "MobCyberRFoot")],
+        ["LegLeft"] = [(HumanoidVisualLayers.LLeg, "MobCyberLLeg")],
+        ["LegRight"] = [(HumanoidVisualLayers.RLeg, "MobCyberRLeg")],
+    };
+
+    private static readonly IReadOnlyDictionary<string, HumanoidVisualLayers[]> CategoryToFootLayers = new Dictionary<string, HumanoidVisualLayers[]>
+    {
+        ["LegLeft"] = [HumanoidVisualLayers.LFoot],
+        ["LegRight"] = [HumanoidVisualLayers.RFoot],
     };
 
     [Dependency] private readonly SharedHumanoidAppearanceSystem _humanoid = default!;
@@ -49,6 +55,12 @@ public sealed class CyberLimbAppearanceSystem : EntitySystem
             {
                 _humanoid.SetBaseLayerId(body, layer, id, humanoid: humanoid);
             }
+
+            // Hide the separate foot layer when using combined-foot leg sprite (avoids double-drawing)
+            if (CategoryToFootLayers.TryGetValue(categoryStr, out var footLayers))
+            {
+                _humanoid.SetLayersVisibility((body, humanoid), footLayers, visible: false);
+            }
         }
 
         if (TryComp<AppearanceComponent>(body, out var appearance))
@@ -57,6 +69,7 @@ public sealed class CyberLimbAppearanceSystem : EntitySystem
             {
                 _appearance.SetData(body, layer, DamageOverlayLayerState.BloodDisabled, appearance);
             }
+            _appearance.SetData(body, DamageVisualizerKeys.ForceUpdate, true, appearance);
         }
     }
 
@@ -79,6 +92,13 @@ public sealed class CyberLimbAppearanceSystem : EntitySystem
             {
                 humanoid.CustomBaseLayers.Remove(layer);
             }
+
+            // Restore foot layer visibility when removing cyber leg
+            if (CategoryToFootLayers.TryGetValue(categoryStr, out var footLayers))
+            {
+                _humanoid.SetLayersVisibility((body, humanoid), footLayers, visible: true);
+            }
+
             Dirty(body, humanoid);
         }
 

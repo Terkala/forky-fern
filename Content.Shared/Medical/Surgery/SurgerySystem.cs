@@ -325,20 +325,6 @@ public sealed class SurgerySystem : EntitySystem
                 args.RejectReason = "limb-not-in-hand";
                 return;
             }
-            var limbCostEv = new IntegrityCostRequestEvent(args.Organ.Value);
-            RaiseLocalEvent(args.Organ.Value, ref limbCostEv);
-            if (limbCostEv.Cost > 0)
-            {
-                var penaltyEv = new IntegrityPenaltyTotalRequestEvent(ent.Owner);
-                RaiseLocalEvent(ent.Owner, ref penaltyEv);
-                var usage = TryComp<IntegrityUsageComponent>(ent.Owner, out var usageComp) ? usageComp.Usage : 0;
-                var maxIntegrity = TryComp<IntegrityCapacityComponent>(ent.Owner, out var cap) ? cap.MaxIntegrity : 6;
-                if (usage + penaltyEv.Total + limbCostEv.Cost > maxIntegrity)
-                {
-                    args.RejectReason = "integrity-over-capacity";
-                    return;
-                }
-            }
         }
 
         var triggersOrganRemoval = procedure?.TriggersOrganRemoval ?? args.ProcedureId == "RemoveOrgan";
@@ -423,21 +409,6 @@ public sealed class SurgerySystem : EntitySystem
                     return;
                 }
             }
-
-            var costEv = new IntegrityCostRequestEvent(args.Organ.Value);
-            RaiseLocalEvent(args.Organ.Value, ref costEv);
-            if (costEv.Cost > 0)
-            {
-                var penaltyEv = new IntegrityPenaltyTotalRequestEvent(ent.Owner);
-                RaiseLocalEvent(ent.Owner, ref penaltyEv);
-                var usage = TryComp<IntegrityUsageComponent>(ent.Owner, out var usageComp) ? usageComp.Usage : 0;
-                var maxIntegrity = TryComp<IntegrityCapacityComponent>(ent.Owner, out var cap) ? cap.MaxIntegrity : 6;
-                if (usage + penaltyEv.Total + costEv.Cost > maxIntegrity)
-                {
-                    args.RejectReason = "integrity-over-capacity";
-                    return;
-                }
-            }
         }
 
         var stepRequestEv = new SurgeryStepRequestEvent(args.User, ent.Owner, args.ProcedureId, args.Layer, args.Organ, stepsConfig);
@@ -451,11 +422,18 @@ public sealed class SurgerySystem : EntitySystem
         args.UsedImprovisedTool = isImprovised;
         args.ToolUsed = tool;
 
-        // InsertOrgan/RemoveOrgan/AttachLimb/organ removal procedures: organ/limb is in hand - use it as DoAfter "used" for tracking.
-        // Organ removal procedures (Retractor/Scalpel/Hemostat) also get relaxed DoAfter break conditions since they target an organ in-body.
+        // InsertOrgan/AttachLimb: organ/limb is in hand - use it as DoAfter "used" for tracking.
+        // RemoveOrgan and organ removal procedures (Retractor/Scalpel/Hemostat): organ is in-body. Use body part as DoAfter "used"
+        // so InRangeUnobstructed succeeds (organ inside body would block the ray from user to organ).
         var isOrganStep = args.ProcedureId == "InsertOrgan" || args.ProcedureId == "AttachLimb" || triggersOrganRemoval || isOrganRemovalProc;
+        var isOrganInBody = args.ProcedureId == "RemoveOrgan" || isOrganRemovalProc;
         if (isOrganStep && args.Organ.HasValue)
-            tool = args.Organ.Value;
+        {
+            if (isOrganInBody)
+                tool = args.BodyPart; // Organ in body - use body part for range check
+            else
+                tool = args.Organ.Value;
+        }
 
         var doAfterEv = new SurgeryDoAfterEvent(GetNetEntity(args.BodyPart), args.ProcedureId, args.Organ.HasValue ? GetNetEntity(args.Organ.Value) : null, isImprovised);
         var delayMultiplier = 1f;
@@ -669,6 +647,8 @@ public sealed class SurgerySystem : EntitySystem
                     Dirty(bodyPart, layerComp);
                 var penaltyEv = new SurgeryPenaltyAppliedEvent(bodyPart, penalty);
                 RaiseLocalEvent(bodyPart, ref penaltyEv);
+                var uiRefreshEv = new SurgeryUiRefreshRequestEvent();
+                RaiseLocalEvent(ent.Owner, ref uiRefreshEv);
             }
         }
         else if (stepId == "InsertOrgan")
@@ -701,6 +681,8 @@ public sealed class SurgerySystem : EntitySystem
                 Dirty(bodyPart, layerComp);
                 var penaltyEv = new SurgeryPenaltyAppliedEvent(bodyPart, penalty);
                 RaiseLocalEvent(bodyPart, ref penaltyEv);
+                var uiRefreshEv = new SurgeryUiRefreshRequestEvent();
+                RaiseLocalEvent(ent.Owner, ref uiRefreshEv);
             }
             else
                 _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-slot-filled"), user, user, PopupType.Medium);
@@ -725,6 +707,8 @@ public sealed class SurgerySystem : EntitySystem
                 Dirty(bodyPart, layerComp);
                 var penaltyEv = new SurgeryPenaltyAppliedEvent(bodyPart, penalty);
                 RaiseLocalEvent(bodyPart, ref penaltyEv);
+                var uiRefreshEv = new SurgeryUiRefreshRequestEvent();
+                RaiseLocalEvent(ent.Owner, ref uiRefreshEv);
             }
         }
         else if (stepId == "AttachLimb")
@@ -754,6 +738,8 @@ public sealed class SurgerySystem : EntitySystem
                 }
                 var penaltyEv = new SurgeryPenaltyAppliedEvent(limb, penalty);
                 RaiseLocalEvent(limb, ref penaltyEv);
+                var uiRefreshEv = new SurgeryUiRefreshRequestEvent();
+                RaiseLocalEvent(ent.Owner, ref uiRefreshEv);
             }
             else
                 _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-slot-filled"), user, user, PopupType.Medium);
@@ -777,6 +763,8 @@ public sealed class SurgerySystem : EntitySystem
                 var penaltyEv = new SurgeryPenaltyAppliedEvent(bodyPart, penalty);
                 RaiseLocalEvent(bodyPart, ref penaltyEv);
             }
+            var uiRefreshEv = new SurgeryUiRefreshRequestEvent();
+            RaiseLocalEvent(ent.Owner, ref uiRefreshEv);
         }
     }
 
@@ -845,22 +833,43 @@ public sealed class SurgerySystem : EntitySystem
             _ => null
         };
 
-        if (closeStepIds != null && closeStepIds.Contains(args.ProcedureId.ToString()) && _prototypes.TryIndex<SurgeryStepPrototype>(args.ProcedureId.ToString(), out var closeStep))
+        var closeStepId = args.ProcedureId.ToString();
+        if (closeStepIds != null && closeStepIds.Contains(closeStepId))
         {
-            if (closeStep.UndoesStep != null)
+            string? undoesStepId = null;
+            int openStepPenalty = 0;
+            var isLegacyRemoveAll = false;
+
+            if (_prototypes.TryIndex<SurgeryStepPrototype>(closeStepId, out var closeStep))
+            {
+                undoesStepId = closeStep.UndoesStep;
+                isLegacyRemoveAll = undoesStepId == null;
+                if (undoesStepId != null && _prototypes.TryIndex<SurgeryStepPrototype>(undoesStepId, out var openStep))
+                    openStepPenalty = openStep.Penalty;
+            }
+            else if (_prototypes.TryIndex<SurgeryProcedurePrototype>(closeStepId, out var closeProc) && closeProc.UndoesProcedure is { } undoesProc)
+            {
+                undoesStepId = undoesProc.ToString();
+                if (_prototypes.TryIndex<SurgeryProcedurePrototype>(undoesStepId, out var openProc))
+                    openStepPenalty = openProc.Penalty;
+                else if (_prototypes.TryIndex<SurgeryStepPrototype>(undoesStepId, out var openStep))
+                    openStepPenalty = openStep.Penalty;
+            }
+
+            if (undoesStepId != null && !isLegacyRemoveAll)
             {
                 // 1:1 pairing: only remove the paired open step
-                if (performedList.Contains(closeStep.UndoesStep) && _prototypes.TryIndex<SurgeryStepPrototype>(closeStep.UndoesStep, out var openStep))
+                if (performedList.Contains(undoesStepId))
                 {
-                    performedList.Remove(closeStep.UndoesStep);
-                    if (openStep.Penalty > 0)
+                    performedList.Remove(undoesStepId);
+                    if (openStepPenalty > 0)
                     {
-                        var removeEv = new SurgeryPenaltyRemovedEvent(ent.Owner, openStep.Penalty);
+                        var removeEv = new SurgeryPenaltyRemovedEvent(ent.Owner, openStepPenalty);
                         RaiseLocalEvent(ent.Owner, ref removeEv);
                     }
                 }
             }
-            else
+            else if (isLegacyRemoveAll)
             {
                 // Legacy: remove all open steps
                 var openStepIds = args.Layer switch
@@ -875,7 +884,9 @@ public sealed class SurgerySystem : EntitySystem
                 {
                     if (!performedList.Contains(openId))
                         continue;
-                    if (_prototypes.TryIndex<SurgeryStepPrototype>(openId, out var openStep))
+                    if (_prototypes.TryIndex<SurgeryProcedurePrototype>(openId, out var openProc))
+                        penaltyToRemove += openProc.Penalty;
+                    else if (_prototypes.TryIndex<SurgeryStepPrototype>(openId, out var openStep))
                         penaltyToRemove += openStep.Penalty;
                     performedList.Remove(openId);
                 }
@@ -896,5 +907,8 @@ public sealed class SurgerySystem : EntitySystem
         RaiseLocalEvent(ent.Owner, ref penaltyEv);
 
         args.Handled = true;
+
+        var uiRefreshEv = new SurgeryUiRefreshRequestEvent();
+        RaiseLocalEvent(args.Target, ref uiRefreshEv);
     }
 }

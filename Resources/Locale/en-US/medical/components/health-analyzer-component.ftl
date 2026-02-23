@@ -106,6 +106,7 @@ health-analyzer-surgery-tool-wrench = wrench
 health-analyzer-surgery-tool-bone-gel = bone gel
 health-analyzer-surgery-tool-screwdriver = screwdriver
 health-analyzer-surgery-improvised-slash = slash
+health-analyzer-surgery-improvised-cutting = cutting
 health-analyzer-surgery-improvised-heat = heat
 health-analyzer-surgery-improvised-blunt = blunt
 health-analyzer-surgery-improvised-prying = prying

@@ -39,3 +39,6 @@
       state: micro_mani
     - type: Stack
       stackType: Manipulator
+      count: 1
+    - type: CyberLimbModule
+      moduleType: Manipulator

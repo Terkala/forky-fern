@@ -14,6 +14,7 @@ using Content.Shared.Tag;
 using Content.Shared.Tools.Systems;
 using JetBrains.Annotations;
 using Robust.Shared.Containers;
+using Robust.Shared.Network;
 using Robust.Shared.Prototypes;
 
 namespace Content.Shared.Cybernetics.Systems;
@@ -23,6 +24,7 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
 {
     [Dependency] private readonly BodySystem _body = default!;
     [Dependency] private readonly SharedDoAfterSystem _doAfter = default!;
+    [Dependency] private readonly INetManager _net = default!;
     [Dependency] private readonly SharedHandsSystem _hands = default!;
     [Dependency] private readonly SharedPopupSystem _popup = default!;
     [Dependency] private readonly SharedStackSystem _stack = default!;
@@ -57,7 +59,7 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
 
         EnsureCyberneticsMaintenanceComponent((body, Comp<BodyComponent>(body)));
 
-        var ev = new CyberLimbAttachedToBodyEvent(body);
+        var ev = new CyberLimbAttachedToBodyEvent(body, ent.Owner);
         RaiseLocalEvent(body, ref ev);
     }
 
@@ -72,7 +74,7 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
 
         RecalcCyberneticsMaintenanceComponent((body, Comp<BodyComponent>(body)));
 
-        var ev = new CyberLimbDetachedFromBodyEvent(body);
+        var ev = new CyberLimbDetachedFromBodyEvent(body, ent.Owner);
         RaiseLocalEvent(body, ref ev);
     }
 
@@ -191,7 +193,7 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
 
     private void OnScrewdriverDoAfter(Entity<CyberneticsMaintenanceComponent> ent, ref CyberneticsScrewdriverDoAfterEvent args)
     {
-        if (args.Cancelled)
+        if (!_net.IsServer || args.Cancelled)
             return;
 
         var comp = ent.Comp;
@@ -201,7 +203,7 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
         {
             comp.PanelSecured = false;
             comp.PanelOpen = true;
-            comp.BoltsTight = true;
+            // Do not reset BoltsTight - preserve state when resuming after closing panel early
             ApplyPenaltyToCyberLimbs(body, 1);
             _popup.PopupEntity(Loc.GetString("cyber-maintenance-open-panel"), body, args.User);
         }
@@ -220,7 +222,7 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
 
     private void OnWrenchDoAfter(Entity<CyberneticsMaintenanceComponent> ent, ref CyberneticsWrenchDoAfterEvent args)
     {
-        if (args.Cancelled)
+        if (!_net.IsServer || args.Cancelled)
             return;
 
         var comp = ent.Comp;
@@ -259,7 +261,7 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
 
     private void OnWireInsertDoAfter(Entity<CyberneticsMaintenanceComponent> ent, ref CyberneticsWireInsertDoAfterEvent args)
     {
-        if (args.Cancelled)
+        if (!_net.IsServer || args.Cancelled)
             return;
 
         var comp = ent.Comp;

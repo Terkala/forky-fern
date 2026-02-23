@@ -90,6 +90,8 @@ public sealed partial class StatusEffectsSystem : EntitySystem
 
         foreach (var ent in _proto.EnumeratePrototypes<EntityPrototype>())
         {
+            if (string.IsNullOrEmpty(ent.ID))
+                continue;
             if (ent.TryGetComponent<StatusEffectComponent>(out _, _factory))
                 StatusEffectPrototypes.Add(ent.ID);
         }

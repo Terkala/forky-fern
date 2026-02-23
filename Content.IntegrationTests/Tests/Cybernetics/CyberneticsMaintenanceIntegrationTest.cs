@@ -557,13 +557,14 @@ public sealed class CyberneticsMaintenanceIntegrationTest
                 "Cyber limb should have no penalty before maintenance");
         });
 
+        var integrityDoAfterTicks = 150;
         await server.WaitPost(() =>
         {
             handsSystem.TryPickupAnyHand(technician, screwdriver, checkActionBlocker: false);
             var ev = new InteractUsingEvent(technician, screwdriver, patient, coords);
             entityManager.EventBus.RaiseLocalEvent(patient, ev);
         });
-        await pair.RunTicksSync(150);
+        await pair.RunTicksSync(integrityDoAfterTicks);
 
         await server.WaitAssertion(() =>
         {
@@ -578,7 +579,7 @@ public sealed class CyberneticsMaintenanceIntegrationTest
             var ev = new InteractUsingEvent(technician, wrench, patient, coords);
             entityManager.EventBus.RaiseLocalEvent(patient, ev);
         });
-        await pair.RunTicksSync(150);
+        await pair.RunTicksSync(integrityDoAfterTicks);
 
         await server.WaitAssertion(() =>
         {
@@ -594,7 +595,7 @@ public sealed class CyberneticsMaintenanceIntegrationTest
             var ev = new InteractUsingEvent(technician, wireStack, patient, coords);
             entityManager.EventBus.RaiseLocalEvent(patient, ev);
         });
-        await pair.RunTicksSync(150);
+        await pair.RunTicksSync(integrityDoAfterTicks);
 
         await server.WaitPost(() =>
         {
@@ -603,7 +604,7 @@ public sealed class CyberneticsMaintenanceIntegrationTest
             var ev = new InteractUsingEvent(technician, wrench, patient, coords);
             entityManager.EventBus.RaiseLocalEvent(patient, ev);
         });
-        await pair.RunTicksSync(150);
+        await pair.RunTicksSync(integrityDoAfterTicks);
 
         await server.WaitAssertion(() =>
         {
@@ -618,7 +619,7 @@ public sealed class CyberneticsMaintenanceIntegrationTest
             var ev = new InteractUsingEvent(technician, screwdriver, patient, coords);
             entityManager.EventBus.RaiseLocalEvent(patient, ev);
         });
-        await pair.RunTicksSync(150);
+        await pair.RunTicksSync(integrityDoAfterTicks);
 
         await server.WaitAssertion(() =>
         {

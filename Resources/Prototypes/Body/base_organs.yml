@@ -43,7 +43,7 @@
     category: ArmLeft
     integrityCost: 0
   - type: OrganSurgeryProcedures
-    removalProcedures: [DetachLimb]
+    removalProcedures: [OrganClampVessels, OrganRemovalScalpel, OrganRemovalHemostat, DetachLimb]
     insertionProcedures: [AttachLimb]
   - type: Sprite
     state: l_arm
@@ -58,7 +58,7 @@
     category: ArmRight
     integrityCost: 0
   - type: OrganSurgeryProcedures
-    removalProcedures: [DetachLimb]
+    removalProcedures: [OrganClampVessels, OrganRemovalScalpel, OrganRemovalHemostat, DetachLimb]
     insertionProcedures: [AttachLimb]
   - type: Sprite
     state: r_arm
@@ -73,7 +73,7 @@
     category: HandLeft
     integrityCost: 0
   - type: OrganSurgeryProcedures
-    removalProcedures: [OrganRemovalRetractor, OrganRemovalScalpel, OrganRemovalHemostat]
+    removalProcedures: [OrganClampVessels, OrganRemovalScalpel, OrganRemovalHemostat, RemoveOrgan]
     insertionProcedures: [OrganInsertHemostat, OrganInsertSearing, OrganInsertRetractor]
   - type: HandOrgan
     handID: left
@@ -92,7 +92,7 @@
     category: HandRight
     integrityCost: 0
   - type: OrganSurgeryProcedures
-    removalProcedures: [OrganRemovalRetractor, OrganRemovalScalpel, OrganRemovalHemostat]
+    removalProcedures: [OrganClampVessels, OrganRemovalScalpel, OrganRemovalHemostat, RemoveOrgan]
     insertionProcedures: [OrganInsertHemostat, OrganInsertSearing, OrganInsertRetractor]
   - type: HandOrgan
     handID: right
@@ -172,7 +172,7 @@
     category: Brain
     integrityCost: 0
   - type: OrganSurgeryProcedures
-    removalProcedures: [OrganRemovalRetractor, OrganRemovalScalpel, OrganRemovalHemostat]
+    removalProcedures: [OrganClampVessels, OrganRemovalScalpel, OrganRemovalHemostat, RemoveOrgan]
     insertionProcedures: [OrganInsertHemostat, OrganInsertSearing, OrganInsertRetractor]
   - type: Sprite
     layers:
@@ -202,7 +202,7 @@
     category: Eyes
     integrityCost: 0
   - type: OrganSurgeryProcedures
-    removalProcedures: [OrganRemovalRetractor, OrganRemovalScalpel, OrganRemovalHemostat]
+    removalProcedures: [OrganClampVessels, OrganRemovalScalpel, OrganRemovalHemostat, RemoveOrgan]
     insertionProcedures: [OrganInsertHemostat, OrganInsertSearing, OrganInsertRetractor]
   - type: Sprite
     layers:
@@ -220,7 +220,7 @@
     category: Tongue
     integrityCost: 0
   - type: OrganSurgeryProcedures
-    removalProcedures: [OrganRemovalRetractor, OrganRemovalScalpel, OrganRemovalHemostat]
+    removalProcedures: [OrganClampVessels, OrganRemovalScalpel, OrganRemovalHemostat, RemoveOrgan]
     insertionProcedures: [OrganInsertHemostat, OrganInsertSearing, OrganInsertRetractor]
   - type: Sprite
     layers:
@@ -237,7 +237,7 @@
     category: Appendix
     integrityCost: 0
   - type: OrganSurgeryProcedures
-    removalProcedures: [OrganRemovalRetractor, OrganRemovalScalpel, OrganRemovalHemostat]
+    removalProcedures: [OrganClampVessels, OrganRemovalScalpel, OrganRemovalHemostat, RemoveOrgan]
     insertionProcedures: [OrganInsertHemostat, OrganInsertSearing, OrganInsertRetractor]
   - type: Sprite
     layers:
@@ -254,7 +254,7 @@
     category: Ears
     integrityCost: 0
   - type: OrganSurgeryProcedures
-    removalProcedures: [OrganRemovalRetractor, OrganRemovalScalpel, OrganRemovalHemostat]
+    removalProcedures: [OrganClampVessels, OrganRemovalScalpel, OrganRemovalHemostat, RemoveOrgan]
     insertionProcedures: [OrganInsertHemostat, OrganInsertSearing, OrganInsertRetractor]
   - type: Sprite
     layers:
@@ -271,7 +271,7 @@
     category: Lungs
     integrityCost: 0
   - type: OrganSurgeryProcedures
-    removalProcedures: [OrganRemovalRetractor, OrganRemovalScalpel, OrganRemovalHemostat]
+    removalProcedures: [OrganClampVessels, OrganRemovalScalpel, OrganRemovalHemostat, RemoveOrgan]
     insertionProcedures: [OrganInsertHemostat, OrganInsertSearing, OrganInsertRetractor]
   - type: Lung
   - type: Metabolizer
@@ -304,7 +304,7 @@
     category: Heart
     integrityCost: 0
   - type: OrganSurgeryProcedures
-    removalProcedures: [OrganRemovalRetractor, OrganRemovalScalpel, OrganRemovalHemostat]
+    removalProcedures: [OrganClampVessels, OrganRemovalScalpel, OrganRemovalHemostat, RemoveOrgan]
     insertionProcedures: [OrganInsertHemostat, OrganInsertSearing, OrganInsertRetractor]
   - type: Sprite
     layers:
@@ -327,7 +327,7 @@
     category: Stomach
     integrityCost: 0
   - type: OrganSurgeryProcedures
-    removalProcedures: [OrganRemovalRetractor, OrganRemovalScalpel, OrganRemovalHemostat]
+    removalProcedures: [OrganClampVessels, OrganRemovalScalpel, OrganRemovalHemostat, RemoveOrgan]
     insertionProcedures: [OrganInsertHemostat, OrganInsertSearing, OrganInsertRetractor]
   - type: Stomach
   - type: SolutionContainerManager
@@ -356,7 +356,7 @@
     category: Liver
     integrityCost: 0
   - type: OrganSurgeryProcedures
-    removalProcedures: [OrganRemovalRetractor, OrganRemovalScalpel, OrganRemovalHemostat]
+    removalProcedures: [OrganClampVessels, OrganRemovalScalpel, OrganRemovalHemostat, RemoveOrgan]
     insertionProcedures: [OrganInsertHemostat, OrganInsertSearing, OrganInsertRetractor]
   - type: Sprite
     layers:
@@ -379,7 +379,7 @@
     category: Kidneys
     integrityCost: 0
   - type: OrganSurgeryProcedures
-    removalProcedures: [OrganRemovalRetractor, OrganRemovalScalpel, OrganRemovalHemostat]
+    removalProcedures: [OrganClampVessels, OrganRemovalScalpel, OrganRemovalHemostat, RemoveOrgan]
     insertionProcedures: [OrganInsertHemostat, OrganInsertSearing, OrganInsertRetractor]
   - type: Sprite
     layers:

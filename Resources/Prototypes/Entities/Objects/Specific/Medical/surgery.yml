@@ -198,6 +198,11 @@
   parent: Retractor
   description: A surgical tool used to compress blood vessels to prevent bleeding.
   components:
+  - type: Tag
+    tags:
+    - HemostatTool
+    - ManipulatingTool
+    - PryingTool
   - type: Sprite
     state: hemostat
   - type: Item

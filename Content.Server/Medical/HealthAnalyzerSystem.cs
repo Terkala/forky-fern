@@ -94,6 +94,7 @@ public sealed class HealthAnalyzerSystem : EntitySystem
         SubscribeLocalEvent<HealthAnalyzerComponent, DroppedEvent>(OnDropped);
         SubscribeLocalEvent<HealthAnalyzerComponent, SurgeryRequestBuiMessage>(OnSurgeryRequest);
         SubscribeLocalEvent<SurgeryLayerComponent, SurgeryPenaltyAppliedEvent>(OnSurgeryPenaltyApplied);
+        SubscribeLocalEvent<BodyComponent, SurgeryUiRefreshRequestEvent>(OnSurgeryUiRefreshRequest);
         SubscribeLocalEvent<BodyComponent, OrganRemovedFromEvent>(OnBodyOrganRemoved);
     }
 
@@ -116,6 +117,20 @@ public sealed class HealthAnalyzerSystem : EntitySystem
         if (!TryComp<BodyPartComponent>(bodyPart, out var bodyPartComp) || bodyPartComp.Body is not { } body)
             return;
 
+        var analyzerQuery = EntityQueryEnumerator<HealthAnalyzerComponent>();
+        while (analyzerQuery.MoveNext(out var uid, out var comp))
+        {
+            if (comp.ScannedEntity == body)
+            {
+                UpdateScannedUser(uid, body, true);
+                break;
+            }
+        }
+    }
+
+    private void OnSurgeryUiRefreshRequest(Entity<BodyComponent> ent, ref SurgeryUiRefreshRequestEvent args)
+    {
+        var body = ent.Owner;
         var analyzerQuery = EntityQueryEnumerator<HealthAnalyzerComponent>();
         while (analyzerQuery.MoveNext(out var uid, out var comp))
         {
@@ -472,10 +487,21 @@ public sealed class HealthAnalyzerSystem : EntitySystem
                     var children = new List<IntegrityPenaltyDisplayEntry>();
                     foreach (var stepId in layerComp.PerformedSkinSteps.Concat(layerComp.PerformedTissueSteps).Concat(layerComp.PerformedOrganSteps))
                     {
-                        if (!_prototypes.TryIndex<SurgeryStepPrototype>(stepId, out var step) || step.Penalty <= 0)
+                        string? stepName = null;
+                        var stepPenalty = 0;
+                        if (_prototypes.TryIndex<SurgeryStepPrototype>(stepId, out var step))
+                        {
+                            stepName = step.Name?.Id ?? stepId;
+                            stepPenalty = step.Penalty;
+                        }
+                        else if (_prototypes.TryIndex<SurgeryProcedurePrototype>(stepId, out var proc))
+                        {
+                            stepName = proc.Name?.Id ?? stepId;
+                            stepPenalty = proc.Penalty;
+                        }
+                        if (stepName == null || stepPenalty <= 0)
                             continue;
-                        var stepName = step.Name?.Id ?? stepId;
-                        children.Add(new IntegrityPenaltyDisplayEntry { Description = stepName, Amount = step.Penalty });
+                        children.Add(new IntegrityPenaltyDisplayEntry { Description = stepName, Amount = stepPenalty });
                     }
                     state.IntegrityPenaltyEntries.Add(new IntegrityPenaltyDisplayEntry
                     {

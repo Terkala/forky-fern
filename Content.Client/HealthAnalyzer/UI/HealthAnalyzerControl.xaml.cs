@@ -454,6 +454,7 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
             "SawingTool" => Loc.GetString("health-analyzer-surgery-tool-saw"),
             "HeatWeapon" => Loc.GetString("health-analyzer-surgery-tool-cautery"),
             "ManipulatingTool" => Loc.GetString("health-analyzer-surgery-tool-hemostat"),
+            "HemostatTool" => Loc.GetString("health-analyzer-surgery-tool-hemostat"),
             "AnchoringTool" => Loc.GetString("health-analyzer-surgery-tool-wrench"),
             "BoneGelTool" => Loc.GetString("health-analyzer-surgery-tool-bone-gel"),
             "SurgeryTool" => Loc.GetString("health-analyzer-surgery-tool-retractor"),
@@ -472,7 +473,9 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
         {
             var display = first.DamageType.Value switch
             {
-                ImprovisedDamageType.Slash => Loc.GetString("health-analyzer-surgery-improvised-slash"),
+                ImprovisedDamageType.Slash => stepId is "DetachLimb" or "DetachFoot"
+                    ? Loc.GetString("health-analyzer-surgery-improvised-cutting")
+                    : Loc.GetString("health-analyzer-surgery-improvised-slash"),
                 ImprovisedDamageType.Heat => Loc.GetString("health-analyzer-surgery-improvised-heat"),
                 ImprovisedDamageType.Blunt => stepId is "RetractSkin" or "ReleaseRetractor" or "RetractTissue"
                     ? Loc.GetString("health-analyzer-surgery-improvised-prying")
@@ -509,6 +512,14 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
         {
             return Loc.GetString("health-analyzer-surgery-step-no-tool",
                 ("step", Loc.GetString("health-analyzer-surgery-step-detach-foot")));
+        }
+
+        // RemoveOrgan and InsertOrgan (when no tool): show "Remove Organ (lungs) (-/-)" or "Insert Organ (lungs) (-/-)"
+        if ((stepId == "RemoveOrgan" || stepId == "InsertOrgan") && !procedure.RequiresTool)
+        {
+            var stepName = Loc.GetString(procedure.Name);
+            var label = $"{stepName} ({organName})";
+            return Loc.GetString("health-analyzer-surgery-step-no-tool", ("step", label));
         }
 
         var baseName = Loc.GetString(procedure.Name);

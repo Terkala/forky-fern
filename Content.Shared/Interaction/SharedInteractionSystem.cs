@@ -229,10 +229,15 @@ namespace Content.Shared.Interaction
 
             var range = _ui.GetUiRange(ev.Target, ev.UiKey);
 
-            // As long as range>0, the UI frame updates should have auto-closed the UI if it is out of range.
-            DebugTools.Assert(range <= 0 || UiRangeCheck(ev.Actor, ev.Target, range));
+            // When target is in a container (e.g. cyber limb in body), use container owner for range check
+            var rangeCheckTarget = ev.Target;
+            if (_containerSystem.TryGetContainingContainer(ev.Target, out var container) && container.Owner != ev.Target)
+                rangeCheckTarget = container.Owner;
 
-            if (range <= 0 && !IsAccessible(ev.Actor, ev.Target))
+            // As long as range>0, the UI frame updates should have auto-closed the UI if it is out of range.
+            DebugTools.Assert(range <= 0 || UiRangeCheck(ev.Actor, rangeCheckTarget, range));
+
+            if (range <= 0 && !IsAccessible(ev.Actor, rangeCheckTarget))
             {
                 ev.Cancel();
                 return;

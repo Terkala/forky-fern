@@ -169,12 +169,7 @@ public sealed class CyberLimbAppearanceAndHandIntegrationTest
             Assert.That(humanoid!.CustomBaseLayers.TryGetValue(HumanoidVisualLayers.LLeg, out var llegInfo), Is.True,
                 "CustomBaseLayers should contain LLeg");
             Assert.That(llegInfo.Id?.ToString(), Is.EqualTo("MobCyberLLeg"),
-                "LLeg should use MobCyberLLeg sprite");
-
-            Assert.That(humanoid.CustomBaseLayers.TryGetValue(HumanoidVisualLayers.LFoot, out var lfootInfo), Is.True,
-                "CustomBaseLayers should contain LFoot");
-            Assert.That(lfootInfo.Id?.ToString(), Is.EqualTo("MobCyberLFoot"),
-                "LFoot should use MobCyberLFoot sprite");
+                "LLeg should use MobCyberLLeg sprite (l_leg-combined-foot for correct side views)");
         });
 
         await pair.CleanReturnAsync();

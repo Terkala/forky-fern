@@ -16,7 +16,7 @@ namespace Content.IntegrationTests.Tests.Medical;
 
 /// <summary>
 /// Integration test for removing a heart via Health Analyzer surgery BUI.
-/// Performs CreateIncision, ClampVessels, RetractSkin, CutBone, MarrowBleeding, RetractTissue, then OrganRemovalRetractor, OrganRemovalScalpel, OrganRemovalHemostat (heart).
+/// Performs CreateIncision, ClampVessels, RetractSkin, CutBone, MarrowBleeding, RetractTissue, then OrganClampVessels, OrganRemovalScalpel, OrganRemovalHemostat, RemoveOrgan (heart).
 /// </summary>
 [TestFixture]
 [TestOf(typeof(HealthAnalyzerSystem))]
@@ -115,10 +115,17 @@ public sealed class HeartRemovalSurgeryIntegrationTest : InteractionTest
         await RunTicks(1);
 
         // Use direct SurgeryRequestEvent for all steps to avoid BUI/client-server sync issues in integration test
-        var torso = SEntMan.GetEntity(torsoNet);
-        var heart = GetHeart(SEntMan, SEntMan.System<BodySystem>(), patient);
-        heartNet = SEntMan.GetNetEntity(heart);
-        var analyzer = SEntMan.GetEntity(analyzerNet);
+        EntityUid torso = default;
+        EntityUid heart = default;
+        EntityUid analyzer = default;
+        await Server.WaitPost(() =>
+        {
+            torso = SEntMan.GetEntity(torsoNet);
+            var bodySystem = SEntMan.System<BodySystem>();
+            heart = GetHeart(SEntMan, bodySystem, patient);
+            heartNet = SEntMan.GetNetEntity(heart);
+            analyzer = SEntMan.GetEntity(analyzerNet);
+        });
 
         await Server.WaitPost(() =>
         {
@@ -187,30 +194,30 @@ public sealed class HeartRemovalSurgeryIntegrationTest : InteractionTest
         });
         await RunSeconds(4);
 
+        var hemostatNet = NetEntity.Invalid;
         await Server.WaitPost(() =>
         {
+            var hemostat = SEntMan.SpawnEntity("Hemostat", SEntMan.GetCoordinates(TargetCoords));
+            hemostatNet = SEntMan.GetNetEntity(hemostat);
             HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
-            HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(wirecutterNet), checkActionBlocker: false);
+            HandSys.TryPickupAnyHand(SPlayer, hemostat, checkActionBlocker: false);
         });
         await RunTicks(1);
 
         // Organ removal steps
         await Server.WaitPost(() =>
         {
-            var analyzer = SEntMan.GetEntity(analyzerNet);
-            var torso = SEntMan.GetEntity(torsoNet);
-            var heart = SEntMan.GetEntity(heartNet);
             foreach (var hand in HandSys.EnumerateHands((SPlayer, Hands!)))
             {
-                if (HandSys.TryGetHeldItem((SPlayer, Hands!), hand, out var held) && held == SEntMan.GetEntity(wirecutterNet))
+                if (HandSys.TryGetHeldItem((SPlayer, Hands!), hand, out var held) && held == SEntMan.GetEntity(hemostatNet))
                 {
                     HandSys.TrySetActiveHand((SPlayer, Hands!), hand);
                     break;
                 }
             }
-            var ev = new SurgeryRequestEvent(analyzer, SPlayer, patient, torso, "OrganRemovalRetractor", SurgeryLayer.Organ, false, heart);
+            var ev = new SurgeryRequestEvent(analyzer, SPlayer, patient, torso, "OrganClampVessels", SurgeryLayer.Organ, false, heart);
             SEntMan.EventBus.RaiseLocalEvent(patient, ref ev);
-            Assert.That(ev.Valid, Is.True, $"OrganRemovalRetractor request should be valid. RejectReason: {ev.RejectReason}");
+            Assert.That(ev.Valid, Is.True, $"OrganClampVessels request should be valid. RejectReason: {ev.RejectReason}");
         });
         await RunSeconds(4);
 
@@ -219,8 +226,8 @@ public sealed class HeartRemovalSurgeryIntegrationTest : InteractionTest
             var torsoEnt = SEntMan.GetEntity(torsoNet);
             Assert.That(SEntMan.TryGetComponent(torsoEnt, out SurgeryLayerComponent? layer), Is.True, "Torso should have SurgeryLayerComponent");
             var entry = layer!.OrganRemovalProgress.FirstOrDefault(e => e.Organ == heartNet);
-            Assert.That(entry, Is.Not.Null, "OrganRemovalRetractor should have added progress for heart");
-            Assert.That(entry!.Steps, Does.Contain("OrganRemovalRetractor"), "OrganRemovalRetractor step should be in progress");
+            Assert.That(entry, Is.Not.Null, "OrganClampVessels should have added progress for heart");
+            Assert.That(entry!.Steps, Does.Contain("OrganClampVessels"), "OrganClampVessels step should be in progress");
         });
 
         await RunTicks(5);
@@ -258,6 +265,14 @@ public sealed class HeartRemovalSurgeryIntegrationTest : InteractionTest
             var ev = new SurgeryRequestEvent(analyzer, SPlayer, patient, torso, "OrganRemovalHemostat", SurgeryLayer.Organ, false, heart);
             SEntMan.EventBus.RaiseLocalEvent(patient, ref ev);
             Assert.That(ev.Valid, Is.True, $"OrganRemovalHemostat: {ev.RejectReason}");
+        });
+        await RunSeconds(5);
+
+        await Server.WaitPost(() =>
+        {
+            var removeEv = new SurgeryRequestEvent(analyzer, SPlayer, patient, torso, "RemoveOrgan", SurgeryLayer.Organ, false, heart);
+            SEntMan.EventBus.RaiseLocalEvent(patient, ref removeEv);
+            Assert.That(removeEv.Valid, Is.True, $"RemoveOrgan: {removeEv.RejectReason}");
         });
         await RunSeconds(5);
 

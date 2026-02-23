@@ -382,6 +382,9 @@ public sealed class DamageVisualsSystem : VisualizerSystem<DamageVisualsComponen
         if (AppearanceSystem.TryGetData<bool>(uid, DamageVisualizerKeys.ForceUpdate, out var update, component)
             && update)
         {
+            // Re-apply disabled layer state (e.g. BloodDisabled for cyber limbs) before full refresh
+            if (damageVisComp.TargetLayers != null && damageVisComp.DamageOverlayGroups != null)
+                UpdateDisabledLayers(uid, spriteComponent, component, damageVisComp);
             ForceUpdateLayers((uid, damageComponent, spriteComponent, damageVisComp));
             return;
         }

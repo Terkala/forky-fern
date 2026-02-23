@@ -27,31 +27,17 @@
     state: r_hand
   matchSkin: false
 
-# Legs
+# Legs - use combined-foot sprites so leg and foot render correctly in all directions (including side views)
 - type: humanoidBaseSprite
   id: MobCyberLLeg
   baseSprite:
     sprite: _EinsteinEngines/Mobs/Species/Cybernetics/bishop/bishop_main.rsi
-    state: l_leg-combined
-  matchSkin: false
-
-- type: humanoidBaseSprite
-  id: MobCyberLFoot
-  baseSprite:
-    sprite: _EinsteinEngines/Mobs/Species/Cybernetics/bishop/bishop_main.rsi
-    state: l_foot
+    state: l_leg-combined-foot
   matchSkin: false
 
 - type: humanoidBaseSprite
   id: MobCyberRLeg
   baseSprite:
     sprite: _EinsteinEngines/Mobs/Species/Cybernetics/bishop/bishop_main.rsi
-    state: r_leg-combined
-  matchSkin: false
-
-- type: humanoidBaseSprite
-  id: MobCyberRFoot
-  baseSprite:
-    sprite: _EinsteinEngines/Mobs/Species/Cybernetics/bishop/bishop_main.rsi
-    state: r_foot
+    state: r_leg-combined-foot
   matchSkin: false

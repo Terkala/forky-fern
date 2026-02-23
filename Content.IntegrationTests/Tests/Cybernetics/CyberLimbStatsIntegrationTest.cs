@@ -222,8 +222,7 @@ public sealed class CyberLimbStatsIntegrationTest
             patient = human;
 
             var stats = entityManager.GetComponent<CyberLimbStatsComponent>(human);
-            stats.ServiceTimeRemaining = TimeSpan.Zero;
-            stats.Efficiency = 1f;
+            stats.BaseServiceRemaining = TimeSpan.Zero;
             entityManager.Dirty(human, stats);
         });
 
