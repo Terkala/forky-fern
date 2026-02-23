@@ -21,6 +21,12 @@
   femaleFirstNames: NamesDionaFirst
   lastNames: NamesDionaLast
   naming: TheFirstofLast
+  limbOrganPrototypes:
+    ArmLeft: OrganDionaArmLeft
+    ArmRight: OrganDionaArmRight
+    LegLeft: OrganDionaLegLeft
+    LegRight: OrganDionaLegRight
+    Head: OrganDionaHead
 
 - type: speciesBaseSprites
   id: MobDionaSprites

@@ -87,6 +87,7 @@ health-analyzer-surgery-error-limb-not-in-hand = You must hold the limb in your 
 health-analyzer-surgery-error-organ-not-in-body-part = That organ is not in the selected body part.
 health-analyzer-surgery-error-body-part-no-container = That body part cannot hold organs.
 health-analyzer-surgery-error-no-slot-for-organ = There is no slot for that organ in this body part.
+health-analyzer-surgery-error-slime-cannot-receive-implants = Slimes cannot receive organ or limb implants; they regenerate instead.
 health-analyzer-surgery-tool-cutting = scalpel or cutting tool
 health-analyzer-surgery-tool-surgery = retractor or drill
 health-analyzer-surgery-tool-manipulating = hemostat or retractor

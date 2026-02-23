@@ -14,6 +14,12 @@
   markingLimits: MobHumanMarkingLimits
   dollPrototype: AppearanceHuman
   skinColoration: HumanToned
+  limbOrganPrototypes:
+    ArmLeft: OrganHumanArmLeft
+    ArmRight: OrganHumanArmRight
+    LegLeft: OrganHumanLegLeft
+    LegRight: OrganHumanLegRight
+    Head: OrganHumanHead
 
 # The lack of a layer means that
 # this person cannot have round-start anything

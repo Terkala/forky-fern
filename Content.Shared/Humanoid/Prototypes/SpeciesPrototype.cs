@@ -16,6 +16,7 @@
 // SPDX-FileCopyrightText: 2025 slarticodefast <161409025+slarticodefast@users.noreply.github.com>
 // SPDX-License-Identifier: MIT
 
+using Content.Shared.Body;
 using Content.Shared.Dataset;
 using Content.Shared.Humanoid.Markings;
 using Robust.Shared.Prototypes;
@@ -88,6 +89,13 @@ public sealed partial class SpeciesPrototype : IPrototype
     /// </summary>
     [DataField(required: true)]
     public EntProtoId Prototype { get; private set; } = default!;
+
+    /// <summary>
+    ///     Mapping of limb/head organ category to entity prototype for limb regeneration and admin smites.
+    ///     When null, limb restoration is not supported for this species.
+    /// </summary>
+    [DataField]
+    public Dictionary<ProtoId<OrganCategoryPrototype>, EntProtoId>? LimbOrganPrototypes { get; private set; }
 
     /// <summary>
     /// Prototype used by the species for the dress-up doll in various menus.

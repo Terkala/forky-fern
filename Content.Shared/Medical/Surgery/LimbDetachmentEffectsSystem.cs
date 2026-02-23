@@ -1,5 +1,6 @@
 using Content.Shared.Body;
 using Content.Shared.Body.Components;
+using Content.Shared.Cybernetics.Components;
 using Content.Shared.Damage;
 using Content.Shared.Humanoid;
 using Content.Shared.Medical.Surgery.Components;
@@ -145,7 +146,8 @@ public sealed class LimbDetachmentEffectsSystem : EntitySystem
             _humanoid.SetLayersVisibility((body, humanoid), layers, true);
         }
 
-        if (TryComp<AppearanceComponent>(body, out var appearance))
+        // Cyber limbs set BloodDisabled via CyberLimbAppearanceSystem - don't overwrite with AllEnabled
+        if (TryComp<AppearanceComponent>(body, out var appearance) && !HasComp<CyberLimbComponent>(ent))
         {
             foreach (var layer in layers)
             {

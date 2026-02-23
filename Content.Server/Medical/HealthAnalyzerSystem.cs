@@ -34,6 +34,7 @@
 
 using System.Linq;
 using Content.Server.Medical.Components;
+using Content.Server.Medical.LimbRegeneration;
 using Content.Shared.Body;
 using Content.Shared.Body.Components;
 using Content.Shared.Cybernetics.Components;
@@ -84,6 +85,7 @@ public sealed class HealthAnalyzerSystem : EntitySystem
     [Dependency] private readonly BodySystem _body = default!;
     [Dependency] private readonly IPrototypeManager _prototypes = default!;
     [Dependency] private readonly SurgeryLayerSystem _surgeryLayer = default!;
+    [Dependency] private readonly LimbRegenerationSystem _limbRegeneration = default!;
 
     public override void Initialize()
     {
@@ -100,6 +102,8 @@ public sealed class HealthAnalyzerSystem : EntitySystem
 
     private void OnBodyOrganRemoved(Entity<BodyComponent> ent, ref OrganRemovedFromEvent args)
     {
+        _limbRegeneration.OnOrganRemovedFrom(ent, ref args);
+
         var analyzerQuery = EntityQueryEnumerator<HealthAnalyzerComponent>();
         while (analyzerQuery.MoveNext(out var uid, out var comp))
         {
@@ -206,6 +210,7 @@ public sealed class HealthAnalyzerSystem : EntitySystem
                     "body-part-no-container" => "health-analyzer-surgery-error-body-part-no-container",
                     "no-slot-for-organ" => "health-analyzer-surgery-error-no-slot-for-organ",
                     "slot-filled" => "health-analyzer-surgery-error-slot-filled",
+                    "slime-cannot-receive-implants" => "health-analyzer-surgery-error-slime-cannot-receive-implants",
                     _ => "health-analyzer-surgery-error-invalid-surgical-process"
                 };
                 msg = Loc.GetString(msgKey);

@@ -67,6 +67,6 @@ public sealed class BodyPartOrganSystem : EntitySystem
         if (!_container.TryGetContainingContainer(parent, ent.Owner, out var container))
             return;
 
-        args.Success = _container.Remove((ent.Owner, (TransformComponent?)null, (MetaDataComponent?)null), container, destination: args.Destination);
+        args.Success = _container.Remove((ent.Owner, (TransformComponent?)null, (MetaDataComponent?)null), container, destination: args.Destination, localRotation: args.LocalRotation);
     }
 }

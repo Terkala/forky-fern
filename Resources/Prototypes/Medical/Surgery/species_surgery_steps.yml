@@ -105,6 +105,47 @@
   tissueCloseSteps: [MaintainAlignment, SealBleedPoints, RepairBoneSection]
   organSteps: [InsertOrgan]
 
+# SlimePerson limbs - same steps as Human for amputation/reattach
+- type: bodyPartSurgerySteps
+  id: SlimePersonLegLeft
+  species: SlimePerson
+  organCategory: LegLeft
+  skinOpenSteps: [CreateIncision, ClampVessels, RetractSkin]
+  skinCloseSteps: [ReleaseRetractor, ReconnectVessels, SealSkin]
+  tissueOpenSteps: [CutBone, MarrowBleeding, RetractTissue]
+  tissueCloseSteps: [MaintainAlignment, SealBleedPoints, RepairBoneSection]
+  organSteps: [InsertOrgan, DetachLimb, AttachLimb]
+
+- type: bodyPartSurgerySteps
+  id: SlimePersonLegRight
+  species: SlimePerson
+  organCategory: LegRight
+  skinOpenSteps: [CreateIncision, ClampVessels, RetractSkin]
+  skinCloseSteps: [ReleaseRetractor, ReconnectVessels, SealSkin]
+  tissueOpenSteps: [CutBone, MarrowBleeding, RetractTissue]
+  tissueCloseSteps: [MaintainAlignment, SealBleedPoints, RepairBoneSection]
+  organSteps: [InsertOrgan, DetachLimb, AttachLimb]
+
+- type: bodyPartSurgerySteps
+  id: SlimePersonArmLeft
+  species: SlimePerson
+  organCategory: ArmLeft
+  skinOpenSteps: [CreateIncision, ClampVessels, RetractSkin]
+  skinCloseSteps: [ReleaseRetractor, ReconnectVessels, SealSkin]
+  tissueOpenSteps: [CutBone, MarrowBleeding, RetractTissue]
+  tissueCloseSteps: [MaintainAlignment, SealBleedPoints, RepairBoneSection]
+  organSteps: [InsertOrgan, DetachLimb, AttachLimb]
+
+- type: bodyPartSurgerySteps
+  id: SlimePersonArmRight
+  species: SlimePerson
+  organCategory: ArmRight
+  skinOpenSteps: [CreateIncision, ClampVessels, RetractSkin]
+  skinCloseSteps: [ReleaseRetractor, ReconnectVessels, SealSkin]
+  tissueOpenSteps: [CutBone, MarrowBleeding, RetractTissue]
+  tissueCloseSteps: [MaintainAlignment, SealBleedPoints, RepairBoneSection]
+  organSteps: [InsertOrgan, DetachLimb, AttachLimb]
+
 # Cyber limbs: attach/detach only, no skin/tissue steps
 - type: bodyPartSurgerySteps
   id: CyberLimbArmLeft

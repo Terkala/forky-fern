@@ -1,4 +1,5 @@
 using Robust.Shared.Map;
+using Robust.Shared.Maths;
 
 namespace Content.Shared.Body.Events;
 
@@ -24,6 +25,11 @@ public record struct OrganRemoveRequestEvent(EntityUid Organ)
     /// Where to place the organ after removal. If null, uses default AttachParentToContainerOrGrid behavior.
     /// </summary>
     public EntityCoordinates? Destination;
+
+    /// <summary>
+    /// Optional local rotation after removal. Used for limb drop placement when patient is laying down.
+    /// </summary>
+    public Angle? LocalRotation;
 
     /// <summary>
     /// Whether the remove succeeded. Populated by BodyPartOrganSystem.

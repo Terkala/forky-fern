@@ -19,6 +19,12 @@
   markingLimits: MobSlimeMarkingLimits
   dollPrototype: AppearanceSlimePerson
   skinColoration: Hues
+  limbOrganPrototypes:
+    ArmLeft: OrganSlimePersonArmLeft
+    ArmRight: OrganSlimePersonArmRight
+    LegLeft: OrganSlimePersonLegLeft
+    LegRight: OrganSlimePersonLegRight
+    Head: OrganSlimePersonHead
 
 - type: speciesBaseSprites
   id: MobSlimeSprites

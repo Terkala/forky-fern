@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Numerics;
 using Content.Shared.Body;
 using Content.Shared.Body.Components;
 using Content.Shared.Body.Events;
@@ -11,13 +12,16 @@ using Content.Shared.Medical.Integrity.Events;
 using Content.Shared.Medical.Surgery.Components;
 using Content.Shared.Medical.Surgery.Events;
 using Content.Shared.Humanoid;
+using Content.Shared.Humanoid.Prototypes;
 using Content.Shared.Medical.Surgery.Prototypes;
 using Content.Shared.Popups;
+using Content.Shared.Standing;
 using Content.Shared.Tag;
 using Content.Shared.Weapons.Melee;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Containers;
 using Robust.Shared.Map;
+using Robust.Shared.Maths;
 using Robust.Shared.Network;
 using Robust.Shared.Prototypes;
 
@@ -37,8 +41,10 @@ public sealed class SurgerySystem : EntitySystem
     [Dependency] private readonly IPrototypeManager _prototypes = default!;
     [Dependency] private readonly SharedPopupSystem _popup = default!;
     [Dependency] private readonly SharedMeleeWeaponSystem _melee = default!;
+    [Dependency] private readonly StandingStateSystem _standing = default!;
     [Dependency] private readonly SurgeryLayerSystem _surgeryLayer = default!;
     [Dependency] private readonly TagSystem _tag = default!;
+    [Dependency] private readonly SharedTransformSystem _transform = default!;
 
     public override void Initialize()
     {
@@ -68,6 +74,15 @@ public sealed class SurgerySystem : EntitySystem
         if (!isAttachLimbToEmptySlot && !query.Parts.Contains(args.BodyPart))
         {
             args.RejectReason = "body-part-not-in-body";
+            return;
+        }
+
+        // Slime-specific: cannot receive organ or limb implants (design doc: Slime-Specific Systems)
+        if (TryComp<HumanoidAppearanceComponent>(ent.Owner, out var appearance) &&
+            appearance.Species == (ProtoId<SpeciesPrototype>)"SlimePerson" &&
+            (args.ProcedureId == "InsertOrgan" || args.ProcedureId == "AttachLimb"))
+        {
+            args.RejectReason = "slime-cannot-receive-implants";
             return;
         }
 
@@ -689,17 +704,35 @@ public sealed class SurgerySystem : EntitySystem
         }
         else if (stepId == "DetachLimb")
         {
-            var dest = Transform(ent.Owner).Coordinates;
+            var baseCoords = Transform(ent.Owner).Coordinates;
+            EntityCoordinates dest;
+            Angle? localRotation = null;
+
+            if (_standing.IsDown(ent.Owner) && TryComp<OrganComponent>(bodyPart, out var limbOrganComp) && limbOrganComp.Category is { } limbCategory)
+            {
+                var categoryStr = limbCategory.ToString();
+                var bodyRot = _transform.GetWorldRotation(ent.Owner);
+                var offset = categoryStr is "ArmLeft" or "LegLeft"
+                    ? bodyRot.RotateVec(new Vector2(-0.35f, 0))
+                    : bodyRot.RotateVec(new Vector2(0.35f, 0));
+                dest = baseCoords.Offset(offset);
+                localRotation = bodyRot + Angle.FromDegrees(90);
+            }
+            else
+            {
+                dest = baseCoords;
+            }
+
             // Detach limb organs (hand/foot) first so they drop as separate items
             if (TryComp<BodyPartComponent>(bodyPart, out var limbBodyPart) && limbBodyPart.Organs != null)
             {
                 foreach (var limbOrgan in limbBodyPart.Organs.ContainedEntities.ToArray())
                 {
-                    var limbRemoveEv = new OrganRemoveRequestEvent(limbOrgan) { Destination = dest };
+                    var limbRemoveEv = new OrganRemoveRequestEvent(limbOrgan) { Destination = dest, LocalRotation = localRotation };
                     RaiseLocalEvent(limbOrgan, ref limbRemoveEv);
                 }
             }
-            var removeEv = new OrganRemoveRequestEvent(bodyPart) { Destination = dest };
+            var removeEv = new OrganRemoveRequestEvent(bodyPart) { Destination = dest, LocalRotation = localRotation };
             RaiseLocalEvent(bodyPart, ref removeEv);
             if (removeEv.Success)
             {
