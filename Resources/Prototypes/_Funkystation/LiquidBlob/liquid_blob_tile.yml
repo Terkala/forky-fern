@@ -1,0 +1,18 @@
+- type: entity
+  id: LiquidBlobTile
+  name: liquid blob tile
+  description: A tile of liquid blob.
+  categories: [ HideSpawnMenu ]
+  placement:
+    mode: SnapgridCenter
+  components:
+  - type: LiquidBlobTile
+  - type: Transform
+    anchored: true
+    noRot: true
+  - type: Sprite
+    layers:
+    - sprite: Fluids/puddle.rsi
+      state: splat0
+    drawdepth: Puddles
+    color: "#00FF0080"

@@ -1,0 +1,28 @@
+- type: entity
+  parent: [ Incorporeal, BaseMob ]
+  id: LiquidBlobObserver
+  name: liquid blob observer
+  description: You are a liquid blob.
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: LiquidBlobObserver
+  - type: Sprite
+    sprite: Mobs/Ghosts/ghost_human.rsi
+    color: "#00FF0080"
+    layers:
+    - state: animated
+      shader: unshaded
+  - type: ContentEye
+    maxZoom: 1.44,1.44
+  - type: Eye
+    drawFov: false
+  - type: Input
+    context: "ghost"
+  - type: Examiner
+    skipChecks: true
+  - type: MindContainer
+  - type: Tag
+    tags:
+    - BypassInteractionRangeChecks
+  - type: Actions
+  - type: ActionsContainer

@@ -78,6 +78,7 @@ using Content.Shared.Gravity;
 using Content.Shared.Interaction.Components;
 using Content.Shared.Inventory;
 using Content.Shared.Medical;
+using Content.Shared.Mind.Components;
 using Content.Shared.Mobs;
 using Content.Shared.Mobs.Components;
 using Content.Shared.Mobs.Systems;
@@ -246,6 +247,46 @@ public sealed partial class AdminVerbSystem
             Message = string.Join(": ", monkeyName, Loc.GetString("admin-smite-monkeyify-description"))
         };
         args.Verbs.Add(monkey);
+
+        if (HasComp<MindContainerComponent>(args.Target) && HasComp<ActorComponent>(args.Target))
+        {
+            var liquidBlobName = Loc.GetString("admin-smite-liquid-blob-name").ToLowerInvariant();
+            Verb liquidBlob = new()
+            {
+                Text = liquidBlobName,
+                Category = VerbCategory.Smite,
+                Icon = new SpriteSpecifier.Rsi(new("/Textures/Mobs/Aliens/slimes.rsi"), "aslime-_3"),
+                Act = () =>
+                {
+                    if (!_mindSystem.TryGetMind(args.Target, out var mindId, out var mind))
+                        return;
+
+                    var xform = Transform(args.Target);
+                    if (xform.GridUid is not { } gridUid || !TryComp(gridUid, out MapGridComponent? grid))
+                        return;
+
+                    var tile = _map.TileIndicesFor(gridUid, grid, xform.Coordinates);
+                    var tileCenter = _map.GridTileToLocal(gridUid, grid, tile);
+                    var tileEntity = Spawn("LiquidBlobTile", tileCenter);
+                    var observerEntity = Spawn("LiquidBlobObserver", tileCenter);
+
+                    var tileComp = Comp<Content.Shared._Funkystation.LiquidBlob.Components.LiquidBlobTileComponent>(tileEntity);
+                    tileComp.RootTile = tileEntity;
+                    tileComp.LiquidLevel = 0;
+
+                    var observerComp = Comp<Content.Shared._Funkystation.LiquidBlob.Components.LiquidBlobObserverComponent>(observerEntity);
+                    observerComp.RootTile = tileEntity;
+
+                    _mindSystem.TransferTo(mindId, observerEntity, ghostCheckOverride: true, mind: mind);
+                    _actions.AddAction(observerEntity, "ActionLiquidBlobSpread");
+                    _popupSystem.PopupEntity(Loc.GetString("admin-smite-liquid-blob-self"), args.Target, args.Target, PopupType.LargeCaution);
+                    _popupSystem.PopupCoordinates(Loc.GetString("admin-smite-liquid-blob-others", ("name", args.Target)), tileCenter, Filter.PvsExcept(args.Target), true, PopupType.MediumCaution);
+                },
+                Impact = LogImpact.Extreme,
+                Message = string.Join(": ", liquidBlobName, Loc.GetString("admin-smite-liquid-blob-description"))
+            };
+            args.Verbs.Add(liquidBlob);
+        }
 
         var disposalBinName = Loc.GetString("admin-smite-garbage-can-name").ToLowerInvariant();
         Verb disposalBin = new()

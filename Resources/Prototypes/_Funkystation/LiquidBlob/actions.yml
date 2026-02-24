@@ -1,0 +1,14 @@
+- type: entity
+  parent: BaseAction
+  id: ActionLiquidBlobSpread
+  name: Spread
+  description: Spend 5 liquid to spread to an adjacent tile.
+  components:
+  - type: Action
+    icon: { sprite: Mobs/Aliens/slimes.rsi, state: aslime-_3 }
+    priority: 1
+  - type: TargetAction
+    checkCanAccess: false
+    range: 2
+  - type: WorldTargetAction
+    event: !type:LiquidBlobSpreadActionEvent

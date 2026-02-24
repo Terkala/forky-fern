@@ -56,6 +56,11 @@
   path: "/Textures/Shaders/singularity.swsl"
 
 - type: shader
+  id: LiquidBlob
+  kind: source
+  path: "/Textures/Shaders/liquid_blob.swsl"
+
+- type: shader
   id: Radiation
   kind: source
   path: "/Textures/Shaders/radiation.swsl"

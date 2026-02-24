@@ -1,0 +1,41 @@
+// Wavy fluid green outline enclosing blob tiles. Metaball boundary with TIME-based wobble.
+light_mode unshaded;
+
+uniform highp float renderScale;
+uniform lowp int tileCount;
+uniform highp float tileSize;
+uniform highp float threshold;
+uniform highp float outlineWidth;
+uniform highp float waveSpeed;
+uniform highp float waveAmplitude;
+uniform highp vec4 blobColor;
+
+uniform highp vec2[64] positions;
+uniform highp float[64] liquidLevels;
+
+void fragment() {
+    highp float sum = 0.0;
+    highp float dist;
+    highp float falloff;
+    highp float level;
+
+    for (int i = 0; i < 64 && i < tileCount; i++) {
+        dist = length(FRAGCOORD.xy - positions[i]);
+        level = max(0.1, liquidLevels[i]);
+        falloff = level * max(0.0, 1.0 - dist / (tileSize * renderScale));
+        sum += falloff;
+    }
+
+    highp vec2 coord = FRAGCOORD.xy * SCREEN_PIXEL_SIZE.xy * 0.02;
+    highp float wobble = waveAmplitude * (zFBM(coord + TIME * waveSpeed) - 0.5);
+    highp float effectiveThreshold = threshold + wobble;
+
+    highp float distFromEdge = abs(sum - effectiveThreshold);
+    highp float outline = 1.0 - smoothstep(0.0, outlineWidth, distFromEdge);
+
+    if (outline > 0.0) {
+        COLOR = vec4(blobColor.rgb, blobColor.a * outline);
+    } else {
+        discard;
+    }
+}
