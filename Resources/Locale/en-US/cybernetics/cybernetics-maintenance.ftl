@@ -14,4 +14,10 @@ cyber-maintenance-no-wires-needed = No more wires needed; maintenance is complet
 
 cyber-limb-inspection-service-time = Service time: {$remaining} / {$max}
 cyber-limb-inspection-efficiency = Efficiency: {$efficiency}%
+cyber-limb-inspection-efficiency-hands = Efficiency (hands): {$efficiency}%
+cyber-limb-inspection-efficiency-feet = Efficiency (feet): {$efficiency}%
+cyber-limb-inspection-efficiency-left-arm = Efficiency (left arm): {$efficiency}%
+cyber-limb-inspection-efficiency-right-arm = Efficiency (right arm): {$efficiency}%
+cyber-limb-inspection-efficiency-left-leg = Efficiency (left leg): {$efficiency}%
+cyber-limb-inspection-efficiency-right-leg = Efficiency (right leg): {$efficiency}%
 cyber-limb-inspection-modules = Installed modules: {$modules}

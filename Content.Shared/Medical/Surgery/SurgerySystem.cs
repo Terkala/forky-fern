@@ -891,15 +891,73 @@ public sealed class SurgerySystem : EntitySystem
 
             if (undoesStepId != null && !isLegacyRemoveAll)
             {
-                // 1:1 pairing: only remove the paired open step
+                var penaltyToRemove = 0;
                 if (performedList.Contains(undoesStepId))
                 {
                     performedList.Remove(undoesStepId);
-                    if (openStepPenalty > 0)
+                    penaltyToRemove += openStepPenalty;
+                }
+
+                // Cascade: remove any performed open steps whose prerequisites are no longer satisfied
+                var openStepIds = args.Layer switch
+                {
+                    SurgeryLayer.Skin => stepsConfig?.GetSkinOpenStepIds(_prototypes) ?? Array.Empty<string>(),
+                    SurgeryLayer.Tissue => stepsConfig?.GetTissueOpenStepIds(_prototypes) ?? Array.Empty<string>(),
+                    _ => Array.Empty<string>()
+                };
+
+                var changed = true;
+                while (changed)
+                {
+                    changed = false;
+                    foreach (var stepId in performedList.Where(s => openStepIds.Contains(s)).ToList())
                     {
-                        var removeEv = new SurgeryPenaltyRemovedEvent(ent.Owner, openStepPenalty);
-                        RaiseLocalEvent(ent.Owner, ref removeEv);
+                        var prereqsSatisfied = true;
+                        if (_prototypes.TryIndex<SurgeryProcedurePrototype>(stepId, out var proc))
+                        {
+                            foreach (var p in proc.Prerequisites)
+                            {
+                                if (p.Type != StepPrerequisiteType.RequireStepPerformed)
+                                    continue;
+                                var reqId = p.Procedure?.ToString() ?? p.StepId;
+                                if (string.IsNullOrEmpty(reqId) || !performedList.Contains(reqId))
+                                {
+                                    prereqsSatisfied = false;
+                                    break;
+                                }
+                            }
+                        }
+                        else if (_prototypes.TryIndex<SurgeryStepPrototype>(stepId, out var step))
+                        {
+                            foreach (var p in step.Prerequisites)
+                            {
+                                if (p.Type != StepPrerequisiteType.RequireStepPerformed)
+                                    continue;
+                                var reqId = p.Procedure?.ToString() ?? p.StepId;
+                                if (string.IsNullOrEmpty(reqId) || !performedList.Contains(reqId))
+                                {
+                                    prereqsSatisfied = false;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!prereqsSatisfied)
+                        {
+                            performedList.Remove(stepId);
+                            if (_prototypes.TryIndex<SurgeryProcedurePrototype>(stepId, out var removedProc))
+                                penaltyToRemove += removedProc.Penalty;
+                            else if (_prototypes.TryIndex<SurgeryStepPrototype>(stepId, out var removedStep))
+                                penaltyToRemove += removedStep.Penalty;
+                            changed = true;
+                        }
                     }
+                }
+
+                if (penaltyToRemove > 0)
+                {
+                    var removeEv = new SurgeryPenaltyRemovedEvent(ent.Owner, penaltyToRemove);
+                    RaiseLocalEvent(ent.Owner, ref removeEv);
                 }
             }
             else if (isLegacyRemoveAll)

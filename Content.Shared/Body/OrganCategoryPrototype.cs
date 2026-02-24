@@ -16,6 +16,13 @@ public sealed partial class OrganCategoryPrototype : IPrototype
     public string ID { get; private set; } = default!;
 
     /// <summary>
+    /// Localized display name for this category (e.g. "Left Leg", "Left Arm").
+    /// When null, falls back to ID for display.
+    /// </summary>
+    [DataField]
+    public LocId? Name { get; private set; }
+
+    /// <summary>
     /// Default removal procedures for organs in this category when OrganSurgeryProceduresComponent is absent.
     /// </summary>
     [DataField]

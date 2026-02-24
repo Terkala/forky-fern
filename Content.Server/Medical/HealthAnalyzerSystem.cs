@@ -64,6 +64,7 @@ using Content.Shared.Traits.Assorted;
 using Robust.Server.GameObjects;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Containers;
+using Robust.Shared.Localization;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Timing;
 using Content.Server.Body.Systems;
@@ -447,8 +448,16 @@ public sealed class HealthAnalyzerSystem : EntitySystem
 
             state.IntegrityPenaltyEntries ??= new List<IntegrityPenaltyDisplayEntry>();
             state.IntegrityPenaltyEntries.Clear();
-            if (usage > 0)
-                state.IntegrityPenaltyEntries.Add(new IntegrityPenaltyDisplayEntry { Description = "health-analyzer-integrity-usage", Amount = usage });
+            var nonCyberUsage = 0;
+            foreach (var organ in _body.GetAllOrgans(entity))
+            {
+                if (HasComp<CyberLimbComponent>(organ))
+                    continue;
+                if (TryComp<OrganComponent>(organ, out var organComp) && organComp.IntegrityCost > 0)
+                    nonCyberUsage += organComp.IntegrityCost;
+            }
+            if (nonCyberUsage > 0)
+                state.IntegrityPenaltyEntries.Add(new IntegrityPenaltyDisplayEntry { Description = "health-analyzer-integrity-usage", Amount = nonCyberUsage });
 
             var cyberLimbsWithPenalty = new List<(EntityUid Organ, int Amount)>();
             foreach (var organ in _body.GetAllOrgans(entity))
@@ -484,7 +493,7 @@ public sealed class HealthAnalyzerSystem : EntitySystem
                     continue;
 
                 var desc = TryComp<OrganComponent>(organ, out var organComp) && organComp.Category is { } cat
-                    ? cat.ToString()
+                    ? GetCategoryDisplayName(cat)
                     : Identity.Name(organ, EntityManager);
 
                 if (TryComp<SurgeryLayerComponent>(organ, out var layerComp))
@@ -720,5 +729,12 @@ public sealed class HealthAnalyzerSystem : EntitySystem
         }
 
         entries.Add(ConvertToDisplayEntry(improperEntry));
+    }
+
+    private string GetCategoryDisplayName(ProtoId<OrganCategoryPrototype> category)
+    {
+        if (_prototypes.TryIndex(category, out var proto) && proto.Name is { } name)
+            return Loc.GetString(name);
+        return category.ToString();
     }
 }

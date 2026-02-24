@@ -123,4 +123,26 @@ health-analyzer-integrity-no-penalties = No penalties
 health-analyzer-integrity-improvised-tool = Improvised tool
 health-analyzer-integrity-unsanitary-surgery = Unsanitary surgery
 
+# Organ category display names (used in integrity/surgery views)
+organ-category-torso = Torso
+organ-category-head = Head
+organ-category-left-arm = Left Arm
+organ-category-right-arm = Right Arm
+organ-category-left-hand = Left Hand
+organ-category-right-hand = Right Hand
+organ-category-left-leg = Left Leg
+organ-category-right-leg = Right Leg
+organ-category-left-foot = Left Foot
+organ-category-right-foot = Right Foot
+organ-category-brain = Brain
+organ-category-eyes = Eyes
+organ-category-tongue = Tongue
+organ-category-appendix = Appendix
+organ-category-ears = Ears
+organ-category-lungs = Lungs
+organ-category-heart = Heart
+organ-category-stomach = Stomach
+organ-category-liver = Liver
+organ-category-kidneys = Kidneys
+
 health-analyzer-popup-scan-target = {CAPITALIZE(THE($user))} is trying to scan you!
