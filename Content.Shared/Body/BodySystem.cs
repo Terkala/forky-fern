@@ -294,4 +294,27 @@ public sealed partial class BodySystem : EntitySystem
             }
         }
     }
+
+    /// <summary>
+    /// Resolves the root body entity from a container that holds organs.
+    /// Handles both direct body containers (body_organs) and body part containers (e.g. limb_organs).
+    /// </summary>
+    public bool TryGetRootBodyFromOrganContainer(BaseContainer container, out EntityUid body)
+    {
+        body = default;
+        if (container.ID == BodyComponent.ContainerID && HasComp<BodyComponent>(container.Owner))
+        {
+            body = container.Owner;
+            return true;
+        }
+        if (TryComp<BodyPartComponent>(container.Owner, out var bodyPart) &&
+            bodyPart.Body is { } bodyUid &&
+            Exists(bodyUid) &&
+            container.ID == bodyPart.ContainerId)
+        {
+            body = bodyUid;
+            return true;
+        }
+        return false;
+    }
 }

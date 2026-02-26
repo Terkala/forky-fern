@@ -712,11 +712,12 @@ public sealed class SurgerySystem : EntitySystem
             {
                 var categoryStr = limbCategory.ToString();
                 var bodyRot = _transform.GetWorldRotation(ent.Owner);
+                // Use Y-axis (perpendicular to body) so limbs drop to the side when laying down
                 var offset = categoryStr is "ArmLeft" or "LegLeft"
-                    ? bodyRot.RotateVec(new Vector2(-0.35f, 0))
-                    : bodyRot.RotateVec(new Vector2(0.35f, 0));
+                    ? bodyRot.RotateVec(new Vector2(0, -0.35f))
+                    : bodyRot.RotateVec(new Vector2(0, 0.35f));
                 dest = baseCoords.Offset(offset);
-                localRotation = bodyRot + Angle.FromDegrees(90);
+                localRotation = bodyRot + Angle.FromDegrees(-90);
             }
             else
             {
@@ -990,7 +991,28 @@ public sealed class SurgerySystem : EntitySystem
             }
         }
 
-        performedList.Add(args.ProcedureId.ToString());
+        // When re-performing an open step, remove the close step that undoes it so it can be performed again
+        var stepIdToAdd = args.ProcedureId.ToString();
+        if (closeStepIds != null)
+        {
+            foreach (var undoCloseStepId in closeStepIds)
+            {
+                if (!performedList.Contains(undoCloseStepId))
+                    continue;
+                var undoesOpen = false;
+                if (_prototypes.TryIndex<SurgeryProcedurePrototype>(undoCloseStepId, out var closeProc))
+                    undoesOpen = closeProc.UndoesProcedure?.ToString() == stepIdToAdd;
+                else if (_prototypes.TryIndex<SurgeryStepPrototype>(undoCloseStepId, out var closeStep))
+                    undoesOpen = closeStep.UndoesStep == stepIdToAdd;
+                if (undoesOpen)
+                {
+                    performedList.Remove(undoCloseStepId);
+                    break; // at most one close step undoes a given open step
+                }
+            }
+        }
+
+        performedList.Add(stepIdToAdd);
         Dirty(ent, layerComp);
 
         var penalty = args.Procedure?.Penalty ?? args.Step?.Penalty ?? 0;

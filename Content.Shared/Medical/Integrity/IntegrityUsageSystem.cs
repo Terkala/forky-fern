@@ -2,11 +2,14 @@ using Content.Shared.Body;
 using Content.Shared.Body.Components;
 using Content.Shared.Medical.Integrity.Components;
 using Content.Shared.Medical.Integrity.Events;
+using Robust.Shared.Timing;
 
 namespace Content.Shared.Medical.Integrity;
 
 public sealed class IntegrityUsageSystem : EntitySystem
 {
+    [Dependency] private readonly IGameTiming _timing = default!;
+
     public override void Initialize()
     {
         base.Initialize();
@@ -18,6 +21,9 @@ public sealed class IntegrityUsageSystem : EntitySystem
 
     private void OnOrganGotInserted(Entity<OrganComponent> ent, ref OrganGotInsertedEvent args)
     {
+        if (_timing.ApplyingState)
+            return;
+
         var body = args.Target;
         if (!Exists(body) || !TryComp<BodyComponent>(body, out _))
             return;
@@ -33,6 +39,9 @@ public sealed class IntegrityUsageSystem : EntitySystem
 
     private void OnOrganGotRemoved(Entity<OrganComponent> ent, ref OrganGotRemovedEvent args)
     {
+        if (_timing.ApplyingState)
+            return;
+
         var body = args.Target;
         if (!Exists(body))
             return;

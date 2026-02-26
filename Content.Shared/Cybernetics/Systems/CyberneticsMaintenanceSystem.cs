@@ -16,6 +16,7 @@ using JetBrains.Annotations;
 using Robust.Shared.Containers;
 using Robust.Shared.Network;
 using Robust.Shared.Prototypes;
+using Robust.Shared.Timing;
 
 namespace Content.Shared.Cybernetics.Systems;
 
@@ -23,6 +24,7 @@ namespace Content.Shared.Cybernetics.Systems;
 public sealed class CyberneticsMaintenanceSystem : EntitySystem
 {
     [Dependency] private readonly BodySystem _body = default!;
+    [Dependency] private readonly IGameTiming _timing = default!;
     [Dependency] private readonly SharedDoAfterSystem _doAfter = default!;
     [Dependency] private readonly INetManager _net = default!;
     [Dependency] private readonly SharedHandsSystem _hands = default!;
@@ -50,11 +52,10 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
 
     private void OnCyberLimbInserted(Entity<CyberLimbComponent> ent, ref EntGotInsertedIntoContainerMessage args)
     {
-        if (args.Container.ID != BodyComponent.ContainerID)
+        if (_timing.ApplyingState)
             return;
 
-        var body = args.Container.Owner;
-        if (!HasComp<BodyComponent>(body))
+        if (!_body.TryGetRootBodyFromOrganContainer(args.Container, out var body))
             return;
 
         EnsureCyberneticsMaintenanceComponent((body, Comp<BodyComponent>(body)));
@@ -65,11 +66,10 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
 
     private void OnCyberLimbRemoved(Entity<CyberLimbComponent> ent, ref EntGotRemovedFromContainerMessage args)
     {
-        if (args.Container.ID != BodyComponent.ContainerID)
+        if (_timing.ApplyingState)
             return;
 
-        var body = args.Container.Owner;
-        if (!HasComp<BodyComponent>(body))
+        if (!_body.TryGetRootBodyFromOrganContainer(args.Container, out var body))
             return;
 
         RecalcCyberneticsMaintenanceComponent((body, Comp<BodyComponent>(body)));
@@ -77,6 +77,7 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
         var ev = new CyberLimbDetachedFromBodyEvent(body, ent.Owner);
         RaiseLocalEvent(body, ref ev);
     }
+
 
     private void EnsureCyberneticsMaintenanceComponent(Entity<BodyComponent> body)
     {

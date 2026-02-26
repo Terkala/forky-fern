@@ -37,6 +37,9 @@ public sealed class CyberLimbStatsSystem : EntitySystem
 
     private void OnCyberLimbAttached(Entity<BodyComponent> ent, ref CyberLimbAttachedToBodyEvent args)
     {
+        if (_timing.ApplyingState)
+            return;
+
         var body = args.Body;
         var limb = args.Limb;
 
@@ -57,6 +60,9 @@ public sealed class CyberLimbStatsSystem : EntitySystem
 
     private void OnCyberLimbDetached(Entity<BodyComponent> ent, ref CyberLimbDetachedFromBodyEvent args)
     {
+        if (_timing.ApplyingState)
+            return;
+
         var body = args.Body;
         var cyberCount = _body.GetAllOrgans(body).Count(o => HasComp<CyberLimbComponent>(o));
 

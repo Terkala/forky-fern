@@ -57,21 +57,8 @@ public sealed class LimbDetachmentEffectsSystem : EntitySystem
         if (_timing.ApplyingState)
             return;
 
-        EntityUid body;
-        if (args.Container.ID == BodyComponent.ContainerID)
-        {
-            body = args.Container.Owner;
-        }
-        else if ((args.Container.ID == "body_part_organs" || args.Container.ID == "limb_organs") &&
-                 TryComp<BodyPartComponent>(args.Container.Owner, out var bodyPart) &&
-                 bodyPart.Body is { } bodyUid)
-        {
-            body = bodyUid;
-        }
-        else
-        {
+        if (!_body.TryGetRootBodyFromOrganContainer(args.Container, out var body))
             return;
-        }
 
         var organ = ent.Comp;
         if (organ.Category is not { } category)
@@ -111,21 +98,8 @@ public sealed class LimbDetachmentEffectsSystem : EntitySystem
         if (_timing.ApplyingState)
             return;
 
-        EntityUid body;
-        if (args.Container.ID == BodyComponent.ContainerID)
-        {
-            body = args.Container.Owner;
-        }
-        else if ((args.Container.ID == "body_part_organs" || args.Container.ID == "limb_organs") &&
-                 TryComp<BodyPartComponent>(args.Container.Owner, out var bodyPart) &&
-                 bodyPart.Body is { } bodyUid)
-        {
-            body = bodyUid;
-        }
-        else
-        {
+        if (!_body.TryGetRootBodyFromOrganContainer(args.Container, out var body))
             return;
-        }
 
         var organ = ent.Comp;
         if (organ.Category is not { } category)
@@ -141,9 +115,13 @@ public sealed class LimbDetachmentEffectsSystem : EntitySystem
         if (LifeStage(body) >= EntityLifeStage.Terminating)
             return;
 
-        if (TryComp<HumanoidAppearanceComponent>(body, out var humanoid))
+        // Cyber limbs: CyberLimbAppearanceSystem sets sprite and visibility together to avoid organic flash
+        if (!HasComp<CyberLimbComponent>(ent))
         {
-            _humanoid.SetLayersVisibility((body, humanoid), layers, true);
+            if (TryComp<HumanoidAppearanceComponent>(body, out var humanoid))
+            {
+                _humanoid.SetLayersVisibility((body, humanoid), layers, true);
+            }
         }
 
         // Cyber limbs set BloodDisabled via CyberLimbAppearanceSystem - don't overwrite with AllEnabled

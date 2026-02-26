@@ -51,10 +51,16 @@ public sealed class CyberLimbAppearanceSystem : EntitySystem
 
         if (TryComp<HumanoidAppearanceComponent>(body, out var humanoid))
         {
+            // Force hidden first, then set cyber sprite, then reveal - ensures no flash of organic arm
+            var layerArray = new HumanoidVisualLayers[layers.Length];
+            for (var i = 0; i < layers.Length; i++)
+                layerArray[i] = layers[i].Layer;
+            _humanoid.SetLayersVisibility((body, humanoid), layerArray, visible: false);
             foreach (var (layer, id) in layers)
             {
                 _humanoid.SetBaseLayerId(body, layer, id, humanoid: humanoid);
             }
+            _humanoid.SetLayersVisibility((body, humanoid), layerArray, visible: true);
 
             // Hide the separate foot layer when using combined-foot leg sprite (avoids double-drawing)
             if (CategoryToFootLayers.TryGetValue(categoryStr, out var footLayers))
