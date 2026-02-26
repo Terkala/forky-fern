@@ -78,12 +78,22 @@ public sealed class SurgerySystem : EntitySystem
         }
 
         // Slime-specific: cannot receive organ or limb implants (design doc: Slime-Specific Systems)
-        if (TryComp<HumanoidAppearanceComponent>(ent.Owner, out var appearance) &&
-            appearance.Species == (ProtoId<SpeciesPrototype>)"SlimePerson" &&
-            (args.ProcedureId == "InsertOrgan" || args.ProcedureId == "AttachLimb"))
+        if (TryComp<HumanoidAppearanceComponent>(ent.Owner, out var appearance))
         {
-            args.RejectReason = "slime-cannot-receive-implants";
-            return;
+            if (appearance.Species == (ProtoId<SpeciesPrototype>)"SlimePerson" &&
+                (args.ProcedureId == "InsertOrgan" || args.ProcedureId == "AttachLimb"))
+            {
+                args.RejectReason = "slime-cannot-receive-implants";
+                return;
+            }
+
+            // Skeleton-specific: cannot receive organ implants; only limb detach/attach
+            if (appearance.Species == (ProtoId<SpeciesPrototype>)"Skeleton" &&
+                args.ProcedureId == "InsertOrgan")
+            {
+                args.RejectReason = "skeleton-cannot-receive-organs";
+                return;
+            }
         }
 
         SurgeryProcedurePrototype? procedure = null;

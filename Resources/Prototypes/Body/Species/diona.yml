@@ -291,6 +291,7 @@
   components:
   - type: Nymph
     entityPrototype: OrganDionaNymphBrain
+    transferMind: true
 
 - type: entity
   parent: OrganDionaLungs
