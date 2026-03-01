@@ -350,10 +350,20 @@ public sealed class SurgeryLayerSystem : EntitySystem
         var organ = config.OrganSteps.Select(s => s.ToString()).ToList();
 
         // Add organ removal/insertion procedures from organs in this body part
+        
         if (TryComp<BodyPartComponent>(bodyPart, out var bodyPartComp) && bodyPartComp.Organs != null)
         {
             foreach (var organEntity in bodyPartComp.Organs.ContainedEntities)
             {
+                if (TryComp<OrganComponent>(organEntity, out var organComp) && organComp.Category is { } category)
+                {
+                    var categoryId = category.Id;
+                    // Tongue and Ears surgeries disabled pending a reason to do those surgeries
+                    // Hardcoded for now because I couldn't find a better way to disable this
+                    if (categoryId == "Tongue" || categoryId == "Ears")
+                        continue;
+                }
+
                 if (TryComp<OrganSurgeryProceduresComponent>(organEntity, out var organProcs))
                 {
                     foreach (var proc in organProcs.RemovalProcedures)
@@ -455,6 +465,14 @@ public sealed class SurgeryLayerSystem : EntitySystem
 
         foreach (var organ in bodyPartComp.Organs.ContainedEntities)
         {
+            // Tongue and Ears surgeries disabled pending a reason to do those surgeries (no speech/hearing mechanics).
+            if (TryComp<OrganComponent>(organ, out var organComp) && organComp.Category is { } category)
+            {
+                var categoryId = category.Id;
+                if (categoryId == "Tongue" || categoryId == "Ears")
+                    continue;
+            }
+
             var organNet = GetNetEntity(organ);
             if (!TryComp<OrganSurgeryProceduresComponent>(organ, out var organProcs))
                 continue;

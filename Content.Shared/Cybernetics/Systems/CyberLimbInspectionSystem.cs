@@ -59,6 +59,24 @@ public sealed class CyberLimbInspectionSystem : EntitySystem
                 ("remaining", remaining),
                 ("max", max)));
 
+        if (stats.BatteryMax > 0)
+        {
+            var percent = Math.Clamp((int)(100 * stats.BatteryRemaining / stats.BatteryMax), 0, 100);
+            var (_, _, capacitorCount) = _moduleSystem.GetModuleCounts(ent.Owner);
+            var effectiveDrain = stats.BaseBatteryDrainPerSecond * _moduleSystem.GetCapacitorBatteryDrainMultiplier(capacitorCount);
+            string remainingBattery;
+            if (effectiveDrain > 0)
+            {
+                var timeRemaining = TimeSpan.FromSeconds(stats.BatteryRemaining / effectiveDrain);
+                remainingBattery = FormatServiceTime(timeRemaining) + " remaining";
+            }
+            else
+            {
+                remainingBattery = "recharging";
+            }
+            args.PushMarkup(Loc.GetString("cyber-limb-inspection-battery", ("percent", percent), ("remaining", remainingBattery)));
+        }
+
         var limbsByCategory = new Dictionary<string, List<EntityUid>>();
         foreach (var organ in _body.GetAllOrgans(ent.Owner))
         {

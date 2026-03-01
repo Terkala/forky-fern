@@ -9,6 +9,7 @@
 // SPDX-License-Identifier: MIT
 
 using System.Diagnostics.CodeAnalysis;
+using Content.Shared.Cybernetics.Components;
 using Content.Shared.Hands;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Interaction;
@@ -16,6 +17,7 @@ using Content.Shared.Interaction.Events;
 using Content.Shared.Inventory.Events;
 using Content.Shared.Item;
 using Content.Shared.Popups;
+using Content.Shared.Verbs;
 using Robust.Shared.Containers;
 using Robust.Shared.Prototypes;
 
@@ -53,6 +55,7 @@ public abstract class SharedVirtualItemSystem : EntitySystem
         SubscribeLocalEvent<VirtualItemComponent, GettingInteractedWithAttemptEvent>(OnGettingInteractedWithAttemptEvent);
 
         SubscribeLocalEvent<VirtualItemComponent, GetUsedEntityEvent>(OnGetUsedEntity);
+        SubscribeLocalEvent<VirtualItemComponent, GetVerbsEvent<AlternativeVerb>>(OnGetAlternativeVerbs);
     }
 
     /// <summary>
@@ -93,6 +96,9 @@ public abstract class SharedVirtualItemSystem : EntitySystem
         if (args.Handled)
             return;
 
+        if (!Exists(ent.Comp.BlockingEntity))
+            return;
+
         foreach (var held in _handsSystem.EnumerateHeld(args.User))
         {
             if (held == ent.Comp.BlockingEntity)
@@ -107,6 +113,16 @@ public abstract class SharedVirtualItemSystem : EntitySystem
                 return;
             }
         }
+    }
+
+    private void OnGetAlternativeVerbs(Entity<VirtualItemComponent> ent, ref GetVerbsEvent<AlternativeVerb> args)
+    {
+        if (!HasComp<CyberArmVirtualItemComponent>(ent) || !Exists(ent.Comp.BlockingEntity))
+            return;
+
+        var relayArgs = new GetVerbsEvent<AlternativeVerb>(args.User, ent.Comp.BlockingEntity, args.Using, args.Hands, args.CanInteract, args.CanComplexInteract, args.CanAccess, args.ExtraCategories);
+        RaiseLocalEvent(ent.Comp.BlockingEntity, relayArgs);
+        args.Verbs.UnionWith(relayArgs.Verbs);
     }
 
     #region Hands

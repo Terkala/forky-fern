@@ -8,8 +8,10 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using Content.Shared.Cybernetics.Components;
 using Content.Shared.Hands;
 using Content.Shared.Inventory.Events;
+using Content.Shared.Inventory.VirtualItem;
 using Content.Shared.Item;
 using Robust.Client.GameObjects;
 using Robust.Client.Graphics;
@@ -61,6 +63,14 @@ public sealed class ItemSystem : SharedItemSystem
     /// </summary>
     private void OnGetVisuals(EntityUid uid, ItemComponent item, GetInhandVisualsEvent args)
     {
+        // Cyber arm virtual items get visuals from the blocking entity via CyberArmVirtualItemVisualsSystem
+        if (HasComp<CyberArmVirtualItemComponent>(uid) &&
+            TryComp<VirtualItemComponent>(uid, out var virt) &&
+            Exists(virt.BlockingEntity))
+        {
+            return;
+        }
+
         var defaultKey = $"inhand-{args.Location.ToString().ToLowerInvariant()}";
 
         // try get explicit visuals

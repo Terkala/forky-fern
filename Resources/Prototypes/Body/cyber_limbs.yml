@@ -121,3 +121,76 @@
     interfaces:
       enum.StorageUiKey.Key:
         type: StorageBoundUserInterface
+
+# Pre-filled cyber limbs for CyberSurgery crate - come with capacitor, modular machine part, medium battery, and matter bin
+- type: entity
+  parent: OrganCyberArmLeft
+  id: OrganCyberArmLeftPreFilled
+  name: left cyber arm
+  components:
+  - type: Storage
+    maxItemSize: Normal
+    grid:
+    - 0,0,4,1
+  - type: EntityTableContainerFill
+    containers:
+      storagebase: !type:AllSelector
+        children:
+        - id: CapacitorStockPart
+        - id: MicroManipulatorStockPart
+        - id: PowerCellMedium
+        - id: MatterBinStockPart
+
+- type: entity
+  parent: OrganCyberArmRight
+  id: OrganCyberArmRightPreFilled
+  name: right cyber arm
+  components:
+  - type: Storage
+    maxItemSize: Normal
+    grid:
+    - 0,0,4,1
+  - type: EntityTableContainerFill
+    containers:
+      storagebase: !type:AllSelector
+        children:
+        - id: CapacitorStockPart
+        - id: MicroManipulatorStockPart
+        - id: PowerCellMedium
+        - id: MatterBinStockPart
+
+- type: entity
+  parent: OrganCyberLegLeft
+  id: OrganCyberLegLeftPreFilled
+  name: left cyber leg
+  components:
+  - type: Storage
+    maxItemSize: Normal
+    grid:
+    - 0,0,4,1
+  - type: EntityTableContainerFill
+    containers:
+      storagebase: !type:AllSelector
+        children:
+        - id: CapacitorStockPart
+        - id: MicroManipulatorStockPart
+        - id: PowerCellMedium
+        - id: MatterBinStockPart
+
+- type: entity
+  parent: OrganCyberLegRight
+  id: OrganCyberLegRightPreFilled
+  name: right cyber leg
+  components:
+  - type: Storage
+    maxItemSize: Normal
+    grid:
+    - 0,0,4,1
+  - type: EntityTableContainerFill
+    containers:
+      storagebase: !type:AllSelector
+        children:
+        - id: CapacitorStockPart
+        - id: MicroManipulatorStockPart
+        - id: PowerCellMedium
+        - id: MatterBinStockPart

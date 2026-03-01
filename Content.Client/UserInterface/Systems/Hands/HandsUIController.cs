@@ -325,21 +325,19 @@ public sealed class HandsUIController : UIController, IOnStateEntered<GameplaySt
             var heldEnt = _handsSystem.GetHeldItem((playerEntity, _playerHandsComponent), handName);
 
             var foldedLocation = hand.Value.Location.GetUILocation();
-            // Status panels are laid out with Right hand on left of screen, Left hand on right of screen
-            // (character facing down: their right = screen left). So we swap which panel we update.
+            // Status panels: StatusPanelLeft shows left hand (screen right), StatusPanelRight shows right hand (screen left).
             if (foldedLocation == HandUILocation.Left)
             {
                 _statusHandLeft = handControl;
-                HandsGui.UpdatePanelEntityRight(heldEnt, hand.Value);
+                HandsGui.UpdatePanelEntityLeft(heldEnt, hand.Value);
             }
             else
             {
-                // Middle or right
                 _statusHandRight = handControl;
-                HandsGui.UpdatePanelEntityLeft(heldEnt, hand.Value);
+                HandsGui.UpdatePanelEntityRight(heldEnt, hand.Value);
             }
 
-            HandsGui.SetHighlightHand(foldedLocation == HandUILocation.Left ? HandUILocation.Right : HandUILocation.Left);
+            HandsGui.SetHighlightHand(foldedLocation);
         }
     }
 
@@ -542,11 +540,11 @@ public sealed class HandsUIController : UIController, IOnStateEntered<GameplaySt
 
     private void UpdateHandStatus(HandButton hand, EntityUid? entity, Hand? handData)
     {
-        // Status panels: Right is left of screen (next to left hand), Left is right of screen (next to right hand)
+        // Status panels: StatusPanelLeft shows left hand, StatusPanelRight shows right hand
         if (hand == _statusHandLeft)
-            HandsGui?.UpdatePanelEntityRight(entity, handData);
+            HandsGui?.UpdatePanelEntityLeft(entity, handData);
 
         if (hand == _statusHandRight)
-            HandsGui?.UpdatePanelEntityLeft(entity, handData);
+            HandsGui?.UpdatePanelEntityRight(entity, handData);
     }
 }

@@ -52,6 +52,7 @@ using Content.Shared.Hands.Components;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.IdentityManagement;
 using Content.Shared.Interaction;
+using Content.Shared.Cybernetics.Components;
 using Content.Shared.Inventory;
 using Content.Shared.Inventory.VirtualItem;
 using Content.Shared.Item.ItemToggle.Components;
@@ -348,6 +349,17 @@ public abstract class SharedMeleeWeaponSystem : EntitySystem
                 !melee.MustBeEquippedToUse)
             {
                 weaponUid = held.Value;
+                return true;
+            }
+
+            // Cyber arm virtual item: resolve to blocking entity (mirrors SharedGunSystem.TryGetGun)
+            if (TryComp(held, out VirtualItemComponent? virt) &&
+                Exists(virt.BlockingEntity) &&
+                HasComp<CyberArmVirtualItemComponent>(held) &&
+                TryComp(virt.BlockingEntity, out melee) &&
+                !melee.MustBeEquippedToUse)
+            {
+                weaponUid = virt.BlockingEntity;
                 return true;
             }
 

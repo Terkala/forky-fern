@@ -460,24 +460,43 @@ public sealed class HealthAnalyzerSystem : EntitySystem
             if (nonCyberUsage > 0)
                 state.IntegrityPenaltyEntries.Add(new IntegrityPenaltyDisplayEntry { Description = "health-analyzer-integrity-usage", Amount = nonCyberUsage });
 
-            var cyberLimbsWithPenalty = new List<(EntityUid Organ, int Amount)>();
+            var cyberLimbData = new Dictionary<EntityUid, (int Usage, int Penalty)>();
             foreach (var organ in _body.GetAllOrgans(entity))
             {
                 if (!HasComp<CyberLimbComponent>(organ))
                     continue;
-                if (!TryComp<IntegrityPenaltyComponent>(organ, out var cyberPenalty) || cyberPenalty.Penalty <= 0)
-                    continue;
-                cyberLimbsWithPenalty.Add((organ, cyberPenalty.Penalty));
+                var usage = 0;
+                var penalty = 0;
+                if (TryComp<OrganComponent>(organ, out var organComp) && organComp.IntegrityCost > 0)
+                    usage = organComp.IntegrityCost;
+                if (TryComp<IntegrityPenaltyComponent>(organ, out var cyberPenalty) && cyberPenalty.Penalty > 0)
+                    penalty = cyberPenalty.Penalty;
+                if (usage > 0 || penalty > 0)
+                    cyberLimbData[organ] = (usage, penalty);
             }
-            if (cyberLimbsWithPenalty.Count > 0)
+            if (cyberLimbData.Count > 0)
             {
-                var cyberTotal = cyberLimbsWithPenalty.Sum(x => x.Amount);
                 var cyberChildren = new List<IntegrityPenaltyDisplayEntry>();
-                foreach (var (organ, amount) in cyberLimbsWithPenalty)
+                foreach (var (organ, (usage, penalty)) in cyberLimbData)
                 {
-                    var desc = Identity.Name(organ, EntityManager);
-                    cyberChildren.Add(new IntegrityPenaltyDisplayEntry { Description = desc ?? "?", Amount = amount });
+                    var limbName = Identity.Name(organ, EntityManager) ?? "?";
+                    var limbTotal = usage + penalty;
+                    List<IntegrityPenaltyDisplayEntry>? limbChildren = null;
+                    if (penalty > 0)
+                    {
+                        limbChildren = new List<IntegrityPenaltyDisplayEntry>
+                        {
+                            new() { Description = "health-analyzer-integrity-maintenance-panel-open-indent", Amount = penalty }
+                        };
+                    }
+                    cyberChildren.Add(new IntegrityPenaltyDisplayEntry
+                    {
+                        Description = limbName,
+                        Amount = limbTotal,
+                        Children = limbChildren
+                    });
                 }
+                var cyberTotal = cyberLimbData.Values.Sum(x => x.Usage + x.Penalty);
                 state.IntegrityPenaltyEntries.Add(new IntegrityPenaltyDisplayEntry
                 {
                     Description = "health-analyzer-integrity-cybernetics",

@@ -25,6 +25,7 @@ public sealed class UnsanitarySurgeryCalculationSystem : EntitySystem
 
     [Dependency] private readonly AtmosphereSystem _atmosphere = default!;
     [Dependency] private readonly EntityLookupSystem _lookup = default!;
+    [Dependency] private readonly IMapManager _mapManager = default!;
     [Dependency] private readonly PuddleSystem _puddle = default!;
     [Dependency] private readonly SharedTransformSystem _transform = default!;
     [Dependency] private readonly SharedMapSystem _map = default!;
@@ -78,13 +79,31 @@ public sealed class UnsanitarySurgeryCalculationSystem : EntitySystem
 
     private int CalculateUnsanitaryPenalty(EntityUid patient)
     {
-        if (!TryComp<TransformComponent>(patient, out var xform) || xform.GridUid is not { } gridUid)
+        if (!TryComp<TransformComponent>(patient, out var xform))
             return 0;
 
-        if (!TryComp<MapGridComponent>(gridUid, out var grid))
-            return 0;
+        EntityUid gridUid;
+        MapGridComponent grid;
 
-        var startTile = _transform.GetGridTilePositionOrDefault((patient, xform), grid);
+        // Patient may have null GridUid when parented to non-grid entity (e.g. buckled to bed).
+        // Fallback: resolve grid from patient's world position.
+        if (xform.GridUid is { } directGridUid && TryComp<MapGridComponent>(directGridUid, out var directGrid))
+        {
+            gridUid = directGridUid;
+            grid = directGrid;
+        }
+        else if (!_mapManager.TryFindGridAt(_transform.GetMapCoordinates(patient), out var resolvedGridUid, out var resolvedGrid))
+        {
+            return 0;
+        }
+        else
+        {
+            gridUid = resolvedGridUid;
+            grid = resolvedGrid;
+        }
+
+        var mapCoords = _transform.GetMapCoordinates(patient);
+        var startTile = _map.CoordinatesToTile(gridUid, grid, mapCoords);
         var floodedTiles = FloodFillAtmosphere(gridUid, grid, startTile);
 
         var totalPenalty = 0f;

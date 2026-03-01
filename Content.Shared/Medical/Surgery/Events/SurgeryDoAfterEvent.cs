@@ -20,17 +20,24 @@ public sealed partial class SurgeryDoAfterEvent : DoAfterEvent
     [DataField]
     public bool IsImprovised { get; private set; }
 
+    /// <summary>
+    /// The tool entity used for the surgery (for playing tool-appropriate hit sounds).
+    /// </summary>
+    [DataField]
+    public NetEntity? Tool { get; private set; }
+
     private SurgeryDoAfterEvent()
     {
     }
 
-    public SurgeryDoAfterEvent(NetEntity bodyPart, ProtoId<SurgeryProcedurePrototype> procedureId, NetEntity? organ = null, bool isImprovised = false)
+    public SurgeryDoAfterEvent(NetEntity bodyPart, ProtoId<SurgeryProcedurePrototype> procedureId, NetEntity? organ = null, bool isImprovised = false, NetEntity? tool = null)
     {
         BodyPart = bodyPart;
         ProcedureId = procedureId;
         Organ = organ;
         IsImprovised = isImprovised;
+        Tool = tool;
     }
 
-    public override DoAfterEvent Clone() => new SurgeryDoAfterEvent(BodyPart, ProcedureId, Organ, IsImprovised);
+    public override DoAfterEvent Clone() => new SurgeryDoAfterEvent(BodyPart, ProcedureId, Organ, IsImprovised, Tool);
 }

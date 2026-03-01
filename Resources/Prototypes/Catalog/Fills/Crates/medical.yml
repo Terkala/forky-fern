@@ -94,7 +94,31 @@
         - id: Drill
         - id: Saw
         - id: Hemostat
+        - id: BoneGel
         - id: ClothingMaskSterile
+
+- type: entity
+  parent: CrateSurgery
+  id: CrateCyberSurgery
+  name: CyberSurgery crate
+  description: Surgical instruments and pre-equipped cyber limbs.
+  components:
+  - type: EntityTableContainerFill
+    containers:
+      entity_storage: !type:AllSelector
+        children:
+        - id: Scalpel
+        - id: Retractor
+        - id: Cautery
+        - id: Drill
+        - id: Saw
+        - id: Hemostat
+        - id: BoneGel
+        - id: ClothingMaskSterile
+        - id: OrganCyberArmLeftPreFilled
+        - id: OrganCyberArmRightPreFilled
+        - id: OrganCyberLegLeftPreFilled
+        - id: OrganCyberLegRightPreFilled
 
 - type: entity
   parent: CrateMedical

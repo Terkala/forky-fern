@@ -483,6 +483,25 @@ public sealed partial class AdminVerbSystem
                     Message = string.Join(": ", restoreAllLimbsName, Loc.GetString("admin-smite-restore-all-limbs-description"))
                 };
                 args.Verbs.Add(restoreAllLimbs);
+
+                var cyberneticsReplacementName = Loc.GetString("admin-smite-cybernetics-replacement-name").ToLowerInvariant();
+                Verb cyberneticsReplacement = new()
+                {
+                    Text = cyberneticsReplacementName,
+                    Category = VerbCategory.Smite,
+                    Icon = new SpriteSpecifier.Rsi(new("Interface/Actions/actions_borg.rsi"), "state-laws"),
+                    Act = () =>
+                    {
+                        _limbRegeneration.ReplaceAllLimbsWithCybernetics(args.Target);
+                        _popupSystem.PopupEntity(Loc.GetString("admin-smite-cybernetics-replacement-self"), args.Target,
+                            args.Target, PopupType.Medium);
+                        _popupSystem.PopupCoordinates(Loc.GetString("admin-smite-cybernetics-replacement-other", ("name", args.Target)), Transform(args.Target).Coordinates,
+                            Filter.PvsExcept(args.Target), true, PopupType.Medium);
+                    },
+                    Impact = LogImpact.High,
+                    Message = string.Join(": ", cyberneticsReplacementName, Loc.GetString("admin-smite-cybernetics-replacement-description"))
+                };
+                args.Verbs.Add(cyberneticsReplacement);
             }
 
             var stomachRemovalName = Loc.GetString("admin-smite-stomach-removal-name").ToLowerInvariant();

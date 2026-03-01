@@ -17,9 +17,12 @@ using Content.Shared.Medical.Surgery.Prototypes;
 using Content.Shared.Popups;
 using Content.Shared.Standing;
 using Content.Shared.Tag;
+using Content.Shared.Weapons.Melee.Components;
 using Content.Shared.Weapons.Melee;
+using Robust.Shared.Audio;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Containers;
+using Robust.Shared.GameObjects;
 using Robust.Shared.Map;
 using Robust.Shared.Maths;
 using Robust.Shared.Network;
@@ -43,6 +46,7 @@ public sealed class SurgerySystem : EntitySystem
     [Dependency] private readonly SharedMeleeWeaponSystem _melee = default!;
     [Dependency] private readonly StandingStateSystem _standing = default!;
     [Dependency] private readonly SurgeryLayerSystem _surgeryLayer = default!;
+    [Dependency] private readonly SharedMapSystem _map = default!;
     [Dependency] private readonly TagSystem _tag = default!;
     [Dependency] private readonly SharedTransformSystem _transform = default!;
 
@@ -452,6 +456,7 @@ public sealed class SurgerySystem : EntitySystem
         // so InRangeUnobstructed succeeds (organ inside body would block the ray from user to organ).
         var isOrganStep = args.ProcedureId == "InsertOrgan" || args.ProcedureId == "AttachLimb" || triggersOrganRemoval || isOrganRemovalProc;
         var isOrganInBody = args.ProcedureId == "RemoveOrgan" || isOrganRemovalProc;
+        var toolForSound = tool; // Save for surgery sound (tool's melee hit sound) before reassignment
         if (isOrganStep && args.Organ.HasValue)
         {
             if (isOrganInBody)
@@ -460,7 +465,7 @@ public sealed class SurgerySystem : EntitySystem
                 tool = args.Organ.Value;
         }
 
-        var doAfterEv = new SurgeryDoAfterEvent(GetNetEntity(args.BodyPart), args.ProcedureId, args.Organ.HasValue ? GetNetEntity(args.Organ.Value) : null, isImprovised);
+        var doAfterEv = new SurgeryDoAfterEvent(GetNetEntity(args.BodyPart), args.ProcedureId, args.Organ.HasValue ? GetNetEntity(args.Organ.Value) : null, isImprovised, toolForSound.HasValue ? GetNetEntity(toolForSound.Value) : null);
         var delayMultiplier = 1f;
         float baseDelay;
         if (procedure != null)
@@ -583,7 +588,6 @@ public sealed class SurgerySystem : EntitySystem
         var penalty = procedure?.Penalty ?? step?.Penalty ?? 0;
         var damage = procedure?.Damage ?? procedure?.PrimaryTool.Damage ?? step?.Damage;
         var healAmount = procedure?.HealAmount ?? procedure?.PrimaryTool.HealAmount ?? step?.HealAmount;
-        var sound = procedure?.Sound ?? procedure?.PrimaryTool.Sound ?? step?.Sound;
 
         if (isOrganStep)
         {
@@ -606,8 +610,17 @@ public sealed class SurgerySystem : EntitySystem
         if (healAmount is { } h && !h.Empty)
             _damageable.TryChangeDamage(ent.Owner, h, ignoreResistances: true, origin: args.User);
 
-        if (sound != null && _net.IsServer)
-            _audio.PlayPvs(sound, ent.Owner);
+        // Play the tool's melee hit sound (scalpel sounds like scalpel, crowbar sounds like crowbar)
+        if (_net.IsServer)
+        {
+            SoundSpecifier? sound = null;
+            if (args.Tool.HasValue && TryGetEntity(args.Tool.Value, out var toolEnt) && TryComp<MeleeWeaponComponent>(toolEnt, out var melee))
+                sound = melee.HitSound ?? melee.NoDamageSound;
+            if (sound != null)
+                _audio.PlayPvs(sound, ent.Owner);
+            else
+                _audio.PlayPvs(new SoundCollectionSpecifier("WeakHit"), ent.Owner);
+        }
     }
 
     private void ApplyOrganStep(Entity<BodyComponent> ent, EntityUid bodyPart, string stepId, NetEntity? organNet, EntityUid? organUid, SurgeryProcedurePrototype? procedure, SurgeryStepPrototype? step, EntityUid user)
@@ -714,9 +727,15 @@ public sealed class SurgerySystem : EntitySystem
         }
         else if (stepId == "DetachLimb")
         {
-            var baseCoords = Transform(ent.Owner).Coordinates;
             EntityCoordinates dest;
             Angle? localRotation = null;
+
+            // Use map coordinates and AlignToGrid so limbs always drop on the floor/grid,
+            // never on the bed or other object the patient may be buckled to.
+            // Fallback: patient not on a grid (e.g. in space) — use surgeon's position.
+            var mapCoords = !TryComp(ent.Owner, out TransformComponent? patientXform) || patientXform.GridUid == null
+                ? _transform.GetMapCoordinates(user)
+                : _transform.GetMapCoordinates(ent.Owner);
 
             if (_standing.IsDown(ent.Owner) && TryComp<OrganComponent>(bodyPart, out var limbOrganComp) && limbOrganComp.Category is { } limbCategory)
             {
@@ -726,13 +745,15 @@ public sealed class SurgerySystem : EntitySystem
                 var offset = categoryStr is "ArmLeft" or "LegLeft"
                     ? bodyRot.RotateVec(new Vector2(0, -0.35f))
                     : bodyRot.RotateVec(new Vector2(0, 0.35f));
-                dest = baseCoords.Offset(offset);
+                mapCoords = new MapCoordinates(mapCoords.Position + offset, mapCoords.MapId);
                 localRotation = bodyRot + Angle.FromDegrees(-90);
             }
             else
             {
-                dest = baseCoords;
+                localRotation = null;
             }
+
+            dest = _map.AlignToGrid(_transform.ToCoordinates(mapCoords));
 
             // Detach limb organs (hand/foot) first so they drop as separate items
             if (TryComp<BodyPartComponent>(bodyPart, out var limbBodyPart) && limbBodyPart.Organs != null)

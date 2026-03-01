@@ -37,4 +37,22 @@ public sealed partial class CyberLimbStatsComponent : Component
     /// </summary>
     [DataField]
     public TimeSpan BaseServiceRemaining { get; set; }
+
+    /// <summary>
+    /// Sum of charge across all batteries in cyber limb storage. Computed by CyberLimbStatsSystem.
+    /// </summary>
+    [DataField]
+    public float BatteryRemaining { get; set; }
+
+    /// <summary>
+    /// Sum of MaxCharge across all batteries. 0 when no batteries.
+    /// </summary>
+    [DataField]
+    public float BatteryMax { get; set; }
+
+    /// <summary>
+    /// Base battery drain rate in joules per second (watts). PowerCellMedium 720 J / 20 min = 0.6 J/s.
+    /// </summary>
+    [DataField]
+    public float BaseBatteryDrainPerSecond { get; set; } = 0.6f;
 }

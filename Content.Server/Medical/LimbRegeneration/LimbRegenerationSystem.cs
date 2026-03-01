@@ -119,4 +119,54 @@ public sealed class LimbRegenerationSystem : EntitySystem
             RestoreSingleLimb(body, humanoid.Species, category);
         }
     }
+
+    private static readonly ProtoId<OrganCategoryPrototype>[] LimbCategories =
+    [
+        "ArmLeft",
+        "ArmRight",
+        "LegLeft",
+        "LegRight"
+    ];
+
+    private static readonly (ProtoId<OrganCategoryPrototype> Category, EntProtoId Proto)[] CyberLimbPrototypes =
+    [
+        ("ArmLeft", "OrganCyberArmLeftPreFilled"),
+        ("ArmRight", "OrganCyberArmRightPreFilled"),
+        ("LegLeft", "OrganCyberLegLeftPreFilled"),
+        ("LegRight", "OrganCyberLegRightPreFilled"),
+    ];
+
+    /// <summary>
+    /// Removes all arms and legs, then replaces them with pre-filled cyber limbs.
+    /// Used by the admin "Replace with cybernetics" smite.
+    /// </summary>
+    public void ReplaceAllLimbsWithCybernetics(EntityUid body)
+    {
+        BodyComponent? bodyComp = null;
+        if (!Resolve(body, ref bodyComp) || bodyComp.Organs is not { } organsContainer)
+            return;
+
+        var coords = Transform(body).Coordinates;
+        var limbCategories = new HashSet<ProtoId<OrganCategoryPrototype>>(LimbCategories);
+
+        // Remove existing limbs
+        foreach (var organ in _body.GetAllOrgans(body))
+        {
+            if (!TryComp(organ, out OrganComponent? organComp) || organComp.Category is not { } category || !limbCategories.Contains(category))
+                continue;
+
+            var removeEv = new OrganRemoveRequestEvent(organ) { Destination = coords };
+            RaiseLocalEvent(organ, ref removeEv);
+        }
+
+        // Insert pre-filled cyber limbs
+        foreach (var (category, proto) in CyberLimbPrototypes)
+        {
+            if (_body.GetAllOrgans(body).Any(o => TryComp<OrganComponent>(o, out var oComp) && oComp.Category == category))
+                continue;
+
+            var limb = Spawn(proto, coords);
+            _container.Insert(limb, organsContainer);
+        }
+    }
 }

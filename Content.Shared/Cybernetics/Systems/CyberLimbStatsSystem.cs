@@ -4,6 +4,8 @@ using Content.Shared.Body.Components;
 using Content.Shared.Cybernetics.Components;
 using Content.Shared.Cybernetics.Events;
 using Content.Shared.Movement.Systems;
+using Content.Shared.Power.Components;
+using Content.Shared.Power.EntitySystems;
 using Content.Shared.Stacks;
 using Content.Shared.Storage;
 using Robust.Shared.Network;
@@ -15,6 +17,7 @@ public sealed class CyberLimbStatsSystem : EntitySystem
 {
     [Dependency] private readonly BodySystem _body = default!;
     [Dependency] private readonly CyberLimbModuleSystem _moduleSystem = default!;
+    [Dependency] private readonly SharedBatterySystem _battery = default!;
     [Dependency] private readonly IGameTiming _timing = default!;
     [Dependency] private readonly MovementSpeedModifierSystem _movementSpeed = default!;
     [Dependency] private readonly INetManager _net = default!;
@@ -144,14 +147,72 @@ public sealed class CyberLimbStatsSystem : EntitySystem
         var totalRemaining = _moduleSystem.GetTotalServiceRemaining(body);
         stats.ServiceTimeRemaining = TimeSpan.FromTicks(Math.Min(totalRemaining.Ticks, stats.ServiceTimeMax.Ticks));
 
+        var batteries = _moduleSystem.GetBatteryEntities(body);
+        stats.BatteryRemaining = 0f;
+        stats.BatteryMax = 0f;
+        foreach (var battery in batteries)
+        {
+            if (TryComp<BatteryComponent>(battery, out var batteryComp))
+            {
+                stats.BatteryRemaining += _battery.GetCharge(battery);
+                stats.BatteryMax += batteryComp.MaxCharge;
+            }
+        }
+
         var (_, manipulatorCount, _) = _moduleSystem.GetModuleCounts(body);
         var limbEfficiency = _moduleSystem.GetLimbEfficiencyFromManipulators(manipulatorCount);
-        var depleted = totalRemaining <= TimeSpan.Zero;
+        var depleted = (stats.ServiceTimeRemaining <= TimeSpan.Zero) || (stats.BatteryMax > 0 && stats.BatteryRemaining <= 0);
         var newEfficiency = limbEfficiency * (depleted ? 0.5f : 1f);
         stats.Efficiency = newEfficiency;
 
         Dirty(body, stats);
         _movementSpeed.RefreshMovementSpeedModifiers(body);
+    }
+
+    /// <summary>
+    /// Attempts to drain the given amount of charge (joules) from the body's shared battery pool.
+    /// Used by components that consume power (e.g. CyberLimbPowerDrawComponent).
+    /// </summary>
+    /// <returns>The amount actually drained. May be less than requested if batteries are depleted.</returns>
+    public float TryUseBatteryCharge(EntityUid body, float amount)
+    {
+        if (amount <= 0f)
+            return 0f;
+
+        var batteries = _moduleSystem.GetBatteryEntities(body);
+        var totalDrained = 0f;
+        var remaining = amount;
+
+        foreach (var battery in batteries)
+        {
+            if (remaining <= 0f)
+                break;
+
+            var drained = _battery.UseCharge(battery, remaining);
+            totalDrained += drained;
+            remaining -= drained;
+        }
+
+        if (totalDrained > 0f && TryComp<CyberLimbStatsComponent>(body, out var stats))
+        {
+            stats.BatteryRemaining = 0f;
+            foreach (var battery in batteries)
+            {
+                stats.BatteryRemaining += _battery.GetCharge(battery);
+            }
+            Dirty(body, stats);
+            var depleted = (stats.ServiceTimeRemaining <= TimeSpan.Zero) || (stats.BatteryMax > 0 && stats.BatteryRemaining <= 0);
+            var (_, manipulatorCount, _) = _moduleSystem.GetModuleCounts(body);
+            var limbEfficiency = _moduleSystem.GetLimbEfficiencyFromManipulators(manipulatorCount);
+            var newEfficiency = limbEfficiency * (depleted ? 0.5f : 1f);
+            if (stats.Efficiency != newEfficiency)
+            {
+                stats.Efficiency = newEfficiency;
+                _movementSpeed.RefreshMovementSpeedModifiers(body);
+            }
+        }
+
+        return totalDrained;
     }
 
     public override void Update(float frameTime)
@@ -209,9 +270,38 @@ public sealed class CyberLimbStatsSystem : EntitySystem
             if (stats.ServiceTimeRemaining < TimeSpan.Zero)
                 stats.ServiceTimeRemaining = TimeSpan.Zero;
 
+            var batteries = _moduleSystem.GetBatteryEntities(uid);
+            if (batteries.Count > 0)
+            {
+                var (_, _, capacitorCount) = _moduleSystem.GetModuleCounts(uid);
+                var drainMultiplier = _moduleSystem.GetCapacitorBatteryDrainMultiplier(capacitorCount);
+                var joulesToDrain = stats.BaseBatteryDrainPerSecond * drainMultiplier;
+                var remaining = joulesToDrain;
+
+                foreach (var battery in batteries)
+                {
+                    if (remaining <= 0f)
+                        break;
+
+                    var drained = _battery.UseCharge(battery, remaining);
+                    remaining -= drained;
+                }
+
+                stats.BatteryRemaining = 0f;
+                stats.BatteryMax = 0f;
+                foreach (var battery in batteries)
+                {
+                    if (TryComp<BatteryComponent>(battery, out var batteryComp))
+                    {
+                        stats.BatteryRemaining += _battery.GetCharge(battery);
+                        stats.BatteryMax += batteryComp.MaxCharge;
+                    }
+                }
+            }
+
             var (_, manipulatorCount, _) = _moduleSystem.GetModuleCounts(uid);
             var limbEfficiency = _moduleSystem.GetLimbEfficiencyFromManipulators(manipulatorCount);
-            var depleted = stats.ServiceTimeRemaining <= TimeSpan.Zero;
+            var depleted = (stats.ServiceTimeRemaining <= TimeSpan.Zero) || (stats.BatteryMax > 0 && stats.BatteryRemaining <= 0);
             var newEfficiency = limbEfficiency * (depleted ? 0.5f : 1f);
 
             if (stats.Efficiency != newEfficiency)

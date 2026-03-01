@@ -13,6 +13,7 @@
 // SPDX-License-Identifier: MIT
 
 using System.Linq;
+using Content.Shared.Cybernetics.Components;
 using Content.Shared.Cybernetics.Events;
 using Content.Shared.Examine;
 using Content.Shared.Hands.Components;
@@ -191,7 +192,22 @@ public abstract partial class SharedHandsSystem : EntitySystem
             hand = handsComp.ActiveHandId;
 
         if (!TryGetHeldItem((uid, handsComp), hand, out var held))
-            return false;
+        {
+            // Empty hand - allow systems like CyberArmSelectSystem to handle (e.g. open radial menu for cyber arm storage)
+            var ev = new EmptyHandActivateEvent(uid, hand);
+            RaiseLocalEvent(uid, ref ev);
+            return ev.Handled;
+        }
+
+        // Cyber arm virtual item: Use opens the selection menu instead of using the item
+        if (HasComp<CyberArmVirtualItemComponent>(held.Value) &&
+            TryComp<VirtualItemComponent>(held.Value, out var virt))
+        {
+            _virtualSystem.DeleteVirtualItem((held.Value, virt), uid);
+            var ev = new EmptyHandActivateEvent(uid, hand);
+            RaiseLocalEvent(uid, ref ev);
+            return ev.Handled;
+        }
 
         if (altInteract)
             return _interactionSystem.AltInteract(uid, held.Value);

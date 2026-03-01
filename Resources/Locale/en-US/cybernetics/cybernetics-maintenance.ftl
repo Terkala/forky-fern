@@ -21,3 +21,6 @@ cyber-limb-inspection-efficiency-right-arm = Efficiency (right arm): {$efficienc
 cyber-limb-inspection-efficiency-left-leg = Efficiency (left leg): {$efficiency}%
 cyber-limb-inspection-efficiency-right-leg = Efficiency (right leg): {$efficiency}%
 cyber-limb-inspection-modules = Installed modules: {$modules}
+cyber-limb-inspection-battery = Battery: {$percent}% ({$remaining})
+
+cyber-arm-cannot-wield-two-handed = You cannot wield two-handed weapons from cybernetic arm storage.
