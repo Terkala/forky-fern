@@ -444,7 +444,7 @@ public sealed partial class AdminVerbSystem
                 {
                     Text = removeAllLimbsName,
                     Category = VerbCategory.Smite,
-                    Icon = new SpriteSpecifier.Texture(new("/Textures/Interface/AdminActions/remove-hands.png")),
+                    Icon = new SpriteSpecifier.Rsi(new("/Textures/Objects/Consumable/Food/Baked/nuggets.rsi"), "tendie"),
                     Act = () =>
                     {
                         var baseXform = Transform(args.Target);

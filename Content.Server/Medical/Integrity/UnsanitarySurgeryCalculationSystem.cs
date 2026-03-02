@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Content.Shared.Atmos;
 using Content.Shared.Body;
+using Content.Shared.Chemistry.EntitySystems;
 using Content.Shared.FixedPoint;
 using Content.Shared.Fluids.Components;
 using Content.Shared.IdentityManagement;
@@ -11,7 +12,7 @@ using Content.Shared.Medical.Integrity.Events;
 using Content.Shared.Medical.Surgery.Prototypes;
 using Content.Shared.Tag;
 using Content.Server.Atmos.EntitySystems;
-using Content.Server.Fluids.EntitySystems;
+using Robust.Shared.GameObjects;
 using Robust.Shared.Map;
 using Robust.Shared.Map.Components;
 using Robust.Shared.Prototypes;
@@ -22,10 +23,12 @@ public sealed class UnsanitarySurgeryCalculationSystem : EntitySystem
 {
     private const float VoidPressureThreshold = 5000f; // 5 kPa - no bacteria in void
     private const int FloodFillMaxDistance = 3;
+    private const string WaterReagentId = "Water";
 
     [Dependency] private readonly AtmosphereSystem _atmosphere = default!;
+    [Dependency] private readonly EntityLookupSystem _lookup = default!;
     [Dependency] private readonly IMapManager _mapManager = default!;
-    [Dependency] private readonly PuddleSystem _puddle = default!;
+    [Dependency] private readonly SharedSolutionContainerSystem _solutionContainer = default!;
     [Dependency] private readonly SharedTransformSystem _transform = default!;
     [Dependency] private readonly SharedMapSystem _map = default!;
     [Dependency] private readonly TagSystem _tag = default!;
@@ -108,18 +111,31 @@ public sealed class UnsanitarySurgeryCalculationSystem : EntitySystem
         var totalPenalty = 0f;
         var rustyWallsCounted = new HashSet<EntityUid>();
 
+        // Get puddles in range of patient - GetEntitiesInRange<PuddleComponent> works reliably
+        // (used by DrainSystem, JuggernautBloodAbsorption). Range 4 covers ~3 tiles.
+        var puddleVolume = GetPuddleVolumeInRange(xform.Coordinates, range: 4f);
+
         foreach (var tile in floodedTiles)
         {
             var tileCoords = _map.GridTileToLocal(gridUid, grid, tile);
             var mixture = _atmosphere.GetTileMixture(gridUid, xform.MapUid, tile, excite: false);
 
+            // Always check for puddles - GetAnchoredEntities is used by PuddleSystem itself when spilling
+            var liquidVolume = GetTileLiquidVolume(gridUid, grid, tile);
+            if (liquidVolume == 0)
+                liquidVolume = GetAnchoredPuddleVolume(gridUid, grid, tile);
+
             if (mixture == null || mixture.Pressure < VoidPressureThreshold)
+            {
+                // No atmosphere - still count liquid as unsanitary
+                if (liquidVolume > 0)
+                    totalPenalty += (float)liquidVolume / 10f + 0.25f;
                 continue;
+            }
 
             var tilePenalty = 0f;
             var isSterile = IsTileSterile(gridUid, grid, tile, tileCoords);
 
-            var liquidVolume = GetTileLiquidVolume(gridUid, grid, tile);
             tilePenalty += (float)liquidVolume / 10f;
 
             if (!isSterile)
@@ -139,6 +155,10 @@ public sealed class UnsanitarySurgeryCalculationSystem : EntitySystem
                 }
             }
         }
+
+        // Fallback: range-based puddle detection when tile-based logic missed it (e.g. empty map, no atmosphere)
+        if (puddleVolume > 0 && totalPenalty == 0)
+            totalPenalty = (float)puddleVolume / 10f + 0.25f;
 
         return (int)System.Math.Ceiling(totalPenalty);
     }
@@ -189,13 +209,59 @@ public sealed class UnsanitarySurgeryCalculationSystem : EntitySystem
         return false;
     }
 
+    private FixedPoint2 GetPuddleVolumeInRange(EntityCoordinates coords, float range)
+    {
+        var puddles = _lookup.GetEntitiesInRange<PuddleComponent>(coords, range);
+        var total = FixedPoint2.Zero;
+        foreach (var puddle in puddles)
+            total += GetUnsanitaryPuddleVolume(puddle.Owner, puddle.Comp);
+        return total;
+    }
+
+    /// <summary>
+    /// Volume of puddle reagents that count as unsanitary. Water is excluded (clean water is not unsanitary).
+    /// </summary>
+    private FixedPoint2 GetUnsanitaryPuddleVolume(EntityUid uid, PuddleComponent puddle)
+    {
+        if (!_solutionContainer.TryGetSolution(uid, puddle.SolutionName, out _, out var solution))
+            return FixedPoint2.Zero;
+
+        var total = FixedPoint2.Zero;
+        foreach (var (reagent, quantity) in solution.Contents)
+        {
+            if (reagent.Prototype != WaterReagentId)
+                total += quantity;
+        }
+        return total;
+    }
+
     private FixedPoint2 GetTileLiquidVolume(EntityUid gridUid, MapGridComponent grid, Vector2i indices)
+    {
+        // Use GetLocalEntitiesIntersecting (same as CleanTileReaction/cleannades) - puddles have Physics
+        // so they're found via broadphase.
+        if (!_map.TryGetTileRef(gridUid, grid, indices, out var tileRef))
+            return FixedPoint2.Zero;
+
+        var total = FixedPoint2.Zero;
+        foreach (var uid in _lookup.GetLocalEntitiesIntersecting(tileRef, 0f))
+        {
+            if (TryComp<PuddleComponent>(uid, out var puddle))
+                total += GetUnsanitaryPuddleVolume(uid, puddle);
+        }
+        return total;
+    }
+
+    /// <summary>
+    /// Puddle volume via GetAnchoredEntities - same approach PuddleSystem uses when finding puddles to add to.
+    /// Use when GetLocalEntitiesIntersecting returns 0 (e.g. empty map with no physics broadphase).
+    /// </summary>
+    private FixedPoint2 GetAnchoredPuddleVolume(EntityUid gridUid, MapGridComponent grid, Vector2i indices)
     {
         var total = FixedPoint2.Zero;
         foreach (var uid in _map.GetAnchoredEntities(gridUid, grid, indices))
         {
             if (TryComp<PuddleComponent>(uid, out var puddle))
-                total += _puddle.CurrentVolume(uid, puddle);
+                total += GetUnsanitaryPuddleVolume(uid, puddle);
         }
         return total;
     }

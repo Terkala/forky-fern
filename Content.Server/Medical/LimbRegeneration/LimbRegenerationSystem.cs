@@ -4,6 +4,7 @@ using Content.Shared.Body;
 using Content.Shared.Body.Components;
 using Content.Shared.Body.Events;
 using Content.Shared.Containers;
+using Content.Shared.Cybernetics.Components;
 using Content.Shared.Humanoid;
 using Content.Shared.Humanoid.Prototypes;
 using Robust.Shared.Containers;
@@ -149,10 +150,14 @@ public sealed class LimbRegenerationSystem : EntitySystem
         var coords = Transform(body).Coordinates;
         var limbCategories = new HashSet<ProtoId<OrganCategoryPrototype>>(LimbCategories);
 
-        // Remove existing limbs
-        foreach (var organ in _body.GetAllOrgans(body))
+        // Remove existing limbs (only organic - skip if already cyber to avoid double-replacement crash)
+        // ToList() required: OrganRemoveRequestEvent modifies the organs container during iteration
+        foreach (var organ in _body.GetAllOrgans(body).ToList())
         {
             if (!TryComp(organ, out OrganComponent? organComp) || organComp.Category is not { } category || !limbCategories.Contains(category))
+                continue;
+
+            if (HasComp<CyberLimbComponent>(organ))
                 continue;
 
             var removeEv = new OrganRemoveRequestEvent(organ) { Destination = coords };

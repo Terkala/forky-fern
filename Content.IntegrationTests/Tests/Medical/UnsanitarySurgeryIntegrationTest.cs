@@ -1,8 +1,12 @@
 using System.Collections.Generic;
 using System.Linq;
+using Content.Server.Fluids.EntitySystems;
+using Content.Shared.Chemistry.Components;
+using Content.Shared.FixedPoint;
 using Content.Server.Medical.Integrity;
 using Content.Shared.Body;
 using Content.Shared.Body.Events;
+using Content.Shared.Chemistry.EntitySystems;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Medical.Integrity;
 using Content.Shared.Medical.Integrity.Components;
@@ -12,7 +16,10 @@ using Content.Shared.Medical.Surgery.Components;
 using Content.Shared.Medical.Surgery.Events;
 using Content.Shared.Medical.Surgery.Prototypes;
 using Robust.Shared.GameObjects;
+using Robust.Shared.Map;
+using Robust.Shared.Map.Components;
 using Robust.Shared.Prototypes;
+using Robust.Shared.Timing;
 
 namespace Content.IntegrationTests.Tests.Medical;
 
@@ -113,6 +120,145 @@ public sealed class UnsanitarySurgeryIntegrationTest
                 var unsanitaryEntries = surgeryComp.Entries.Where(e => e.Category == IntegrityPenaltyCategory.UnsanitarySurgery).ToList();
                 Assert.That(unsanitaryEntries.Sum(e => e.Amount), Is.LessThanOrEqualTo(1), "On sterile floor, UnsanitarySurgery penalty should be minimal");
             }
+        });
+
+        await pair.CleanReturnAsync();
+    }
+
+    [Test]
+    public async Task Surgery_WithPuddle_AppliesUnsanitaryPenalty()
+    {
+        await using var pair = await PoolManager.GetServerClient(new PoolSettings
+        {
+            Connected = true,
+            DummyTicker = false
+        });
+        var server = pair.Server;
+
+        await server.WaitIdleAsync();
+
+        var entityManager = server.ResolveDependency<IEntityManager>();
+        var handsSystem = entityManager.System<SharedHandsSystem>();
+        var puddleSystem = entityManager.System<PuddleSystem>();
+        var mapSystem = entityManager.System<SharedMapSystem>();
+        var mapData = await pair.CreateTestMap();
+
+        await pair.RunTicksSync(5);
+
+        EntityUid surgeon = default;
+        EntityUid patient = default;
+        EntityUid analyzer = default;
+        EntityUid scalpel = default;
+        EntityUid torso = default;
+        EntityUid wirecutter = default;
+        EntityUid retractor = default;
+
+        await server.WaitPost(() =>
+        {
+            var tile = mapData.Tile;
+            var spawnCoords = mapSystem.GridTileToLocal(tile.GridUid, entityManager.GetComponent<MapGridComponent>(tile.GridUid), tile.GridIndices);
+            surgeon = entityManager.SpawnEntity("MobHuman", spawnCoords);
+            patient = entityManager.SpawnEntity("MobHuman", spawnCoords);
+            analyzer = entityManager.SpawnEntity("HandheldHealthAnalyzer", spawnCoords);
+            scalpel = entityManager.SpawnEntity("Scalpel", spawnCoords);
+            wirecutter = entityManager.SpawnEntity("Wirecutter", spawnCoords);
+            retractor = entityManager.SpawnEntity("Retractor", spawnCoords);
+            torso = GetTorso(entityManager, patient);
+
+            // Spill blood directly - water is excluded from unsanitary penalty, so use blood to test detection
+            var solution = new Solution("Blood", FixedPoint2.New(50));
+            Assert.That(puddleSystem.TrySpillAt(spawnCoords, solution, out _), Is.True, "Should spill blood");
+
+            handsSystem.TryPickupAnyHand(surgeon, analyzer, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(surgeon, scalpel, checkActionBlocker: false);
+        });
+
+        // Wait for spill to process and puddle to settle
+        await pair.RunTicksSync(10);
+
+        await server.WaitPost(() =>
+        {
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"CreateIncision", SurgeryLayer.Skin, false);
+            entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
+            Assert.That(ev.Valid, Is.True, $"CreateIncision should be valid. RejectReason: {ev.RejectReason}");
+        });
+
+        await pair.RunTicksSync(150);
+
+        await server.WaitPost(() =>
+        {
+            handsSystem.TryDrop(surgeon, targetDropLocation: null, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(surgeon, wirecutter, checkActionBlocker: false);
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"ClampVessels", SurgeryLayer.Skin, false);
+            entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
+            Assert.That(ev.Valid, Is.True, $"ClampVessels should be valid. RejectReason: {ev.RejectReason}");
+        });
+
+        await pair.RunTicksSync(150);
+
+        await server.WaitPost(() =>
+        {
+            handsSystem.TryDrop(surgeon, targetDropLocation: null, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(surgeon, retractor, checkActionBlocker: false);
+            var ev = new SurgeryRequestEvent(analyzer, surgeon, patient, torso, (ProtoId<SurgeryProcedurePrototype>)"RetractSkin", SurgeryLayer.Skin, false);
+            entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
+            Assert.That(ev.Valid, Is.True, $"RetractSkin should be valid. RejectReason: {ev.RejectReason}");
+        });
+
+        await pair.RunTicksSync(150);
+
+        await server.WaitAssertion(() =>
+        {
+            Assert.That(entityManager.TryGetComponent(torso, out SurgeryLayerComponent? layer), Is.True, "Should have SurgeryLayerComponent on torso");
+            Assert.That(layer!.SkinRetracted, Is.True, "Skin should be retracted after DoAfter");
+            var totalEv = new IntegrityPenaltyTotalRequestEvent(patient);
+            entityManager.EventBus.RaiseLocalEvent(patient, ref totalEv);
+            Assert.That(totalEv.Total, Is.GreaterThanOrEqualTo(1), "Should have at least step penalty (1)");
+            Assert.That(entityManager.TryGetComponent(patient, out IntegritySurgeryComponent? surgeryComp), Is.True, "Patient should have IntegritySurgeryComponent after surgery");
+            var unsanitaryEntries = surgeryComp!.Entries.Where(e => e.Category == IntegrityPenaltyCategory.UnsanitarySurgery).ToList();
+            Assert.That(unsanitaryEntries.Sum(e => e.Amount), Is.GreaterThan(0), "With puddle under patient, UnsanitarySurgery penalty should be applied");
+        });
+
+        await pair.CleanReturnAsync();
+    }
+
+    [Test]
+    public async Task UnsanitaryPenalty_WithPuddleOnTile_DetectsPuddle()
+    {
+        // Direct test of puddle detection: spawn patient, spill puddle, request penalty, assert applied
+        await using var pair = await PoolManager.GetServerClient(new PoolSettings { DummyTicker = false });
+        var server = pair.Server;
+        await server.WaitIdleAsync();
+
+        var entityManager = server.ResolveDependency<IEntityManager>();
+        var puddleSystem = entityManager.System<PuddleSystem>();
+        var mapSystem = entityManager.System<SharedMapSystem>();
+        var mapData = await pair.CreateTestMap();
+
+        await pair.RunTicksSync(5);
+
+        EntityUid patient = default;
+        await server.WaitPost(() =>
+        {
+            var tile = mapData.Tile;
+            var spawnCoords = mapSystem.GridTileToLocal(tile.GridUid, entityManager.GetComponent<MapGridComponent>(tile.GridUid), tile.GridIndices);
+            patient = entityManager.SpawnEntity("MobHuman", spawnCoords);
+
+            // Spill blood - water is excluded from unsanitary penalty, so use blood to test detection
+            var solution = new Solution("Blood", FixedPoint2.New(50));
+            Assert.That(puddleSystem.TrySpillAt(spawnCoords, solution, out _), Is.True, "Should spill blood");
+        });
+
+        await pair.RunTicksSync(10);
+
+        await server.WaitAssertion(() =>
+        {
+            var ev = new UnsanitarySurgeryPenaltyRequestEvent(patient, GetTorso(entityManager, patient), "TestStep", SurgeryLayer.Skin, false, null, null);
+            entityManager.EventBus.RaiseLocalEvent(patient, ref ev);
+
+            Assert.That(entityManager.TryGetComponent(patient, out IntegritySurgeryComponent? surgeryComp), Is.True, "Patient should have IntegritySurgeryComponent after penalty request with puddle");
+            var unsanitaryEntries = surgeryComp!.Entries.Where(e => e.Category == IntegrityPenaltyCategory.UnsanitarySurgery).ToList();
+            Assert.That(unsanitaryEntries.Sum(e => e.Amount), Is.GreaterThan(0), "UnsanitarySurgery penalty should be applied when puddle on tile");
         });
 
         await pair.CleanReturnAsync();
