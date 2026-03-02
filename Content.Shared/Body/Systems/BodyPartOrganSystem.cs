@@ -1,6 +1,7 @@
 using Content.Shared.Body.Components;
 using Content.Shared.Body.Events;
 using Robust.Shared.Containers;
+using Robust.Shared.Log;
 
 namespace Content.Shared.Body;
 

@@ -34,6 +34,14 @@
   - LightHeadBorg
   - TorsoBorg
 
+- type: latheRecipePack
+  id: CyberneticsStatic
+  recipes:
+  - OrganCyberArmLeft
+  - OrganCyberArmRight
+  - OrganCyberLegLeft
+  - OrganCyberLegRight
+
 ## Dynamic
 
 - type: latheRecipePack
@@ -76,3 +84,19 @@
     - MechEquipmentGrabber
     - MechEquipmentHorn
     - MechEquipmentGrabberSmall
+
+- type: latheRecipePack
+  id: Cybernetics
+  recipes:
+  - OrganCyberArmLeftT1
+  - OrganCyberArmRightT1
+  - OrganCyberLegLeftT1
+  - OrganCyberLegRightT1
+  - OrganCyberArmLeftT2
+  - OrganCyberArmRightT2
+  - OrganCyberLegLeftT2
+  - OrganCyberLegRightT2
+  - OrganCyberArmLeftT3
+  - OrganCyberArmRightT3
+  - OrganCyberLegLeftT3
+  - OrganCyberLegRightT3

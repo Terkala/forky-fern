@@ -40,6 +40,14 @@
 # SPDX-License-Identifier: MIT
 
 - type: damageModifierSet
+  id: MilitaryCyberlimb5Percent
+  coefficients:
+    Blunt: 0.95
+    Slash: 0.95
+    Piercing: 0.95
+    Heat: 0.95
+
+- type: damageModifierSet
   id: Metallic
   coefficients:
     Blunt: 0.7

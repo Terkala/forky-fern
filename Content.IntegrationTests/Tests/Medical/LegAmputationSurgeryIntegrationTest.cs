@@ -104,8 +104,8 @@ public sealed class LegAmputationSurgeryIntegrationTest : InteractionTest
 
         await RunTicks(1);
 
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "CreateIncision", SurgeryLayer.Skin, false), analyzerNet);
-        await RunTicks(150);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "CreateIncision", SurgeryLayer.Skin, false), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
         await Server.WaitPost(() =>
         {
@@ -113,8 +113,8 @@ public sealed class LegAmputationSurgeryIntegrationTest : InteractionTest
             HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(wirecutterNet), checkActionBlocker: false);
         });
         await RunTicks(1);
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "ClampVessels", SurgeryLayer.Skin, false), analyzerNet);
-        await RunTicks(150);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "ClampVessels", SurgeryLayer.Skin, false), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
         await Server.WaitPost(() =>
         {
@@ -122,8 +122,8 @@ public sealed class LegAmputationSurgeryIntegrationTest : InteractionTest
             HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(retractorNet), checkActionBlocker: false);
         });
         await RunTicks(1);
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "RetractSkin", SurgeryLayer.Skin, false), analyzerNet);
-        await RunTicks(150);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "RetractSkin", SurgeryLayer.Skin, false), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
         await Server.WaitPost(() =>
         {
@@ -131,8 +131,8 @@ public sealed class LegAmputationSurgeryIntegrationTest : InteractionTest
             HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(sawNet), checkActionBlocker: false);
         });
         await RunTicks(1);
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "CutBone", SurgeryLayer.Tissue, false), analyzerNet);
-        await RunTicks(150);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "CutBone", SurgeryLayer.Tissue, false), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
         await Server.WaitPost(() =>
         {
@@ -140,8 +140,8 @@ public sealed class LegAmputationSurgeryIntegrationTest : InteractionTest
             HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(cauteryNet), checkActionBlocker: false);
         });
         await RunTicks(1);
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "MarrowBleeding", SurgeryLayer.Tissue, false), analyzerNet);
-        await RunTicks(150);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "MarrowBleeding", SurgeryLayer.Tissue, false), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
         await Server.WaitPost(() =>
         {
@@ -149,8 +149,8 @@ public sealed class LegAmputationSurgeryIntegrationTest : InteractionTest
             HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(retractorNet), checkActionBlocker: false);
         });
         await RunTicks(1);
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "RetractTissue", SurgeryLayer.Tissue, false), analyzerNet);
-        await RunTicks(150);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "RetractTissue", SurgeryLayer.Tissue, false), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
         await Server.WaitPost(() =>
         {
@@ -158,8 +158,9 @@ public sealed class LegAmputationSurgeryIntegrationTest : InteractionTest
             HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(scalpelNet), checkActionBlocker: false);
         });
         await RunTicks(1);
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "DetachLimb", SurgeryLayer.Organ, false), analyzerNet);
-        await RunTicks(500);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "DetachLimb", SurgeryLayer.Organ, false), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
+        await RunTicks(5);
 
         NetEntity? footNet = null;
         await Server.WaitAssertion(() =>
@@ -187,12 +188,13 @@ public sealed class LegAmputationSurgeryIntegrationTest : InteractionTest
         });
 
         // Pick up the leg and verify player can hold it (prerequisite for re-attach via surgery)
+        // After DetachLimb we hold the scalpel; drop it to free a hand for the leg.
         await Server.WaitPost(() =>
         {
-            var sawUid = SEntMan.GetEntity(sawNet);
+            var scalpelUid = SEntMan.GetEntity(scalpelNet);
             foreach (var hand in HandSys.EnumerateHands((SPlayer, Hands!)))
             {
-                if (HandSys.TryGetHeldItem((SPlayer, Hands!), hand, out var held) && held == sawUid)
+                if (HandSys.TryGetHeldItem((SPlayer, Hands!), hand, out var held) && held == scalpelUid)
                 {
                     HandSys.TrySetActiveHand((SPlayer, Hands!), hand);
                     HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);

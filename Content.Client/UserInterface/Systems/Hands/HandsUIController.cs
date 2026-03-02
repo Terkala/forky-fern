@@ -325,7 +325,7 @@ public sealed class HandsUIController : UIController, IOnStateEntered<GameplaySt
             var heldEnt = _handsSystem.GetHeldItem((playerEntity, _playerHandsComponent), handName);
 
             var foldedLocation = hand.Value.Location.GetUILocation();
-            // Status panels: StatusPanelLeft shows left hand (screen right), StatusPanelRight shows right hand (screen left).
+            // Status panels: StatusPanelLeft shows left hand, StatusPanelRight shows right hand.
             if (foldedLocation == HandUILocation.Left)
             {
                 _statusHandLeft = handControl;

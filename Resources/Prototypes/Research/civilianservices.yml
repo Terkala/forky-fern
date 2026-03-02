@@ -109,6 +109,21 @@
   - BiofabricatorMachineCircuitboard
   - BiomassReclaimerMachineCircuitboard
 
+- type: technology
+  id: CyberneticsBasic
+  name: research-technology-cybernetics-basic
+  icon:
+    sprite: _EinsteinEngines/Mobs/Species/Cybernetics/bishop/bishop_main.rsi
+    state: l_arm-combined-hand
+  discipline: CivilianServices
+  tier: 1
+  cost: 5000
+  recipeUnlocks:
+  - OrganCyberArmLeftT1
+  - OrganCyberArmRightT1
+  - OrganCyberLegLeftT1
+  - OrganCyberLegRightT1
+
 # Tier 2
 
 - type: technology
@@ -233,6 +248,21 @@
   - PushHorn
   - BorgModuleAdvancedClowning
 
+- type: technology
+  id: CyberneticsAdvanced
+  name: research-technology-cybernetics-advanced
+  icon:
+    sprite: _EinsteinEngines/Mobs/Species/Cybernetics/bishop/bishop_main.rsi
+    state: l_arm-combined-hand
+  discipline: CivilianServices
+  tier: 2
+  cost: 7500
+  recipeUnlocks:
+  - OrganCyberArmLeftT2
+  - OrganCyberArmRightT2
+  - OrganCyberLegLeftT2
+  - OrganCyberLegRightT2
+
 # Tier 3
 
 - type: technology
@@ -272,3 +302,18 @@
   recipeUnlocks:
   - LauncherSyringe
   - MiniSyringe
+
+- type: technology
+  id: CyberneticsElite
+  name: research-technology-cybernetics-elite
+  icon:
+    sprite: _EinsteinEngines/Mobs/Species/Cybernetics/bishop/bishop_main.rsi
+    state: l_arm-combined-hand
+  discipline: CivilianServices
+  tier: 3
+  cost: 10000
+  recipeUnlocks:
+  - OrganCyberArmLeftT3
+  - OrganCyberArmRightT3
+  - OrganCyberLegLeftT3
+  - OrganCyberLegRightT3

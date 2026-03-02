@@ -48,7 +48,7 @@ public sealed class CyberArmSelectMenuBoundUserInterface : BoundUserInterface
 
     private void HandleMenuOptionClick(NetEntity entity)
     {
-        SendMessage(new CyberArmSelectRequestMessage(entity));
+        SendPredictedMessage(new CyberArmSelectRequestMessage(entity));
     }
 
     protected override void Dispose(bool disposing)

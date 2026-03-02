@@ -533,6 +533,7 @@ public sealed class CyberneticsMaintenanceIntegrationTest
         EntityUid patient = default;
         EntityUid cyberArm = default;
         EntityUid screwdriver = default;
+        EntityUid precisionScrewdriver = default;
         EntityUid wrench = default;
         EntityUid wireStack = default;
         EntityCoordinates coords = default;
@@ -543,6 +544,7 @@ public sealed class CyberneticsMaintenanceIntegrationTest
             technician = entityManager.SpawnEntity("MobHuman", coords);
             patient = entityManager.SpawnEntity("MobHuman", coords);
             screwdriver = entityManager.SpawnEntity("Screwdriver", coords);
+            precisionScrewdriver = entityManager.SpawnEntity("ScrewdriverPrecision", coords);
             wrench = entityManager.SpawnEntity("Wrench", coords);
             wireStack = entityManager.SpawnEntity("CableApcStack", coords);
 
@@ -590,7 +592,7 @@ public sealed class CyberneticsMaintenanceIntegrationTest
         await server.WaitPost(() =>
         {
             handsSystem.TryDrop(technician, targetDropLocation: null, checkActionBlocker: false);
-            handsSystem.TryPickupAnyHand(technician, screwdriver, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(technician, precisionScrewdriver, checkActionBlocker: false);
             handsSystem.TryPickupAnyHand(technician, wireStack, checkActionBlocker: false);
             var ev = new InteractUsingEvent(technician, wireStack, patient, coords);
             entityManager.EventBus.RaiseLocalEvent(patient, ev);

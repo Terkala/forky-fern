@@ -582,8 +582,12 @@ public abstract partial class InteractionTest
     /// <summary>
     /// Wait for any currently active DoAfters to finish.
     /// </summary>
-    protected async Task AwaitDoAfters(int maxExpected = 1)
+    /// <param name="minExpected">When &gt; 0, asserts at least this many DoAfters are active (fails fast if surgery/action was rejected).</param>
+    protected async Task AwaitDoAfters(int maxExpected = 1, int minExpected = 0)
     {
+        if (minExpected > 0)
+            Assert.That(ActiveDoAfters.Count(), Is.GreaterThanOrEqualTo(minExpected), $"Expected at least {minExpected} DoAfter(s) to be active (action may have been rejected)");
+
         if (!ActiveDoAfters.Any())
             return;
 
@@ -1184,12 +1188,37 @@ public abstract partial class InteractionTest
     /// <summary>
     ///     Sends a bui message using the given bui key.
     /// </summary>
-    protected async Task SendBui(Enum key, BoundUserInterfaceMessage msg, NetEntity? target = null)
+    /// <param name="fromServer">When true, raises the message on the server directly (bypasses client prediction).
+    /// Use for integration tests where client BUI messages may not reach the server reliably.</param>
+    protected async Task SendBui(Enum key, BoundUserInterfaceMessage msg, NetEntity? target = null, bool fromServer = false)
     {
-        if (!TryGetBui(key, out var bui, target))
-            return;
+        if (fromServer)
+        {
+            await Server.WaitPost(() =>
+            {
+                target ??= Target;
+                if (target == null)
+                {
+                    Assert.Fail("No target specified");
+                    return;
+                }
+                var uid = SEntMan.GetEntity(target.Value);
+                if (!SEntMan.TryGetComponent(uid, out UserInterfaceComponent? uiComp))
+                {
+                    Assert.Fail($"Entity {SEntMan.ToPrettyString(uid)} does not have UserInterfaceComponent");
+                    return;
+                }
+                msg.Actor = SPlayer;
+                SUiSys.RaiseUiMessage(new Entity<UserInterfaceComponent?>(uid, uiComp), key, msg);
+            });
+        }
+        else
+        {
+            if (!TryGetBui(key, out var bui, target))
+                return;
 
-        await Client.WaitPost(() => bui.SendMessage(msg));
+            await Client.WaitPost(() => bui.SendMessage(msg));
+        }
 
         // allow for client -> server and server -> client messages to be sent.
         await RunTicks(15);

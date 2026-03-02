@@ -454,11 +454,13 @@
     - RoboticsStatic
     - BorgModulesStatic
     - BorgLimbsStatic
+    - CyberneticsStatic
     dynamicPacks:
     - Robotics
     - BorgModules
     - MechParts
     - MechEquipment
+    - Cybernetics
   - type: MaterialStorage
     whitelist: *StandardMaterialWhitelist
   - type: OreSiloClient
@@ -543,6 +545,7 @@
     - SecurityAmmo
     - SecurityWeapons
     - SecurityDisablers
+    - MilitaryCybernetics
   - type: EmagLatheRecipes
     emagStaticPacks:
     - SyndicateAmmoStatic

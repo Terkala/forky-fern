@@ -47,6 +47,7 @@
   - type: HealthAnalyzer
     scanningEndSound:
       path: "/Audio/Items/Medical/healthscanner.ogg"
+  - type: SharedHealthAnalyzer
   - type: Tag
     tags:
     - DiscreteHealthAnalyzer

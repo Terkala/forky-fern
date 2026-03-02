@@ -24,7 +24,6 @@ public sealed class UnsanitarySurgeryCalculationSystem : EntitySystem
     private const int FloodFillMaxDistance = 3;
 
     [Dependency] private readonly AtmosphereSystem _atmosphere = default!;
-    [Dependency] private readonly EntityLookupSystem _lookup = default!;
     [Dependency] private readonly IMapManager _mapManager = default!;
     [Dependency] private readonly PuddleSystem _puddle = default!;
     [Dependency] private readonly SharedTransformSystem _transform = default!;
@@ -120,7 +119,7 @@ public sealed class UnsanitarySurgeryCalculationSystem : EntitySystem
             var tilePenalty = 0f;
             var isSterile = IsTileSterile(gridUid, grid, tile, tileCoords);
 
-            var liquidVolume = GetTileLiquidVolume(tileCoords);
+            var liquidVolume = GetTileLiquidVolume(gridUid, grid, tile);
             tilePenalty += (float)liquidVolume / 10f;
 
             if (!isSterile)
@@ -181,8 +180,7 @@ public sealed class UnsanitarySurgeryCalculationSystem : EntitySystem
                 return true;
         }
 
-        var entities = _turf.GetEntitiesInTile(coords, LookupFlags.Static | LookupFlags.Approximate);
-        foreach (var uid in entities)
+        foreach (var uid in _map.GetAnchoredEntities(gridUid, grid, indices))
         {
             if (HasComp<SterileSurgerySurfaceComponent>(uid))
                 return true;
@@ -191,11 +189,10 @@ public sealed class UnsanitarySurgeryCalculationSystem : EntitySystem
         return false;
     }
 
-    private FixedPoint2 GetTileLiquidVolume(EntityCoordinates coords)
+    private FixedPoint2 GetTileLiquidVolume(EntityUid gridUid, MapGridComponent grid, Vector2i indices)
     {
-        var entities = _turf.GetEntitiesInTile(coords, LookupFlags.Static | LookupFlags.Approximate);
         var total = FixedPoint2.Zero;
-        foreach (var uid in entities)
+        foreach (var uid in _map.GetAnchoredEntities(gridUid, grid, indices))
         {
             if (TryComp<PuddleComponent>(uid, out var puddle))
                 total += _puddle.CurrentVolume(uid, puddle);
@@ -205,9 +202,7 @@ public sealed class UnsanitarySurgeryCalculationSystem : EntitySystem
 
     private IEnumerable<EntityUid> GetRustyWallsInTile(EntityUid gridUid, MapGridComponent grid, Vector2i indices)
     {
-        var coords = _map.GridTileToLocal(gridUid, grid, indices);
-        var entities = _turf.GetEntitiesInTile(coords, LookupFlags.Static | LookupFlags.Approximate);
-        foreach (var uid in entities)
+        foreach (var uid in _map.GetAnchoredEntities(gridUid, grid, indices))
         {
             if (_tag.HasTag(uid, "RustyWall"))
                 yield return uid;

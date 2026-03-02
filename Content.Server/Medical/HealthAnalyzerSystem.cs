@@ -95,59 +95,17 @@ public sealed class HealthAnalyzerSystem : EntitySystem
         SubscribeLocalEvent<HealthAnalyzerComponent, EntGotInsertedIntoContainerMessage>(OnInsertedIntoContainer);
         SubscribeLocalEvent<HealthAnalyzerComponent, ItemToggledEvent>(OnToggled);
         SubscribeLocalEvent<HealthAnalyzerComponent, DroppedEvent>(OnDropped);
-        SubscribeLocalEvent<HealthAnalyzerComponent, SurgeryRequestBuiMessage>(OnSurgeryRequest);
         SubscribeLocalEvent<SurgeryLayerComponent, SurgeryPenaltyAppliedEvent>(OnSurgeryPenaltyApplied);
         SubscribeLocalEvent<BodyComponent, SurgeryUiRefreshRequestEvent>(OnSurgeryUiRefreshRequest);
         SubscribeLocalEvent<BodyComponent, OrganRemovedFromEvent>(OnBodyOrganRemoved);
-    }
 
-    private void OnBodyOrganRemoved(Entity<BodyComponent> ent, ref OrganRemovedFromEvent args)
-    {
-        _limbRegeneration.OnOrganRemovedFrom(ent, ref args);
-
-        var analyzerQuery = EntityQueryEnumerator<HealthAnalyzerComponent>();
-        while (analyzerQuery.MoveNext(out var uid, out var comp))
+        Subs.BuiEvents<HealthAnalyzerComponent>(HealthAnalyzerUiKey.Key, subs =>
         {
-            if (comp.ScannedEntity == ent.Owner)
-            {
-                UpdateScannedUser(uid, ent.Owner, true);
-                break;
-            }
-        }
+            subs.Event<SurgeryRequestBuiMessage>(OnSurgeryRequestBui);
+        });
     }
 
-    private void OnSurgeryPenaltyApplied(Entity<SurgeryLayerComponent> ent, ref SurgeryPenaltyAppliedEvent args)
-    {
-        var bodyPart = ent.Owner;
-        if (!TryComp<BodyPartComponent>(bodyPart, out var bodyPartComp) || bodyPartComp.Body is not { } body)
-            return;
-
-        var analyzerQuery = EntityQueryEnumerator<HealthAnalyzerComponent>();
-        while (analyzerQuery.MoveNext(out var uid, out var comp))
-        {
-            if (comp.ScannedEntity == body)
-            {
-                UpdateScannedUser(uid, body, true);
-                break;
-            }
-        }
-    }
-
-    private void OnSurgeryUiRefreshRequest(Entity<BodyComponent> ent, ref SurgeryUiRefreshRequestEvent args)
-    {
-        var body = ent.Owner;
-        var analyzerQuery = EntityQueryEnumerator<HealthAnalyzerComponent>();
-        while (analyzerQuery.MoveNext(out var uid, out var comp))
-        {
-            if (comp.ScannedEntity == body)
-            {
-                UpdateScannedUser(uid, body, true);
-                break;
-            }
-        }
-    }
-
-    private void OnSurgeryRequest(Entity<HealthAnalyzerComponent> uid, ref SurgeryRequestBuiMessage args)
+    private void OnSurgeryRequestBui(Entity<HealthAnalyzerComponent> uid, ref SurgeryRequestBuiMessage args)
     {
         if (uid.Comp.ScannedEntity is not { } target)
             return;
@@ -233,6 +191,52 @@ public sealed class HealthAnalyzerSystem : EntitySystem
             "SnippingTool" => "health-analyzer-surgery-tool-snipping",
             _ => tagId
         };
+    }
+
+    private void OnBodyOrganRemoved(Entity<BodyComponent> ent, ref OrganRemovedFromEvent args)
+    {
+        _limbRegeneration.OnOrganRemovedFrom(ent, ref args);
+
+        var analyzerQuery = EntityQueryEnumerator<HealthAnalyzerComponent>();
+        while (analyzerQuery.MoveNext(out var uid, out var comp))
+        {
+            if (comp.ScannedEntity == ent.Owner)
+            {
+                UpdateScannedUser(uid, ent.Owner, true);
+                break;
+            }
+        }
+    }
+
+    private void OnSurgeryPenaltyApplied(Entity<SurgeryLayerComponent> ent, ref SurgeryPenaltyAppliedEvent args)
+    {
+        var bodyPart = ent.Owner;
+        if (!TryComp<BodyPartComponent>(bodyPart, out var bodyPartComp) || bodyPartComp.Body is not { } body)
+            return;
+
+        var analyzerQuery = EntityQueryEnumerator<HealthAnalyzerComponent>();
+        while (analyzerQuery.MoveNext(out var uid, out var comp))
+        {
+            if (comp.ScannedEntity == body)
+            {
+                UpdateScannedUser(uid, body, true);
+                break;
+            }
+        }
+    }
+
+    private void OnSurgeryUiRefreshRequest(Entity<BodyComponent> ent, ref SurgeryUiRefreshRequestEvent args)
+    {
+        var body = ent.Owner;
+        var analyzerQuery = EntityQueryEnumerator<HealthAnalyzerComponent>();
+        while (analyzerQuery.MoveNext(out var uid, out var comp))
+        {
+            if (comp.ScannedEntity == body)
+            {
+                UpdateScannedUser(uid, body, true);
+                break;
+            }
+        }
     }
 
     public override void Update(float frameTime)
@@ -353,6 +357,10 @@ public sealed class HealthAnalyzerSystem : EntitySystem
         //Link the health analyzer to the scanned entity
         healthAnalyzer.Comp.ScannedEntity = target;
 
+        var shared = EnsureComp<SharedHealthAnalyzerComponent>(healthAnalyzer);
+        shared.ScannedEntity = target;
+        Dirty(healthAnalyzer, shared);
+
         _toggle.TryActivate(healthAnalyzer.Owner);
 
         UpdateScannedUser(healthAnalyzer, target, true);
@@ -367,6 +375,12 @@ public sealed class HealthAnalyzerSystem : EntitySystem
     {
         //Unlink the analyzer
         healthAnalyzer.Comp.ScannedEntity = null;
+
+        if (TryComp<SharedHealthAnalyzerComponent>(healthAnalyzer, out var shared))
+        {
+            shared.ScannedEntity = null;
+            Dirty(healthAnalyzer, shared);
+        }
 
         _toggle.TryDeactivate(healthAnalyzer.Owner);
 
@@ -465,28 +479,28 @@ public sealed class HealthAnalyzerSystem : EntitySystem
             {
                 if (!HasComp<CyberLimbComponent>(organ))
                     continue;
-                var usage = 0;
-                var penalty = 0;
+                var organUsage = 0;
+                var organPenalty = 0;
                 if (TryComp<OrganComponent>(organ, out var organComp) && organComp.IntegrityCost > 0)
-                    usage = organComp.IntegrityCost;
+                    organUsage = organComp.IntegrityCost;
                 if (TryComp<IntegrityPenaltyComponent>(organ, out var cyberPenalty) && cyberPenalty.Penalty > 0)
-                    penalty = cyberPenalty.Penalty;
-                if (usage > 0 || penalty > 0)
-                    cyberLimbData[organ] = (usage, penalty);
+                    organPenalty = cyberPenalty.Penalty;
+                if (organUsage > 0 || organPenalty > 0)
+                    cyberLimbData[organ] = (organUsage, organPenalty);
             }
             if (cyberLimbData.Count > 0)
             {
                 var cyberChildren = new List<IntegrityPenaltyDisplayEntry>();
-                foreach (var (organ, (usage, penalty)) in cyberLimbData)
+                foreach (var (organ, (limbUsage, limbPenalty)) in cyberLimbData)
                 {
                     var limbName = Identity.Name(organ, EntityManager) ?? "?";
-                    var limbTotal = usage + penalty;
+                    var limbTotal = limbUsage + limbPenalty;
                     List<IntegrityPenaltyDisplayEntry>? limbChildren = null;
-                    if (penalty > 0)
+                    if (limbPenalty > 0)
                     {
                         limbChildren = new List<IntegrityPenaltyDisplayEntry>
                         {
-                            new() { Description = "health-analyzer-integrity-maintenance-panel-open-indent", Amount = penalty }
+                            new() { Description = "health-analyzer-integrity-maintenance-panel-open-indent", Amount = limbPenalty }
                         };
                     }
                     cyberChildren.Add(new IntegrityPenaltyDisplayEntry

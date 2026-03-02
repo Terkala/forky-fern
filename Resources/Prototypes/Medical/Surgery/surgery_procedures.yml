@@ -207,6 +207,7 @@
 - type: surgeryProcedure
   id: SealBleedPoints
   layer: Tissue
+  undoesProcedure: MarrowBleeding
   name: health-analyzer-surgery-step-seal-bleed-points
   penalty: 0
   primaryTool:

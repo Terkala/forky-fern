@@ -72,6 +72,11 @@ public sealed class BioRejectionSystem : EntitySystem
                 : RampRatePerNegativeIntegrity * current;
             var delta = Math.Clamp(target - current, -stepSize, stepSize);
 
+            // When target is 0, clear residual damage that would otherwise get stuck due to
+            // FixedPoint2 precision limits or step size becoming smaller than the minimum threshold.
+            if (target == 0 && Math.Abs(delta) < 0.001f && current > 0)
+                delta = -current;
+
             if (Math.Abs(delta) < 0.001f)
                 continue;
 

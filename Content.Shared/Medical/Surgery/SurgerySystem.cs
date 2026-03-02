@@ -25,7 +25,6 @@ using Robust.Shared.Containers;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Map;
 using Robust.Shared.Maths;
-using Robust.Shared.Network;
 using Robust.Shared.Prototypes;
 
 namespace Content.Shared.Medical.Surgery;
@@ -40,7 +39,6 @@ public sealed class SurgerySystem : EntitySystem
     [Dependency] private readonly DamageableSystem _damageable = default!;
     [Dependency] private readonly SharedDoAfterSystem _doAfter = default!;
     [Dependency] private readonly SharedHandsSystem _hands = default!;
-    [Dependency] private readonly INetManager _net = default!;
     [Dependency] private readonly IPrototypeManager _prototypes = default!;
     [Dependency] private readonly SharedPopupSystem _popup = default!;
     [Dependency] private readonly SharedMeleeWeaponSystem _melee = default!;
@@ -575,7 +573,7 @@ public sealed class SurgerySystem : EntitySystem
 
             if (stepsConfig == null || !_surgeryLayer.CanPerformStep(args.ProcedureId.ToString(), stepLayer, layerComp, stepsConfig, bodyPart, organUid))
             {
-                _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-invalid-surgical-process"), args.User, args.User, PopupType.Medium);
+                _popup.PopupClient(Loc.GetString("health-analyzer-surgery-error-invalid-surgical-process"), args.User, args.User, PopupType.Medium);
                 return;
             }
         }
@@ -590,9 +588,7 @@ public sealed class SurgerySystem : EntitySystem
         var healAmount = procedure?.HealAmount ?? procedure?.PrimaryTool.HealAmount ?? step?.HealAmount;
 
         if (isOrganStep)
-        {
             ApplyOrganStep(ent, bodyPart, args.ProcedureId.ToString(), args.Organ, organUid, procedure, step, args.User);
-        }
         else
         {
             var completedEv = new SurgeryStepCompletedEvent(args.User, ent.Owner, bodyPart, args.ProcedureId, stepLayer, organUid, step, procedure);
@@ -611,16 +607,13 @@ public sealed class SurgerySystem : EntitySystem
             _damageable.TryChangeDamage(ent.Owner, h, ignoreResistances: true, origin: args.User);
 
         // Play the tool's melee hit sound (scalpel sounds like scalpel, crowbar sounds like crowbar)
-        if (_net.IsServer)
-        {
-            SoundSpecifier? sound = null;
-            if (args.Tool.HasValue && TryGetEntity(args.Tool.Value, out var toolEnt) && TryComp<MeleeWeaponComponent>(toolEnt, out var melee))
-                sound = melee.HitSound ?? melee.NoDamageSound;
-            if (sound != null)
-                _audio.PlayPvs(sound, ent.Owner);
-            else
-                _audio.PlayPvs(new SoundCollectionSpecifier("WeakHit"), ent.Owner);
-        }
+        SoundSpecifier? sound = null;
+        if (args.Tool.HasValue && TryGetEntity(args.Tool.Value, out var toolEnt) && TryComp<MeleeWeaponComponent>(toolEnt, out var melee))
+            sound = melee.HitSound ?? melee.NoDamageSound;
+        if (sound != null)
+            _audio.PlayPredicted(sound, ent.Owner, args.User);
+        else
+            _audio.PlayPredicted(new SoundCollectionSpecifier("WeakHit"), ent.Owner, args.User);
     }
 
     private void ApplyOrganStep(Entity<BodyComponent> ent, EntityUid bodyPart, string stepId, NetEntity? organNet, EntityUid? organUid, SurgeryProcedurePrototype? procedure, SurgeryStepPrototype? step, EntityUid user)
@@ -635,7 +628,7 @@ public sealed class SurgerySystem : EntitySystem
         {
             if (!TryComp<BodyPartComponent>(bodyPart, out bodyPartComp) || bodyPartComp.Body != ent.Owner)
             {
-                _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-invalid-surgical-process"), user, user, PopupType.Medium);
+                _popup.PopupClient(Loc.GetString("health-analyzer-surgery-error-invalid-surgical-process"), user, user, PopupType.Medium);
                 return;
             }
 
@@ -663,12 +656,12 @@ public sealed class SurgerySystem : EntitySystem
         {
             if (organUid is not { } organ || !Exists(organ))
             {
-                _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-organ-gone"), user, user, PopupType.Medium);
+                _popup.PopupClient(Loc.GetString("health-analyzer-surgery-error-organ-gone"), user, user, PopupType.Medium);
                 return;
             }
             if (bodyPartComp!.Organs == null || !bodyPartComp.Organs.ContainedEntities.Contains(organ))
             {
-                _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-organ-gone"), user, user, PopupType.Medium);
+                _popup.PopupClient(Loc.GetString("health-analyzer-surgery-error-organ-gone"), user, user, PopupType.Medium);
                 return;
             }
             var removeEv = new OrganRemoveRequestEvent(organ) { Destination = Transform(user).Coordinates };
@@ -693,12 +686,12 @@ public sealed class SurgerySystem : EntitySystem
         {
             if (organUid is not { } organ || !Exists(organ))
             {
-                _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-organ-not-in-hand"), user, user, PopupType.Medium);
+                _popup.PopupClient(Loc.GetString("health-analyzer-surgery-error-organ-not-in-hand"), user, user, PopupType.Medium);
                 return;
             }
             if (!_hands.IsHolding(user, organ))
             {
-                _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-organ-not-in-hand"), user, user, PopupType.Medium);
+                _popup.PopupClient(Loc.GetString("health-analyzer-surgery-error-organ-not-in-hand"), user, user, PopupType.Medium);
                 return;
             }
             if (TryComp<OrganComponent>(organ, out var organComp) && organComp.Category is { } category &&
@@ -706,7 +699,7 @@ public sealed class SurgerySystem : EntitySystem
                 bodyPartComp.Organs.ContainedEntities.Any(o =>
                     TryComp<OrganComponent>(o, out var oComp) && oComp.Category == category))
             {
-                _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-slot-filled"), user, user, PopupType.Medium);
+                _popup.PopupClient(Loc.GetString("health-analyzer-surgery-error-slot-filled"), user, user, PopupType.Medium);
                 return;
             }
             var insertEv = new OrganInsertRequestEvent(bodyPart, organ);
@@ -723,7 +716,7 @@ public sealed class SurgerySystem : EntitySystem
                 RaiseLocalEvent(ent.Owner, ref uiRefreshEv);
             }
             else
-                _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-slot-filled"), user, user, PopupType.Medium);
+                _popup.PopupClient(Loc.GetString("health-analyzer-surgery-error-slot-filled"), user, user, PopupType.Medium);
         }
         else if (stepId == "DetachLimb")
         {
@@ -780,7 +773,7 @@ public sealed class SurgerySystem : EntitySystem
         {
             if (organUid is not { } limb || !Exists(limb) || !_hands.IsHolding(user, limb))
             {
-                _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-organ-not-in-hand"), user, user, PopupType.Medium);
+                _popup.PopupClient(Loc.GetString("health-analyzer-surgery-error-organ-not-in-hand"), user, user, PopupType.Medium);
                 return;
             }
             if (TryComp<OrganComponent>(limb, out var limbOrganComp) && limbOrganComp.Category is { } attachCategory)
@@ -789,7 +782,7 @@ public sealed class SurgerySystem : EntitySystem
                     TryComp<OrganComponent>(o, out var oComp) && oComp.Category == attachCategory);
                 if (alreadyHasLimb)
                 {
-                    _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-slot-filled"), user, user, PopupType.Medium);
+                    _popup.PopupClient(Loc.GetString("health-analyzer-surgery-error-slot-filled"), user, user, PopupType.Medium);
                     return;
                 }
             }
@@ -807,7 +800,7 @@ public sealed class SurgerySystem : EntitySystem
                 RaiseLocalEvent(ent.Owner, ref uiRefreshEv);
             }
             else
-                _popup.PopupEntity(Loc.GetString("health-analyzer-surgery-error-slot-filled"), user, user, PopupType.Medium);
+                _popup.PopupClient(Loc.GetString("health-analyzer-surgery-error-slot-filled"), user, user, PopupType.Medium);
         }
         else if (procedure != null && layerComp != null && organUid.HasValue && organNet.HasValue)
         {
@@ -930,61 +923,8 @@ public sealed class SurgerySystem : EntitySystem
                     penaltyToRemove += openStepPenalty;
                 }
 
-                // Cascade: remove any performed open steps whose prerequisites are no longer satisfied
-                var openStepIds = args.Layer switch
-                {
-                    SurgeryLayer.Skin => stepsConfig?.GetSkinOpenStepIds(_prototypes) ?? Array.Empty<string>(),
-                    SurgeryLayer.Tissue => stepsConfig?.GetTissueOpenStepIds(_prototypes) ?? Array.Empty<string>(),
-                    _ => Array.Empty<string>()
-                };
-
-                var changed = true;
-                while (changed)
-                {
-                    changed = false;
-                    foreach (var stepId in performedList.Where(s => openStepIds.Contains(s)).ToList())
-                    {
-                        var prereqsSatisfied = true;
-                        if (_prototypes.TryIndex<SurgeryProcedurePrototype>(stepId, out var proc))
-                        {
-                            foreach (var p in proc.Prerequisites)
-                            {
-                                if (p.Type != StepPrerequisiteType.RequireStepPerformed)
-                                    continue;
-                                var reqId = p.Procedure?.ToString() ?? p.StepId;
-                                if (string.IsNullOrEmpty(reqId) || !performedList.Contains(reqId))
-                                {
-                                    prereqsSatisfied = false;
-                                    break;
-                                }
-                            }
-                        }
-                        else if (_prototypes.TryIndex<SurgeryStepPrototype>(stepId, out var step))
-                        {
-                            foreach (var p in step.Prerequisites)
-                            {
-                                if (p.Type != StepPrerequisiteType.RequireStepPerformed)
-                                    continue;
-                                var reqId = p.Procedure?.ToString() ?? p.StepId;
-                                if (string.IsNullOrEmpty(reqId) || !performedList.Contains(reqId))
-                                {
-                                    prereqsSatisfied = false;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (!prereqsSatisfied)
-                        {
-                            performedList.Remove(stepId);
-                            if (_prototypes.TryIndex<SurgeryProcedurePrototype>(stepId, out var removedProc))
-                                penaltyToRemove += removedProc.Penalty;
-                            else if (_prototypes.TryIndex<SurgeryStepPrototype>(stepId, out var removedStep))
-                                penaltyToRemove += removedStep.Penalty;
-                            changed = true;
-                        }
-                    }
-                }
+                // Do not cascade-remove later steps when repairing an earlier step. Later steps stay in their
+                // performed state; the user must re-do the undone step before interacting with later layers again.
 
                 if (penaltyToRemove > 0)
                 {

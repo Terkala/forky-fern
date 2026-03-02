@@ -111,8 +111,8 @@ public sealed class FullOrganSurgeryIntegrationTest : InteractionTest
 
         await RunTicks(1);
 
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "CreateIncision", SurgeryLayer.Skin, false), analyzerNet);
-        await RunTicks(150);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "CreateIncision", SurgeryLayer.Skin, false), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
         await Server.WaitPost(() =>
         {
@@ -120,8 +120,8 @@ public sealed class FullOrganSurgeryIntegrationTest : InteractionTest
             HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(wirecutterNet), checkActionBlocker: false);
         });
         await RunTicks(1);
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "ClampVessels", SurgeryLayer.Skin, false), analyzerNet);
-        await RunTicks(150);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "ClampVessels", SurgeryLayer.Skin, false), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
         await Server.WaitPost(() =>
         {
@@ -129,8 +129,8 @@ public sealed class FullOrganSurgeryIntegrationTest : InteractionTest
             HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(retractorNet), checkActionBlocker: false);
         });
         await RunTicks(1);
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "RetractSkin", SurgeryLayer.Skin, false), analyzerNet);
-        await RunTicks(150);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "RetractSkin", SurgeryLayer.Skin, false), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
         await Server.WaitPost(() =>
         {
@@ -138,8 +138,8 @@ public sealed class FullOrganSurgeryIntegrationTest : InteractionTest
             HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(sawNet), checkActionBlocker: false);
         });
         await RunTicks(1);
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "CutBone", SurgeryLayer.Tissue, false), analyzerNet);
-        await RunTicks(150);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "CutBone", SurgeryLayer.Tissue, false), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
         await Server.WaitPost(() =>
         {
@@ -147,8 +147,8 @@ public sealed class FullOrganSurgeryIntegrationTest : InteractionTest
             HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(cauteryNet), checkActionBlocker: false);
         });
         await RunTicks(1);
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "MarrowBleeding", SurgeryLayer.Tissue, false), analyzerNet);
-        await RunTicks(150);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "MarrowBleeding", SurgeryLayer.Tissue, false), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
         await Server.WaitPost(() =>
         {
@@ -156,8 +156,8 @@ public sealed class FullOrganSurgeryIntegrationTest : InteractionTest
             HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(retractorNet), checkActionBlocker: false);
         });
         await RunTicks(1);
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "RetractTissue", SurgeryLayer.Tissue, false), analyzerNet);
-        await RunTicks(150);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "RetractTissue", SurgeryLayer.Tissue, false), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
         var bodySystem = SEntMan.System<BodySystem>();
         var heartNet = NetEntity.Invalid;
@@ -176,8 +176,8 @@ public sealed class FullOrganSurgeryIntegrationTest : InteractionTest
             HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(hemostatNet), checkActionBlocker: false);
         });
         await RunTicks(1);
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "OrganClampVessels", SurgeryLayer.Organ, false, heartNet), analyzerNet);
-        await RunTicks(200);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "OrganClampVessels", SurgeryLayer.Organ, false, heartNet), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
         await Server.WaitPost(() =>
         {
@@ -185,8 +185,8 @@ public sealed class FullOrganSurgeryIntegrationTest : InteractionTest
             HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(scalpelNet), checkActionBlocker: false);
         });
         await RunTicks(1);
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "OrganRemovalScalpel", SurgeryLayer.Organ, false, heartNet), analyzerNet);
-        await RunTicks(200);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "OrganRemovalScalpel", SurgeryLayer.Organ, false, heartNet), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
         await Server.WaitPost(() =>
         {
@@ -194,11 +194,12 @@ public sealed class FullOrganSurgeryIntegrationTest : InteractionTest
             HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(cauteryNet), checkActionBlocker: false);
         });
         await RunTicks(1);
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "OrganRemovalHemostat", SurgeryLayer.Organ, false, heartNet), analyzerNet);
-        await RunTicks(200);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "OrganRemovalHemostat", SurgeryLayer.Organ, false, heartNet), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "RemoveOrgan", SurgeryLayer.Organ, false, heartNet), analyzerNet);
-        await RunTicks(400);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "RemoveOrgan", SurgeryLayer.Organ, false, heartNet), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
+        await RunTicks(5);
 
         await Server.WaitAssertion(() =>
         {
@@ -231,8 +232,8 @@ public sealed class FullOrganSurgeryIntegrationTest : InteractionTest
             Assert.That(HandSys.IsHolding(SPlayer, heart), Is.True, "Heart must be in hand before InsertOrgan BUI");
         });
 
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "InsertOrgan", SurgeryLayer.Organ, false, heartNet), analyzerNet);
-        await RunTicks(300);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "InsertOrgan", SurgeryLayer.Organ, false, heartNet), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
         await Server.WaitPost(() =>
         {

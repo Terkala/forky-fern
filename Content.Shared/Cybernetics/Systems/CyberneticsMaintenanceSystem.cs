@@ -14,7 +14,6 @@ using Content.Shared.Tag;
 using Content.Shared.Tools.Systems;
 using JetBrains.Annotations;
 using Robust.Shared.Containers;
-using Robust.Shared.Network;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Timing;
 
@@ -26,7 +25,6 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
     [Dependency] private readonly BodySystem _body = default!;
     [Dependency] private readonly IGameTiming _timing = default!;
     [Dependency] private readonly SharedDoAfterSystem _doAfter = default!;
-    [Dependency] private readonly INetManager _net = default!;
     [Dependency] private readonly SharedHandsSystem _hands = default!;
     [Dependency] private readonly SharedPopupSystem _popup = default!;
     [Dependency] private readonly SharedStackSystem _stack = default!;
@@ -194,7 +192,7 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
 
     private void OnScrewdriverDoAfter(Entity<CyberneticsMaintenanceComponent> ent, ref CyberneticsScrewdriverDoAfterEvent args)
     {
-        if (!_net.IsServer || args.Cancelled)
+        if (args.Cancelled)
             return;
 
         var comp = ent.Comp;
@@ -206,14 +204,14 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
             comp.PanelOpen = true;
             // Do not reset BoltsTight - preserve state when resuming after closing panel early
             ApplyPenaltyToCyberLimbs(body, 1);
-            _popup.PopupEntity(Loc.GetString("cyber-maintenance-open-panel"), body, args.User);
+            _popup.PopupPredicted(Loc.GetString("cyber-maintenance-open-panel"), body, args.User);
         }
         else if (comp.PanelOpen)
         {
             comp.PanelSecured = true;
             comp.PanelOpen = false;
             RemovePenaltyFromCyberLimbs(body, 1);
-            _popup.PopupEntity(Loc.GetString("cyber-maintenance-lock-panel"), body, args.User);
+            _popup.PopupPredicted(Loc.GetString("cyber-maintenance-lock-panel"), body, args.User);
         }
 
         var ev = new CyberMaintenanceStateChangedEvent(body, PanelClosed: comp.PanelSecured);
@@ -223,7 +221,7 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
 
     private void OnWrenchDoAfter(Entity<CyberneticsMaintenanceComponent> ent, ref CyberneticsWrenchDoAfterEvent args)
     {
-        if (!_net.IsServer || args.Cancelled)
+        if (args.Cancelled)
             return;
 
         var comp = ent.Comp;
@@ -236,7 +234,7 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
         {
             comp.BoltsTight = false;
             ApplyPenaltyToCyberLimbs(body, 1);
-            _popup.PopupEntity(Loc.GetString("cyber-maintenance-loosen-bolts"), body, args.User);
+            _popup.PopupPredicted(Loc.GetString("cyber-maintenance-loosen-bolts"), body, args.User);
             var ev = new CyberMaintenanceStateChangedEvent(body, BoltsLoosened: true);
             RaiseLocalEvent(body, ref ev);
         }
@@ -252,7 +250,7 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
             comp.BoltsTight = true;
             comp.WiresInsertedCount = 0;
             RemovePenaltyFromCyberLimbs(body, 1);
-            _popup.PopupEntity(Loc.GetString("cyber-maintenance-tighten-bolts"), body, args.User);
+            _popup.PopupPredicted(Loc.GetString("cyber-maintenance-tighten-bolts"), body, args.User);
             var ev = new CyberMaintenanceStateChangedEvent(body, RepairCompleted: true);
             RaiseLocalEvent(body, ref ev);
         }
@@ -262,7 +260,7 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
 
     private void OnWireInsertDoAfter(Entity<CyberneticsMaintenanceComponent> ent, ref CyberneticsWireInsertDoAfterEvent args)
     {
-        if (!_net.IsServer || args.Cancelled)
+        if (args.Cancelled)
             return;
 
         var comp = ent.Comp;
@@ -343,7 +341,7 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
         if (comp.WiresInsertedCount >= cyberCount)
         {
             args.Repeat = false;
-            _popup.PopupEntity(Loc.GetString("cyber-maintenance-wires-complete"), body, args.User);
+            _popup.PopupPredicted(Loc.GetString("cyber-maintenance-wires-complete"), body, args.User);
             var ev = new CyberMaintenanceStateChangedEvent(body);
             RaiseLocalEvent(body, ref ev);
         }

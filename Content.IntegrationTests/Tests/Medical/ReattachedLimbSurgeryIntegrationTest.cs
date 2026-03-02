@@ -103,8 +103,8 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
         });
         await RunTicks(1);
 
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "CreateIncision", SurgeryLayer.Skin, false), analyzerNet);
-        await RunTicks(300);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "CreateIncision", SurgeryLayer.Skin, false), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
         await Server.WaitPost(() =>
         {
@@ -122,8 +122,8 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
         });
         await RunTicks(1);
 
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "ClampVessels", SurgeryLayer.Skin, false), analyzerNet);
-        await RunTicks(300);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "ClampVessels", SurgeryLayer.Skin, false), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
         await Server.WaitPost(() =>
         {
@@ -141,8 +141,8 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
         });
         await RunTicks(1);
 
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "RetractSkin", SurgeryLayer.Skin, false), analyzerNet);
-        await RunTicks(300);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "RetractSkin", SurgeryLayer.Skin, false), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
         await Server.WaitPost(() =>
         {
@@ -160,8 +160,8 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
         });
         await RunTicks(1);
 
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "CutBone", SurgeryLayer.Tissue, false), analyzerNet);
-        await RunTicks(300);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "CutBone", SurgeryLayer.Tissue, false), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
         await Server.WaitPost(() =>
         {
@@ -179,8 +179,8 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
         });
         await RunTicks(1);
 
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "MarrowBleeding", SurgeryLayer.Tissue, false), analyzerNet);
-        await RunTicks(300);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "MarrowBleeding", SurgeryLayer.Tissue, false), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
         await Server.WaitPost(() =>
         {
@@ -198,11 +198,12 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
         });
         await RunTicks(1);
 
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "RetractTissue", SurgeryLayer.Tissue, false), analyzerNet);
-        await RunTicks(300);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "RetractTissue", SurgeryLayer.Tissue, false), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
-        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "DetachLimb", SurgeryLayer.Organ, false), analyzerNet);
-        await RunTicks(300);
+        await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "DetachLimb", SurgeryLayer.Organ, false), analyzerNet, fromServer: true);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
+        await RunTicks(5);
 
         await Server.WaitPost(() =>
         {
