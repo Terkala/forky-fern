@@ -123,6 +123,11 @@
   - OrganCyberArmRightT1
   - OrganCyberLegLeftT1
   - OrganCyberLegRightT1
+  - OrganCyberHeartBasic
+  - OrganCyberLungsBasic
+  - OrganCyberLiverBasic
+  - OrganCyberStomachBasic
+  - OrganCyberEyesBasic
 
 # Tier 2
 
@@ -262,6 +267,11 @@
   - OrganCyberArmRightT2
   - OrganCyberLegLeftT2
   - OrganCyberLegRightT2
+  - OrganCyberHeartT1
+  - OrganCyberLungsT1
+  - OrganCyberLiverT1
+  - OrganCyberStomachT1
+  - OrganCyberEyesT1
 
 # Tier 3
 
@@ -317,3 +327,24 @@
   - OrganCyberArmRightT3
   - OrganCyberLegLeftT3
   - OrganCyberLegRightT3
+  - OrganCyberHeartT2
+  - OrganCyberLungsT2
+  - OrganCyberLiverT2
+  - OrganCyberStomachT2
+  - OrganCyberEyesT2
+
+- type: technology
+  id: CyberneticsOrgansElite
+  name: research-technology-cybernetics-organs-elite
+  icon:
+    sprite: _EinsteinEngines/Mobs/Species/Cybernetics/bishop/bishop_main.rsi
+    state: l_arm-combined-hand
+  discipline: CivilianServices
+  tier: 3
+  cost: 10000
+  recipeUnlocks:
+  - OrganCyberHeartT3
+  - OrganCyberLungsT3
+  - OrganCyberLiverT3
+  - OrganCyberStomachT3
+  - OrganCyberEyesT3

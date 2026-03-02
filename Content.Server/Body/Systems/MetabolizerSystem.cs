@@ -41,6 +41,7 @@ using Content.Shared.Chemistry.Reagent;
 using Content.Shared.EntityConditions;
 using Content.Shared.EntityConditions.Conditions;
 using Content.Shared.EntityConditions.Conditions.Body;
+using Content.Shared.Body.Events;
 using Content.Shared.EntityEffects;
 using Content.Shared.EntityEffects.Effects.Body;
 using Content.Shared.EntityEffects.Effects.Solution;
@@ -252,19 +253,24 @@ public sealed class MetabolizerSystem : SharedMetabolizerSystem
                 // TODO: We should have to do this with metabolism. ReagentEffect struct needs refactoring and so does metabolism!
                 void ApplyEffect(EntityEffect effect)
                 {
+                    var effectScale = scale;
+                    var scaleEv = new GetOrganMetabolismScaleModifierEvent(ent, effect) { Scale = scale };
+                    RaiseLocalEvent(actualEntity, ref scaleEv);
+                    effectScale = scaleEv.Scale;
+
                     switch (effect)
                     {
                         case ModifyLungGas:
-                            _entityEffects.ApplyEffect(ent, effect, scale);
+                            _entityEffects.ApplyEffect(ent, effect, effectScale);
                             break;
                         case AdjustReagent:
-                            _entityEffects.ApplyEffect(soln.Value, effect, scale);
+                            _entityEffects.ApplyEffect(soln.Value, effect, effectScale);
                             break;
                         case AddIntegrityImmunityBoost:
-                            _entityEffects.ApplyEffect(ent, effect, scale);
+                            _entityEffects.ApplyEffect(ent, effect, effectScale);
                             break;
                         default:
-                            _entityEffects.ApplyEffect(actualEntity, effect, scale);
+                            _entityEffects.ApplyEffect(actualEntity, effect, effectScale);
                             break;
                     }
                 }

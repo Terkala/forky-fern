@@ -141,3 +141,104 @@
   parent: BaseMilitaryCyberlimbRecipe
   id: OrganCyberLegRightMilitaryT2
   result: OrganCyberLegRightMilitaryT2
+
+# Cyber organs
+- type: latheRecipe
+  parent: BaseCyberlimbRecipe
+  id: OrganCyberHeartBasic
+  result: OrganCyberHeartBasic
+
+- type: latheRecipe
+  parent: BaseCyberlimbRecipe
+  id: OrganCyberLungsBasic
+  result: OrganCyberLungsBasic
+
+- type: latheRecipe
+  parent: BaseCyberlimbRecipe
+  id: OrganCyberLiverBasic
+  result: OrganCyberLiverBasic
+
+- type: latheRecipe
+  parent: BaseCyberlimbRecipe
+  id: OrganCyberStomachBasic
+  result: OrganCyberStomachBasic
+
+- type: latheRecipe
+  parent: BaseCyberlimbRecipe
+  id: OrganCyberEyesBasic
+  result: OrganCyberEyesBasic
+
+- type: latheRecipe
+  parent: BaseCyberlimbRecipe
+  id: OrganCyberHeartT1
+  result: OrganCyberHeartT1
+
+- type: latheRecipe
+  parent: BaseCyberlimbRecipe
+  id: OrganCyberLungsT1
+  result: OrganCyberLungsT1
+
+- type: latheRecipe
+  parent: BaseCyberlimbRecipe
+  id: OrganCyberLiverT1
+  result: OrganCyberLiverT1
+
+- type: latheRecipe
+  parent: BaseCyberlimbRecipe
+  id: OrganCyberStomachT1
+  result: OrganCyberStomachT1
+
+- type: latheRecipe
+  parent: BaseCyberlimbRecipe
+  id: OrganCyberEyesT1
+  result: OrganCyberEyesT1
+
+- type: latheRecipe
+  parent: BaseCyberlimbRecipe
+  id: OrganCyberHeartT2
+  result: OrganCyberHeartT2
+
+- type: latheRecipe
+  parent: BaseCyberlimbRecipe
+  id: OrganCyberLungsT2
+  result: OrganCyberLungsT2
+
+- type: latheRecipe
+  parent: BaseCyberlimbRecipe
+  id: OrganCyberLiverT2
+  result: OrganCyberLiverT2
+
+- type: latheRecipe
+  parent: BaseCyberlimbRecipe
+  id: OrganCyberStomachT2
+  result: OrganCyberStomachT2
+
+- type: latheRecipe
+  parent: BaseCyberlimbRecipe
+  id: OrganCyberEyesT2
+  result: OrganCyberEyesT2
+
+- type: latheRecipe
+  parent: BaseCyberlimbRecipe
+  id: OrganCyberHeartT3
+  result: OrganCyberHeartT3
+
+- type: latheRecipe
+  parent: BaseCyberlimbRecipe
+  id: OrganCyberLungsT3
+  result: OrganCyberLungsT3
+
+- type: latheRecipe
+  parent: BaseCyberlimbRecipe
+  id: OrganCyberLiverT3
+  result: OrganCyberLiverT3
+
+- type: latheRecipe
+  parent: BaseCyberlimbRecipe
+  id: OrganCyberStomachT3
+  result: OrganCyberStomachT3
+
+- type: latheRecipe
+  parent: BaseCyberlimbRecipe
+  id: OrganCyberEyesT3
+  result: OrganCyberEyesT3

@@ -80,5 +80,6 @@ research-technology-bluespace-chemistry = Bluespace Chemistry
 research-technology-cybernetics-basic = Basic Cybernetics
 research-technology-cybernetics-advanced = Advanced Cybernetics
 research-technology-cybernetics-elite = Elite Cybernetics
+research-technology-cybernetics-organs-elite = Elite Cybernetic Organs
 research-technology-military-cybernetics-t1 = Military Cybernetics I
 research-technology-military-cybernetics-t2 = Military Cybernetics II

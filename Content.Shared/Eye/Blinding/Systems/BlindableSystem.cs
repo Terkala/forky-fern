@@ -141,3 +141,17 @@ public sealed class GetEyeProtectionEvent : EntityEventArgs, IInventoryRelayEven
 
     public SlotFlags TargetSlots => SlotFlags.EYES | SlotFlags.MASK | SlotFlags.HEAD;
 }
+
+/// <summary>
+/// Raised on an entity to get a multiplier for blindness/flash duration. Handlers multiply the value (default 1).
+/// </summary>
+[ByRefEvent]
+public record struct GetBlindnessDurationMultiplierEvent
+{
+    public float Multiplier;
+
+    public GetBlindnessDurationMultiplierEvent()
+    {
+        Multiplier = 1f;
+    }
+}

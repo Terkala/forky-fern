@@ -453,6 +453,9 @@ public sealed class HandsUIController : UIController, IOnStateEntered<GameplaySt
 
     private void UpdateVisibleStatusPanels()
     {
+        // Update hand-to-panel mapping based on button order (organic vs cyber limbs differ)
+        HandsGui?.UpdateHandOrderMapping();
+
         var leftVisible = false;
         var rightVisible = false;
 

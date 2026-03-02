@@ -20,6 +20,7 @@
 using Content.Shared.Body.Components;
 using Content.Shared.Body.Events;
 using Content.Shared.Chemistry.Components;
+using Content.Shared.Cybernetics.Components;
 using Content.Shared.Chemistry.Components.SolutionManager;
 using Content.Shared.Chemistry.EntitySystems;
 using Robust.Shared.Containers;
@@ -107,6 +108,18 @@ namespace Content.Shared.Body.Systems
                 }
 
                 _solutionContainerSystem.UpdateChemicals(stomach.Solution.Value);
+
+                // Scale transfer by cyber stomach effectiveness (eating only; biological = 1.0)
+                var effectiveness = TryComp<CyberOrganComponent>(uid, out var cyberOrgan) ? cyberOrgan.Effectiveness : 1f;
+                if (effectiveness != 1f)
+                {
+                    var scaledTransfer = new Solution();
+                    foreach (var (reagent, quantity) in transferSolution.Contents)
+                    {
+                        scaledTransfer.AddReagent(reagent, quantity * effectiveness);
+                    }
+                    transferSolution = scaledTransfer;
+                }
 
                 // Transfer everything to the body solution!
                 _solutionContainerSystem.TryAddSolution(bodySolution.Value, transferSolution);

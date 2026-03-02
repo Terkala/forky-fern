@@ -21,7 +21,9 @@ public sealed class SharedCyberArmStorageSystem : EntitySystem
     /// <summary>
     /// Returns all items in cyber arm storage for the given body.
     /// </summary>
-    public IEnumerable<(EntityUid Limb, EntityUid Item)> GetCyberArmStorageItems(EntityUid body)
+    /// <param name="body">The body to get items from.</param>
+    /// <param name="armCategory">If specified, only returns items from the arm matching this category (ArmLeft or ArmRight).</param>
+    public IEnumerable<(EntityUid Limb, EntityUid Item)> GetCyberArmStorageItems(EntityUid body, ProtoId<OrganCategoryPrototype>? armCategory = null)
     {
         if (!TryComp<BodyComponent>(body, out var bodyComp) || bodyComp.Organs == null)
             yield break;
@@ -35,6 +37,9 @@ public sealed class SharedCyberArmStorageSystem : EntitySystem
                 continue;
 
             if (organComp.Category != ArmLeft && organComp.Category != ArmRight)
+                continue;
+
+            if (armCategory != null && organComp.Category != armCategory)
                 continue;
 
             if (!TryComp<StorageComponent>(organ, out var storage) || storage.Container == null)

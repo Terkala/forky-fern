@@ -41,6 +41,11 @@
   - OrganCyberArmRight
   - OrganCyberLegLeft
   - OrganCyberLegRight
+  - OrganCyberHeartBasic
+  - OrganCyberLungsBasic
+  - OrganCyberLiverBasic
+  - OrganCyberStomachBasic
+  - OrganCyberEyesBasic
 
 ## Dynamic
 
@@ -100,3 +105,18 @@
   - OrganCyberArmRightT3
   - OrganCyberLegLeftT3
   - OrganCyberLegRightT3
+  - OrganCyberHeartT1
+  - OrganCyberLungsT1
+  - OrganCyberLiverT1
+  - OrganCyberStomachT1
+  - OrganCyberEyesT1
+  - OrganCyberHeartT2
+  - OrganCyberLungsT2
+  - OrganCyberLiverT2
+  - OrganCyberStomachT2
+  - OrganCyberEyesT2
+  - OrganCyberHeartT3
+  - OrganCyberLungsT3
+  - OrganCyberLiverT3
+  - OrganCyberStomachT3
+  - OrganCyberEyesT3

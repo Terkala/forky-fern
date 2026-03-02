@@ -6,19 +6,25 @@ using Content.Shared.Cybernetics.Events;
 using Content.Shared.Cybernetics.Systems;
 using Content.Shared.Cybernetics.UI;
 using Content.Shared.Hands.Components;
+using Content.Shared.Hands.EntitySystems;
 using Content.Shared.IdentityManagement;
 using Content.Shared.Interaction.Components;
 using Content.Shared.Inventory.VirtualItem;
 using Content.Shared.Power.Components;
 using Robust.Server.GameObjects;
+using Robust.Shared.Prototypes;
 
 namespace Content.Server.Cybernetics.Systems;
 
 public sealed class CyberArmSelectSystem : EntitySystem
 {
     [Dependency] private readonly SharedCyberArmStorageSystem _cyberArmStorage = default!;
+    [Dependency] private readonly SharedHandsSystem _hands = default!;
     [Dependency] private readonly SharedVirtualItemSystem _virtualItem = default!;
     [Dependency] private readonly UserInterfaceSystem _ui = default!;
+
+    private static readonly ProtoId<OrganCategoryPrototype> ArmLeft = "ArmLeft";
+    private static readonly ProtoId<OrganCategoryPrototype> ArmRight = "ArmRight";
 
     public override void Initialize()
     {
@@ -36,24 +42,48 @@ public sealed class CyberArmSelectSystem : EntitySystem
         if (!HasComp<BodyComponent>(ev.User))
             return;
 
-        var items = _cyberArmStorage.GetCyberArmStorageItems(ev.User)
+        // Determine which arm the activated hand belongs to - only show that arm's contents
+        var armCategory = GetArmCategoryForHand(ev.User, ev.HandName, ent.Comp);
+        var items = _cyberArmStorage.GetCyberArmStorageItems(ev.User, armCategory)
             .Where(x => !HasComp<CyberLimbModuleComponent>(x.Item) && !HasComp<BatteryComponent>(x.Item))
             .ToList();
         if (items.Count == 0)
             return;
 
-        var firstArmWithItems = items[0].Limb;
-        if (!_ui.HasUi(firstArmWithItems, CyberArmSelectUiKey.Key))
+        var targetArm = items[0].Limb;
+        if (!_ui.HasUi(targetArm, CyberArmSelectUiKey.Key))
             return;
 
         var state = new CyberArmSelectBoundUserInterfaceState(
             items.Select(x => new CyberArmSelectItemEntry(GetNetEntity(x.Item), Identity.Name(x.Item, EntityManager))).ToList());
 
-        if (_ui.TryOpenUi(firstArmWithItems, CyberArmSelectUiKey.Key, ev.User))
+        if (_ui.TryOpenUi(targetArm, CyberArmSelectUiKey.Key, ev.User))
         {
-            _ui.SetUiState(firstArmWithItems, CyberArmSelectUiKey.Key, state);
+            _ui.SetUiState(targetArm, CyberArmSelectUiKey.Key, state);
             ev.Handled = true;
         }
+    }
+
+    /// <summary>
+    /// Maps the activated hand to the corresponding arm category. Returns null to show all arms (fallback).
+    /// </summary>
+    private ProtoId<OrganCategoryPrototype>? GetArmCategoryForHand(EntityUid user, string? handName, HandsComponent handsComp)
+    {
+        var hand = handName;
+
+        if (string.IsNullOrEmpty(hand) || !_hands.TryGetHand((user, handsComp), hand, out var handData))
+            hand = handsComp.ActiveHandId;
+
+        if (string.IsNullOrEmpty(hand) || !_hands.TryGetHand((user, handsComp), hand, out handData))
+            return default;
+
+        return handData.Value.Location switch
+        {
+            HandLocation.Left => ArmLeft,
+            HandLocation.Right => ArmRight,
+            HandLocation.Middle => ArmRight, // Middle hands typically map to right side
+            _ => default
+        };
     }
 
     private void OnCyberArmSelectRequest(Entity<CyberLimbComponent> ent, ref CyberArmSelectRequestMessage msg)
@@ -66,8 +96,9 @@ public sealed class CyberArmSelectSystem : EntitySystem
         if (!TryGetEntity(selectedNet, out var selectedEntity))
             return;
 
-        var items = _cyberArmStorage.GetCyberArmStorageItems(user)
-            .Where(x => !HasComp<CyberLimbModuleComponent>(x.Item) && !HasComp<BatteryComponent>(x.Item))
+        // Only allow selecting items from this specific arm's storage
+        var items = _cyberArmStorage.GetCyberArmStorageItems(user, null)
+            .Where(x => x.Limb == ent.Owner && !HasComp<CyberLimbModuleComponent>(x.Item) && !HasComp<BatteryComponent>(x.Item))
             .ToList();
         if (!items.Any(x => x.Item == selectedEntity))
             return;
