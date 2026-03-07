@@ -93,7 +93,7 @@ public abstract partial class SharedHandsSystem : EntitySystem
 
         if (!TryGetHeldItem((user, handsComp), hand, out _))
         {
-            var ev = new EmptyHandActivateEvent(user, hand);
+            var ev = new EmptyHandActivateEvent(user, hand, AltInteract: true);
             RaiseLocalEvent(user, ref ev);
             if (ev.Handled)
                 return;
@@ -193,20 +193,26 @@ public abstract partial class SharedHandsSystem : EntitySystem
 
         if (!TryGetHeldItem((uid, handsComp), hand, out var held))
         {
-            // Empty hand - allow systems like CyberArmSelectSystem to handle (e.g. open radial menu for cyber arm storage)
-            var ev = new EmptyHandActivateEvent(uid, hand);
+            // Empty hand - only open BUI on alt-use; normal use does nothing
+            if (!altInteract)
+                return false;
+            var ev = new EmptyHandActivateEvent(uid, hand, AltInteract: true);
             RaiseLocalEvent(uid, ref ev);
             return ev.Handled;
         }
 
-        // Cyber arm virtual item: Use opens the selection menu instead of using the item
+        // Cyber arm virtual item: alt-use opens selection menu; normal use uses the item
         if (HasComp<CyberArmVirtualItemComponent>(held.Value) &&
             TryComp<VirtualItemComponent>(held.Value, out var virt))
         {
-            _virtualSystem.DeleteVirtualItem((held.Value, virt), uid);
-            var ev = new EmptyHandActivateEvent(uid, hand);
-            RaiseLocalEvent(uid, ref ev);
-            return ev.Handled;
+            if (altInteract)
+            {
+                _virtualSystem.DeleteVirtualItem((held.Value, virt), uid);
+                var ev = new EmptyHandActivateEvent(uid, hand, AltInteract: true);
+                RaiseLocalEvent(uid, ref ev);
+                return ev.Handled;
+            }
+            return _interactionSystem.UseInHandInteraction(uid, virt.BlockingEntity, checkCanUse: false, checkCanInteract: false);
         }
 
         if (altInteract)

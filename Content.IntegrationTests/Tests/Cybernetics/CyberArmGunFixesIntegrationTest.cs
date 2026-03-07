@@ -14,6 +14,8 @@ using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Inventory.VirtualItem;
 using Content.Shared.Storage;
 using Content.Shared.Storage.Components;
+using Content.Shared.Mind;
+using Content.Shared.Players;
 using Content.Shared.Storage.EntitySystems;
 using Content.Shared.Verbs;
 using Content.Server.Weapons.Ranged.Systems;
@@ -109,7 +111,7 @@ public sealed class CyberArmGunFixesIntegrationTest
     [Test]
     public async Task CyberArmGun_ResolvesInTryGetGun_AndCanShoot()
     {
-        await using var pair = await PoolManager.GetServerClient();
+        await using var pair = await PoolManager.GetServerClient(new PoolSettings { Connected = true, Dirty = true, DummyTicker = false });
         var server = pair.Server;
 
         await server.WaitIdleAsync();
@@ -120,8 +122,12 @@ public sealed class CyberArmGunFixesIntegrationTest
         var storageSystem = sEntMan.System<SharedStorageSystem>();
         var userInterface = sEntMan.System<UserInterfaceSystem>();
         var handsSystem = sEntMan.System<SharedHandsSystem>();
-            var gunSystem = sEntMan.System<GunSystem>();
+        var gunSystem = sEntMan.System<GunSystem>();
+        var playerMan = server.ResolveDependency<Robust.Server.Player.IPlayerManager>();
         var mapData = await pair.CreateTestMap();
+
+        await pair.RunTicksSync(5);
+        await PoolManager.WaitUntil(server, () => playerMan.Sessions.First().AttachedEntity != null);
 
         EntityUid cyberArm = default;
         EntityUid user = default;
@@ -129,16 +135,27 @@ public sealed class CyberArmGunFixesIntegrationTest
 
         await server.WaitAssertion(() =>
         {
+            var session = playerMan.Sessions.First();
+            var mindSystem = sEntMan.System<SharedMindSystem>();
+            mindSystem.WipeMind(session.ContentData()?.Mind);
             user = sEntMan.SpawnEntity("MobHuman", mapData.GridCoords);
+            playerMan.SetAttachedEntity(session, user);
             ReplaceArmWithCyberArm(sEntMan, bodySystem, containerSystem, user, mapData.GridCoords);
             cyberArm = bodySystem.GetAllOrgans(user).First(o =>
                 sEntMan.HasComponent<CyberLimbComponent>(o));
 
             gun = sEntMan.SpawnEntity("WeaponPistolViper", mapData.GridCoords);
             storageSystem.Insert(cyberArm, gun, out _, user: null, playSound: false);
+        });
 
-            var ev = new EmptyHandActivateEvent(user, "hand_right");
-            sEntMan.EventBus.RaiseLocalEvent(user, ref ev);
+        await pair.RunTicksSync(3);
+
+        await server.WaitAssertion(() =>
+        {
+            var handsSystem = sEntMan.System<SharedHandsSystem>();
+            handsSystem.TrySetActiveHand((user, sEntMan.GetComponent<HandsComponent>(user)), "left");
+            Assert.That(handsSystem.TryUseItemInHand(user, altInteract: true, handName: "left"), Is.True,
+                "TryUseItemInHand (alt) should open BUI");
         });
 
         await pair.RunTicksSync(10);
@@ -176,7 +193,7 @@ public sealed class CyberArmGunFixesIntegrationTest
     [Test]
     public async Task CyberArmGun_VirtualItemInvalidated_WhenRemovedFromStorage()
     {
-        await using var pair = await PoolManager.GetServerClient();
+        await using var pair = await PoolManager.GetServerClient(new PoolSettings { Connected = true, Dirty = true, DummyTicker = false });
         var server = pair.Server;
 
         await server.WaitIdleAsync();
@@ -187,7 +204,11 @@ public sealed class CyberArmGunFixesIntegrationTest
         var storageSystem = sEntMan.System<SharedStorageSystem>();
         var userInterface = sEntMan.System<UserInterfaceSystem>();
         var handsSystem = sEntMan.System<SharedHandsSystem>();
+        var playerMan = server.ResolveDependency<Robust.Server.Player.IPlayerManager>();
         var mapData = await pair.CreateTestMap();
+
+        await pair.RunTicksSync(5);
+        await PoolManager.WaitUntil(server, () => playerMan.Sessions.First().AttachedEntity != null);
 
         EntityUid cyberArm = default;
         EntityUid user = default;
@@ -196,7 +217,11 @@ public sealed class CyberArmGunFixesIntegrationTest
 
         await server.WaitAssertion(() =>
         {
+            var session = playerMan.Sessions.First();
+            var mindSystem = sEntMan.System<SharedMindSystem>();
+            mindSystem.WipeMind(session.ContentData()?.Mind);
             user = sEntMan.SpawnEntity("MobHuman", mapData.GridCoords);
+            playerMan.SetAttachedEntity(session, user);
             otherUser = sEntMan.SpawnEntity("MobHuman", mapData.GridCoords.Offset(new(2, 0)));
             ReplaceArmWithCyberArm(sEntMan, bodySystem, containerSystem, user, mapData.GridCoords);
             cyberArm = bodySystem.GetAllOrgans(user).First(o =>
@@ -204,9 +229,16 @@ public sealed class CyberArmGunFixesIntegrationTest
 
             gun = sEntMan.SpawnEntity("WeaponPistolViper", mapData.GridCoords);
             storageSystem.Insert(cyberArm, gun, out _, user: null, playSound: false);
+        });
 
-            var ev = new EmptyHandActivateEvent(user, "hand_right");
-            sEntMan.EventBus.RaiseLocalEvent(user, ref ev);
+        await pair.RunTicksSync(3);
+
+        await server.WaitAssertion(() =>
+        {
+            var handsSystem = sEntMan.System<SharedHandsSystem>();
+            handsSystem.TrySetActiveHand((user, sEntMan.GetComponent<HandsComponent>(user)), "left");
+            Assert.That(handsSystem.TryUseItemInHand(user, altInteract: true, handName: "left"), Is.True,
+                "TryUseItemInHand (alt) should open BUI");
         });
 
         await pair.RunTicksSync(10);
@@ -255,7 +287,7 @@ public sealed class CyberArmGunFixesIntegrationTest
     [Test]
     public async Task CyberArmGun_EjectMagazineVerb_RelaysToBlockingEntity()
     {
-        await using var pair = await PoolManager.GetServerClient();
+        await using var pair = await PoolManager.GetServerClient(new PoolSettings { Connected = true, Dirty = true, DummyTicker = false });
         var server = pair.Server;
 
         await server.WaitIdleAsync();
@@ -268,7 +300,11 @@ public sealed class CyberArmGunFixesIntegrationTest
         var handsSystem = sEntMan.System<SharedHandsSystem>();
         var verbSystem = sEntMan.System<Content.Server.Verbs.VerbSystem>();
         var slotsSystem = sEntMan.System<ItemSlotsSystem>();
+        var playerMan = server.ResolveDependency<Robust.Server.Player.IPlayerManager>();
         var mapData = await pair.CreateTestMap();
+
+        await pair.RunTicksSync(5);
+        await PoolManager.WaitUntil(server, () => playerMan.Sessions.First().AttachedEntity != null);
 
         EntityUid cyberArm = default;
         EntityUid user = default;
@@ -276,16 +312,26 @@ public sealed class CyberArmGunFixesIntegrationTest
 
         await server.WaitAssertion(() =>
         {
+            var session = playerMan.Sessions.First();
+            var mindSystem = sEntMan.System<SharedMindSystem>();
+            mindSystem.WipeMind(session.ContentData()?.Mind);
             user = sEntMan.SpawnEntity("MobHuman", mapData.GridCoords);
+            playerMan.SetAttachedEntity(session, user);
             ReplaceArmWithCyberArm(sEntMan, bodySystem, containerSystem, user, mapData.GridCoords);
             cyberArm = bodySystem.GetAllOrgans(user).First(o =>
                 sEntMan.HasComponent<CyberLimbComponent>(o));
 
             gun = sEntMan.SpawnEntity("WeaponPistolViper", mapData.GridCoords);
             storageSystem.Insert(cyberArm, gun, out _, user: null, playSound: false);
+        });
 
-            var ev = new EmptyHandActivateEvent(user, "hand_right");
-            sEntMan.EventBus.RaiseLocalEvent(user, ref ev);
+        await pair.RunTicksSync(3);
+
+        await server.WaitAssertion(() =>
+        {
+            handsSystem.TrySetActiveHand((user, sEntMan.GetComponent<HandsComponent>(user)), "left");
+            Assert.That(handsSystem.TryUseItemInHand(user, altInteract: true, handName: "left"), Is.True,
+                "TryUseItemInHand (alt) should open BUI");
         });
 
         await pair.RunTicksSync(10);

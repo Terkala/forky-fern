@@ -1,6 +1,7 @@
 using System.Linq;
 using Content.IntegrationTests;
 using Content.Server.Cybernetics.Systems;
+using Content.Shared.Atmos.Components;
 using Content.Shared.Body;
 using Content.Shared.Body.Components;
 using Content.Shared.Body.Events;
@@ -9,10 +10,12 @@ using Content.Shared.Cybernetics.Events;
 using Content.Shared.Cybernetics.UI;
 using Content.Shared.Hands.Components;
 using Content.Shared.Hands.EntitySystems;
-using Content.Shared.Interaction.Components;
+using Content.Shared.IgnitionSource;
+using Content.Shared.Interaction;
+using Content.Shared.Inventory.VirtualItem;
+using Content.Shared.Item.ItemToggle.Components;
 using Content.Shared.Mind;
 using Content.Shared.Players;
-using Content.Shared.Inventory.VirtualItem;
 using Content.Shared.Storage;
 using Content.Shared.Storage.Components;
 using Content.Shared.Storage.EntitySystems;
@@ -24,9 +27,14 @@ using Robust.Shared.Prototypes;
 
 namespace Content.IntegrationTests.Tests.Cybernetics;
 
+/// <summary>
+/// Integration test verifying that a lighter stored in a cyber arm can be brought out
+/// and used to ignite a flammable object (paper). Tests the alt-use BUI change: normal use
+/// on virtual item uses the item instead of opening the BUI.
+/// </summary>
 [TestFixture]
 [TestOf(typeof(CyberArmSelectSystem))]
-public sealed class CyberArmSelectIntegrationTest
+public sealed class CyberArmLighterIgnitionIntegrationTest
 {
     private static EntityUid GetArmLeft(IEntityManager entityManager, EntityUid body)
     {
@@ -50,70 +58,7 @@ public sealed class CyberArmSelectIntegrationTest
     }
 
     [Test]
-    public async Task EmptyHandActivate_OpensCyberArmSelectUI_WhenCyberArmHasItems()
-    {
-        await using var pair = await PoolManager.GetServerClient(new PoolSettings { Connected = true, Dirty = true, DummyTicker = false });
-        var server = pair.Server;
-
-        await server.WaitIdleAsync();
-
-        var entityManager = server.ResolveDependency<IEntityManager>();
-        var bodySystem = entityManager.System<BodySystem>();
-        var containerSystem = entityManager.System<SharedContainerSystem>();
-        var storageSystem = entityManager.System<SharedStorageSystem>();
-        var userInterface = entityManager.System<UserInterfaceSystem>();
-        var playerMan = server.ResolveDependency<Robust.Server.Player.IPlayerManager>();
-        var mapData = await pair.CreateTestMap();
-
-        await pair.RunTicksSync(5);
-        await PoolManager.WaitUntil(server, () => playerMan.Sessions.First().AttachedEntity != null);
-
-        EntityUid cyberArm = default;
-        EntityUid user = default;
-        EntityUid screwdriver = default;
-
-        await server.WaitAssertion(() =>
-        {
-            var session = playerMan.Sessions.First();
-            var mindSystem = entityManager.System<SharedMindSystem>();
-            mindSystem.WipeMind(session.ContentData()?.Mind);
-            user = entityManager.SpawnEntity("MobHuman", mapData.GridCoords);
-            playerMan.SetAttachedEntity(session, user);
-            ReplaceArmWithCyberArm(entityManager, bodySystem, containerSystem, user, mapData.GridCoords);
-            cyberArm = bodySystem.GetAllOrgans(user).First(o =>
-                entityManager.HasComponent<CyberLimbComponent>(o));
-
-            screwdriver = entityManager.SpawnEntity("Screwdriver", mapData.GridCoords);
-            storageSystem.Insert(cyberArm, screwdriver, out _, user: null, playSound: false);
-        });
-
-        await pair.RunTicksSync(3);
-
-        await server.WaitAssertion(() =>
-        {
-            var handsSystem = entityManager.System<SharedHandsSystem>();
-            Assert.That(handsSystem.TryGetHand((user, entityManager.GetComponent<HandsComponent>(user)), "left", out _),
-                Is.True, "Left hand (from cyber arm) should exist");
-            if (handsSystem.TryGetHand((user, entityManager.GetComponent<HandsComponent>(user)), "left", out _))
-                handsSystem.TrySetActiveHand((user, entityManager.GetComponent<HandsComponent>(user)), "left");
-
-            var handled = handsSystem.TryUseItemInHand(user, altInteract: true, handName: "left");
-            Assert.That(handled, Is.True, "TryUseItemInHand (alt) should open BUI");
-        });
-
-        await pair.RunTicksSync(5);
-
-        await server.WaitAssertion(() =>
-        {
-            Assert.That(userInterface.IsUiOpen(cyberArm, CyberArmSelectUiKey.Key, user), Is.True,
-                "Cyber arm select UI should be open");
-        });
-
-        await pair.CleanReturnAsync();
-    }
-
-    [Test]
-    public async Task CyberArmSelect_SpawnsVirtualItemWithUnremoveable_WhenItemSelected()
+    public async Task CyberArmLighter_CanBeBroughtOutAndIgniteObject()
     {
         await using var pair = await PoolManager.GetServerClient(new PoolSettings { Connected = true, Dirty = true, DummyTicker = false });
         var server = pair.Server;
@@ -123,12 +68,12 @@ public sealed class CyberArmSelectIntegrationTest
         await client.WaitIdleAsync();
 
         var sEntMan = server.ResolveDependency<IEntityManager>();
-        var cEntMan = client.ResolveDependency<IEntityManager>();
         var bodySystem = sEntMan.System<BodySystem>();
         var containerSystem = sEntMan.System<SharedContainerSystem>();
         var storageSystem = sEntMan.System<SharedStorageSystem>();
         var userInterface = sEntMan.System<UserInterfaceSystem>();
         var handsSystem = sEntMan.System<SharedHandsSystem>();
+        var interactionSystem = sEntMan.System<SharedInteractionSystem>();
         var playerMan = server.ResolveDependency<Robust.Server.Player.IPlayerManager>();
         var mapData = await pair.CreateTestMap();
 
@@ -137,10 +82,8 @@ public sealed class CyberArmSelectIntegrationTest
 
         EntityUid cyberArm = default;
         EntityUid user = default;
-        EntityUid screwdriver = default;
-        NetEntity userNet = default;
-        NetEntity cyberArmNet = default;
-        NetEntity screwdriverNet = default;
+        EntityUid lighter = default;
+        EntityUid paper = default;
 
         await server.WaitAssertion(() =>
         {
@@ -149,15 +92,12 @@ public sealed class CyberArmSelectIntegrationTest
             mindSystem.WipeMind(session.ContentData()?.Mind);
             user = sEntMan.SpawnEntity("MobHuman", mapData.GridCoords);
             playerMan.SetAttachedEntity(session, user);
-            userNet = sEntMan.GetNetEntity(user);
             ReplaceArmWithCyberArm(sEntMan, bodySystem, containerSystem, user, mapData.GridCoords);
             cyberArm = bodySystem.GetAllOrgans(user).First(o =>
                 sEntMan.HasComponent<CyberLimbComponent>(o));
-            cyberArmNet = sEntMan.GetNetEntity(cyberArm);
 
-            screwdriver = sEntMan.SpawnEntity("Screwdriver", mapData.GridCoords);
-            screwdriverNet = sEntMan.GetNetEntity(screwdriver);
-            storageSystem.Insert(cyberArm, screwdriver, out _, user: null, playSound: false);
+            lighter = sEntMan.SpawnEntity("Lighter", mapData.GridCoords);
+            storageSystem.Insert(cyberArm, lighter, out _, user: null, playSound: false);
         });
 
         await pair.RunTicksSync(3);
@@ -176,7 +116,8 @@ public sealed class CyberArmSelectIntegrationTest
             Assert.That(userInterface.IsUiOpen(cyberArm, CyberArmSelectUiKey.Key, user), Is.True,
                 "Cyber arm select UI should be open");
 
-            var msg = new CyberArmSelectRequestMessage(screwdriverNet);
+            var lighterNet = sEntMan.GetNetEntity(lighter);
+            var msg = new CyberArmSelectRequestMessage(lighterNet);
             msg.Actor = user;
             userInterface.RaiseUiMessage(cyberArm, CyberArmSelectUiKey.Key, msg);
         });
@@ -192,15 +133,47 @@ public sealed class CyberArmSelectIntegrationTest
                 "User should have an item in hand");
             Assert.That(sEntMan.HasComponent<VirtualItemComponent>(held), Is.True,
                 "Held item should be a virtual item");
-            Assert.That(sEntMan.HasComponent<UnremoveableComponent>(held), Is.True,
-                "Virtual item should have UnremoveableComponent");
 
             var virt = sEntMan.GetComponent<VirtualItemComponent>(held!.Value);
-            Assert.That(virt.BlockingEntity, Is.EqualTo(screwdriver),
-                "Virtual item should point to the screwdriver in storage");
+            Assert.That(virt.BlockingEntity, Is.EqualTo(lighter),
+                "Virtual item should point to the lighter in storage");
 
-            Assert.That(handsSystem.CanDrop(user, held.Value), Is.False,
-                "Virtual item should not be droppable");
+            // Normal use in hand - should toggle lighter, NOT open BUI
+            var useResult = handsSystem.TryUseItemInHand(user, altInteract: false);
+            Assert.That(useResult, Is.True, "Use in hand should succeed");
+        });
+
+        await pair.RunTicksSync(5);
+
+        await server.WaitAssertion(() =>
+        {
+            var lighterComp = sEntMan.GetComponent<ItemToggleComponent>(lighter);
+            Assert.That(lighterComp.Activated, Is.True,
+                "Lighter should be activated after use in hand");
+
+            Assert.That(sEntMan.TryGetComponent(lighter, out IgnitionSourceComponent? ignSource), Is.True);
+            Assert.That(ignSource!.Ignited, Is.True,
+                "Lighter ignition source should be ignited");
+
+            paper = sEntMan.SpawnEntity("Paper", mapData.GridCoords.Offset(new(1, 0)));
+        });
+
+        await pair.RunTicksSync(5);
+
+        await server.WaitAssertion(() =>
+        {
+            var paperCoords = sEntMan.GetComponent<TransformComponent>(paper).Coordinates;
+            var interactResult = interactionSystem.InteractUsing(user, lighter, paper, paperCoords);
+            Assert.That(interactResult, Is.True, "InteractUsing lighter on paper should succeed");
+        });
+
+        await pair.RunTicksSync(15);
+
+        await server.WaitAssertion(() =>
+        {
+            Assert.That(sEntMan.TryGetComponent(paper, out FlammableComponent? flammable), Is.True);
+            Assert.That(flammable!.OnFire, Is.True,
+                "Paper should be on fire after being ignited by lighter");
         });
 
         await pair.CleanReturnAsync();

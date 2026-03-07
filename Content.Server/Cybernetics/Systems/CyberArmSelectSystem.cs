@@ -39,6 +39,9 @@ public sealed class CyberArmSelectSystem : EntitySystem
         if (ev.Handled)
             return;
 
+        if (!ev.AltInteract)
+            return;
+
         if (!HasComp<BodyComponent>(ev.User))
             return;
 
