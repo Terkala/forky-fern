@@ -111,7 +111,7 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
         {
             if (comp.PanelSecured || comp.PanelOpen)
             {
-                args.Handled = _tool.UseTool(used, user, body, ScrewdriverDelay, "Screwing", new CyberneticsScrewdriverDoAfterEvent());
+                args.Handled = _tool.UseTool(used, user, body, ScrewdriverDelay, "Screwing", new CyberneticsScrewdriverDoAfterEvent(_tag.HasTag(used, "PrecisionRepairTool"), GetNetEntity(used)));
             }
             return;
         }
@@ -178,7 +178,7 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
                 return;
             }
 
-            var isPrecision = _tool.HasQuality(screwdriver.Value, "PrecisionScrewing");
+            var isPrecision = _tag.HasTag(screwdriver.Value, "PrecisionRepairTool");
             var doAfterArgs = new DoAfterArgs(EntityManager, user, TimeSpan.FromSeconds(WireInsertDelay), new CyberneticsWireInsertDoAfterEvent(isPrecision, GetNetEntity(screwdriver.Value)), body, body, used)
             {
                 BreakOnDropItem = true,
@@ -202,15 +202,22 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
         {
             comp.PanelSecured = false;
             comp.PanelOpen = true;
+            // Unskilled repair: opening with non-precision tool adds flat +5 penalty (binary, once per repair)
+            var isPrecision = args.IsPrecisionRepairTool;
+            if (!isPrecision && args.ToolEntity is { } netTool)
+            {
+                if (TryGetEntity(netTool, out var toolEnt) && _tag.HasTag(toolEnt.Value, "PrecisionRepairTool"))
+                    isPrecision = true;
+            }
+            if (!isPrecision)
+                comp.UnskilledRepairThisSession = true;
             // Do not reset BoltsTight - preserve state when resuming after closing panel early
-            ApplyPenaltyToCyberLimbs(body, 1);
             _popup.PopupPredicted(Loc.GetString("cyber-maintenance-open-panel"), body, args.User);
         }
         else if (comp.PanelOpen)
         {
             comp.PanelSecured = true;
             comp.PanelOpen = false;
-            RemovePenaltyFromCyberLimbs(body, 1);
             _popup.PopupPredicted(Loc.GetString("cyber-maintenance-lock-panel"), body, args.User);
         }
 
@@ -233,7 +240,6 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
         if (comp.BoltsTight)
         {
             comp.BoltsTight = false;
-            ApplyPenaltyToCyberLimbs(body, 1);
             _popup.PopupPredicted(Loc.GetString("cyber-maintenance-loosen-bolts"), body, args.User);
             var ev = new CyberMaintenanceStateChangedEvent(body, BoltsLoosened: true);
             RaiseLocalEvent(body, ref ev);
@@ -249,7 +255,7 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
 
             comp.BoltsTight = true;
             comp.WiresInsertedCount = 0;
-            RemovePenaltyFromCyberLimbs(body, 1);
+            comp.UnskilledRepairThisSession = false;
             _popup.PopupPredicted(Loc.GetString("cyber-maintenance-tighten-bolts"), body, args.User);
             var ev = new CyberMaintenanceStateChangedEvent(body, RepairCompleted: true);
             RaiseLocalEvent(body, ref ev);
@@ -296,7 +302,7 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
         var isPrecision = args.IsPrecisionScrewing;
         if (!isPrecision && args.ScrewdriverEntity is { } netScrewdriver)
         {
-            if (TryGetEntity(netScrewdriver, out var screwdriverEnt) && _tool.HasQuality(screwdriverEnt.Value, "PrecisionScrewing"))
+            if (TryGetEntity(netScrewdriver, out var screwdriverEnt) && _tag.HasTag(screwdriverEnt.Value, "PrecisionRepairTool"))
                 isPrecision = true;
         }
         if (!isPrecision)
@@ -307,7 +313,7 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
                     continue;
                 if (_tool.HasQuality(held, "Screwing"))
                 {
-                    isPrecision = _tool.HasQuality(held, "PrecisionScrewing");
+                    isPrecision = _tag.HasTag(held, "PrecisionRepairTool");
                     break;
                 }
             }
@@ -350,30 +356,6 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
             var ev = new CyberMaintenanceStateChangedEvent(body);
             RaiseLocalEvent(body, ref ev);
             args.Repeat = Exists(used) && TryComp<StackComponent>(used, out var s) && s.Count > 0;
-        }
-    }
-
-    private void ApplyPenaltyToCyberLimbs(EntityUid body, int amount)
-    {
-        foreach (var organ in _body.GetAllOrgans(body))
-        {
-            if (HasComp<CyberLimbComponent>(organ))
-            {
-                var ev = new SurgeryPenaltyAppliedEvent(organ, amount);
-                RaiseLocalEvent(organ, ref ev);
-            }
-        }
-    }
-
-    private void RemovePenaltyFromCyberLimbs(EntityUid body, int amount)
-    {
-        foreach (var organ in _body.GetAllOrgans(body))
-        {
-            if (HasComp<CyberLimbComponent>(organ))
-            {
-                var ev = new SurgeryPenaltyRemovedEvent(organ, amount);
-                RaiseLocalEvent(organ, ref ev);
-            }
         }
     }
 }

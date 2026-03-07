@@ -1,5 +1,7 @@
+using System.Linq;
 using Content.Shared.Body;
 using Content.Shared.Body.Components;
+using Content.Shared.Cybernetics.Components;
 using Content.Shared.Medical.Integrity.Components;
 using Content.Shared.Medical.Integrity.Events;
 
@@ -92,6 +94,17 @@ public sealed class IntegrityPenaltyAggregatorSystem : EntitySystem
         {
             foreach (var entry in surgeryComp.Entries)
                 total += SumEntryRecursive(entry);
+        }
+
+        if (TryComp<CyberneticsMaintenanceComponent>(ent.Owner, out var maint))
+        {
+            const int MaintenancePanelOpenPenalty = 1;
+            const int MaintenanceBoltsLoosePenalty = 1;
+            const int UnskilledRepairPenalty = 5;
+            var cyberCount = _body.GetAllOrgans(ent.Owner).Count(o => HasComp<CyberLimbComponent>(o));
+            total += (maint.PanelOpen ? MaintenancePanelOpenPenalty : 0) * cyberCount;
+            total += (!maint.BoltsTight ? MaintenanceBoltsLoosePenalty : 0) * cyberCount;
+            total += maint.UnskilledRepairThisSession ? UnskilledRepairPenalty : 0;
         }
 
         args.Total = total;

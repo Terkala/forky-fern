@@ -674,6 +674,8 @@ public sealed class SurgerySystem : EntitySystem
                     ClearOrganRemovalProgress(layerComp!, organNet!.Value);
                 else
                     AddOrganRemovalProgress(layerComp!, organNet!.Value, stepId);
+                // Clear organ progress when organ leaves the body so re-insertion shows correct procedures
+                ClearOrganInsertProgress(layerComp!, organNet!.Value);
                 if (layerComp != null)
                     Dirty(bodyPart, layerComp);
                 var penaltyEv = new SurgeryPenaltyAppliedEvent(bodyPart, penalty);
@@ -843,6 +845,11 @@ public sealed class SurgerySystem : EntitySystem
     private static void ClearOrganRemovalProgress(SurgeryLayerComponent comp, NetEntity organ)
     {
         comp.OrganRemovalProgress.RemoveAll(e => e.Organ == organ);
+    }
+
+    private static void ClearOrganInsertProgress(SurgeryLayerComponent comp, NetEntity organ)
+    {
+        comp.OrganInsertProgress.RemoveAll(e => e.Organ == organ);
     }
 
     private static void EnsureOrganInsertEntry(SurgeryLayerComponent comp, NetEntity organ)

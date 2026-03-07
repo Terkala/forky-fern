@@ -98,6 +98,34 @@
         - id: ClothingMaskSterile
 
 - type: entity
+  parent: CrateMedical
+  id: CrateCyberneticsCpu
+  name: cybernetics CPU crate
+  description: A crate containing a supercharged cybernetics CPU.
+  components:
+  - type: EntityTableContainerFill
+    containers:
+      entity_storage:
+        id: TreasureCPUSupercharged
+
+- type: entity
+  parent: CrateSurgery
+  id: CrateFullCyberneticsPackage
+  name: full cybernetics package
+  description: A complete cybernetics kit with pre-equipped limbs, surgical duffel bag, and folding rollerbed.
+  components:
+  - type: EntityTableContainerFill
+    containers:
+      entity_storage: !type:AllSelector
+        children:
+        - id: OrganCyberArmLeftPreFilled
+        - id: OrganCyberArmRightPreFilled
+        - id: OrganCyberLegLeftPreFilled
+        - id: OrganCyberLegRightPreFilled
+        - id: ClothingBackpackDuffelSurgeryFilled
+        - id: RollerBedSpawnFolded
+
+- type: entity
   parent: CrateSurgery
   id: CrateCyberSurgery
   name: CyberSurgery crate

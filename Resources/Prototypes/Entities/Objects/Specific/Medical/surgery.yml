@@ -310,8 +310,8 @@
     - SurgeryTool
     - BoneGelTool
   - type: Sprite
-    sprite: Objects/Specific/Medical/Surgery/bone-gel.rsi
+    sprite: _Funkystation/Objects/Specific/Medical/Surgery/bone-gel.rsi
     state: bone-gel
   - type: Item
-    sprite: Objects/Specific/Medical/Surgery/bone-gel.rsi
+    sprite: _Funkystation/Objects/Specific/Medical/Surgery/bone-gel.rsi
     size: Small

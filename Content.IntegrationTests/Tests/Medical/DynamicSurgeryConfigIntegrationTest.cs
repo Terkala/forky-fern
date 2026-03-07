@@ -238,7 +238,7 @@ public sealed class DynamicSurgeryConfigIntegrationTest
             entityManager.EventBus.RaiseLocalEvent(patient, ref reqEv);
             Assert.That(reqEv.Valid, Is.True, $"CreateIncision: {reqEv.RejectReason}");
         });
-        await pair.RunTicksSync(350);
+        await pair.RunTicksSync(500);
 
         await server.WaitPost(() =>
         {
@@ -249,7 +249,7 @@ public sealed class DynamicSurgeryConfigIntegrationTest
             entityManager.EventBus.RaiseLocalEvent(patient, ref reqEv);
             Assert.That(reqEv.Valid, Is.True, $"ClampVessels: {reqEv.RejectReason}");
         });
-        await pair.RunTicksSync(250);
+        await pair.RunTicksSync(500);
 
         await server.WaitPost(() =>
         {
@@ -260,7 +260,7 @@ public sealed class DynamicSurgeryConfigIntegrationTest
             entityManager.EventBus.RaiseLocalEvent(patient, ref reqEv);
             Assert.That(reqEv.Valid, Is.True, $"RetractSkin: {reqEv.RejectReason}");
         });
-        await pair.RunTicksSync(250);
+        await pair.RunTicksSync(500);
 
         await server.WaitAssertion(() =>
         {

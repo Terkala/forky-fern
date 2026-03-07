@@ -4,7 +4,26 @@ using Robust.Shared.Serialization;
 namespace Content.Shared.Cybernetics.Events;
 
 [Serializable, NetSerializable]
-public sealed partial class CyberneticsScrewdriverDoAfterEvent : SimpleDoAfterEvent;
+public sealed partial class CyberneticsScrewdriverDoAfterEvent : DoAfterEvent
+{
+    [DataField]
+    public bool IsPrecisionRepairTool { get; private set; }
+
+    [DataField]
+    public NetEntity? ToolEntity { get; private set; }
+
+    private CyberneticsScrewdriverDoAfterEvent()
+    {
+    }
+
+    public CyberneticsScrewdriverDoAfterEvent(bool isPrecisionRepairTool, NetEntity? toolEntity = null)
+    {
+        IsPrecisionRepairTool = isPrecisionRepairTool;
+        ToolEntity = toolEntity;
+    }
+
+    public override DoAfterEvent Clone() => new CyberneticsScrewdriverDoAfterEvent(IsPrecisionRepairTool, ToolEntity);
+}
 
 [Serializable, NetSerializable]
 public sealed partial class CyberneticsWrenchDoAfterEvent : SimpleDoAfterEvent;

@@ -18,5 +18,6 @@ public enum CyberLimbModuleType
     MatterBin,
     Manipulator,
     Capacitor,
+    Cpu,
     Battery, // Reserved for future
 }

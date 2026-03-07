@@ -21,7 +21,7 @@ public sealed partial class CyberLimbStatsComponent : Component
     public TimeSpan ServiceTimeMax { get; set; }
 
     /// <summary>
-    /// Efficiency multiplier. Limb efficiency from manipulators, multiplied by external modifiers (e.g. 0.5 when depleted).
+    /// Efficiency multiplier. Limb efficiency from CPUs, multiplied by external modifiers (e.g. 0.5 when depleted).
     /// </summary>
     [DataField, AutoNetworkedField]
     public float Efficiency { get; set; } = 1f;

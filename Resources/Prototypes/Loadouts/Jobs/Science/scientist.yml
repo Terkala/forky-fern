@@ -79,6 +79,12 @@
   equipment:
     jumpsuit: ClothingUniformJumpskirtSeniorResearcher
 
+# Belt
+- type: loadout
+  id: RoboticistBelt
+  equipment:
+    belt: ClothingBeltRoboticistFilled
+
 # Back
 - type: loadout
   id: ScientistBackpack

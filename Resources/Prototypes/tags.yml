@@ -1543,6 +1543,9 @@
   id: BoneGelTool # Bone gel consumable for tissue bone glue step
 
 - type: Tag
+  id: PrecisionRepairTool # Cybernetics maintenance - avoids unskilled repair penalty when opening panel
+
+- type: Tag
   id: HeatWeapon # Cautery, welder - items that deal Heat damage for surgery
 
 - type: Tag

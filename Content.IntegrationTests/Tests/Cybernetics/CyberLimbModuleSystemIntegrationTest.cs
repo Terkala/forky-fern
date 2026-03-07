@@ -198,7 +198,7 @@ public sealed class CyberLimbModuleSystemIntegrationTest
     }
 
     [Test]
-    public async Task Efficiency_FromManipulators_ExternalMultiplier()
+    public async Task Efficiency_FromCpus_ExternalMultiplier()
     {
         await using var pair = await PoolManager.GetServerClient();
         var server = pair.Server;
@@ -231,16 +231,16 @@ public sealed class CyberLimbModuleSystemIntegrationTest
 
             for (var i = 0; i < 6; i++)
             {
-                var manip = entityManager.SpawnEntity("MicroManipulatorStockPart", coords);
-                storageSystem.Insert(cyberArm, manip, out _, user: null, playSound: false);
+                var cpu = entityManager.SpawnEntity("TreasureCPUSupercharged", coords);
+                storageSystem.Insert(cyberArm, cpu, out _, user: null, playSound: false);
             }
 
-            var (_, manipulatorCount, _) = moduleSystem.GetModuleCounts(patient);
-            Assert.That(manipulatorCount, Is.EqualTo(6), $"GetModuleCounts should return 6 manipulators, got {manipulatorCount}");
+            var (_, cpuCount, _) = moduleSystem.GetModuleCounts(patient);
+            Assert.That(cpuCount, Is.EqualTo(6), $"GetModuleCounts should return 6 CPUs, got {cpuCount}");
             statsSystem.RecomputeAndRefresh(patient);
 
             var stats = entityManager.GetComponent<CyberLimbStatsComponent>(patient);
-            Assert.That(stats.Efficiency, Is.EqualTo(1.5f).Within(0.001f), "6 manipulators = 150% limb efficiency");
+            Assert.That(stats.Efficiency, Is.EqualTo(1.6f).Within(0.001f), "6 CPUs = 160% limb efficiency");
 
             var bodyStats = entityManager.GetComponent<CyberLimbStatsComponent>(patient);
             bodyStats.BaseServiceRemaining = TimeSpan.Zero;
@@ -253,14 +253,14 @@ public sealed class CyberLimbModuleSystemIntegrationTest
 
             var statsAfterDeplete = entityManager.GetComponent<CyberLimbStatsComponent>(patient);
             Assert.That(statsAfterDeplete.ServiceTimeRemaining, Is.EqualTo(TimeSpan.Zero), "ServiceTimeRemaining should be 0 when depleted");
-            Assert.That(statsAfterDeplete.Efficiency, Is.EqualTo(0.75f).Within(0.001f), "150% * 50% depletion = 75%");
+            Assert.That(statsAfterDeplete.Efficiency, Is.EqualTo(0.8f).Within(0.001f), "160% * 50% depletion = 80%");
         });
 
         await pair.CleanReturnAsync();
     }
 
     [Test]
-    public async Task Repair_ResetsEfficiencyFromManipulators()
+    public async Task Repair_ResetsEfficiencyFromCpus()
     {
         await using var pair = await PoolManager.GetServerClient();
         var server = pair.Server;
@@ -279,7 +279,7 @@ public sealed class CyberLimbModuleSystemIntegrationTest
         EntityUid screwdriver = default;
         EntityUid wrench = default;
         EntityUid wireStack = default;
-        EntityUid manipulator = default;
+        EntityUid cpu = default;
         EntityCoordinates coords = default;
 
         await server.WaitPost(() =>
@@ -290,8 +290,8 @@ public sealed class CyberLimbModuleSystemIntegrationTest
             screwdriver = entityManager.SpawnEntity("Screwdriver", coords);
             wrench = entityManager.SpawnEntity("Wrench", coords);
             wireStack = entityManager.SpawnEntity("CableApcStack", coords);
-            manipulator = entityManager.SpawnEntity("MicroManipulatorStockPart", coords);
-            var manipulator2 = entityManager.SpawnEntity("MicroManipulatorStockPart", coords);
+            cpu = entityManager.SpawnEntity("TreasureCPUSupercharged", coords);
+            var cpu2 = entityManager.SpawnEntity("TreasureCPUSupercharged", coords);
 
             ReplaceArmWithCyberArm(entityManager, bodySystem, containerSystem, patient, coords);
             var cyberArm = bodySystem.GetAllOrgans(patient).First(o => entityManager.HasComponent<CyberLimbComponent>(o));
@@ -300,8 +300,8 @@ public sealed class CyberLimbModuleSystemIntegrationTest
             maint.PanelOpen = true;
             maint.BoltsTight = true;
             entityManager.Dirty(patient, maint);
-            storageSystem.Insert(cyberArm, manipulator, out _, user: null, playSound: false);
-            storageSystem.Insert(cyberArm, manipulator2, out _, user: null, playSound: false);
+            storageSystem.Insert(cyberArm, cpu, out _, user: null, playSound: false);
+            storageSystem.Insert(cyberArm, cpu2, out _, user: null, playSound: false);
 
             handsSystem.TryPickupAnyHand(technician, screwdriver, checkActionBlocker: false);
         });
@@ -340,7 +340,7 @@ public sealed class CyberLimbModuleSystemIntegrationTest
         await server.WaitAssertion(() =>
         {
             var stats = entityManager.GetComponent<CyberLimbStatsComponent>(patient);
-            Assert.That(stats.Efficiency, Is.EqualTo(1.1f).Within(0.001f), "2 manipulators = 110% after repair");
+            Assert.That(stats.Efficiency, Is.EqualTo(1.2f).Within(0.001f), "2 CPUs = 120% after repair");
         });
 
         await pair.CleanReturnAsync();

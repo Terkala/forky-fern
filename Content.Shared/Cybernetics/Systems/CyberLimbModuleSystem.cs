@@ -93,12 +93,12 @@ public sealed class CyberLimbModuleSystem : EntitySystem
     }
 
     /// <summary>
-    /// Returns matter bin entities, manipulator count, and capacitor count across all cyber limbs on the body.
+    /// Returns matter bin entities, CPU count, and capacitor count across all cyber limbs on the body.
     /// </summary>
-    public (List<EntityUid> MatterBins, int ManipulatorCount, int CapacitorCount) GetModuleCounts(EntityUid body)
+    public (List<EntityUid> MatterBins, int CpuCount, int CapacitorCount) GetModuleCounts(EntityUid body)
     {
         var matterBins = new List<EntityUid>();
-        var manipulatorCount = 0;
+        var cpuCount = 0;
         var capacitorCount = 0;
 
         foreach (var organ in _body.GetAllOrgans(body))
@@ -117,8 +117,8 @@ public sealed class CyberLimbModuleSystem : EntitySystem
                         if (HasComp<CyberLimbMatterBinComponent>(item))
                             matterBins.Add(item);
                         break;
-                    case CyberLimbModuleType.Manipulator:
-                        manipulatorCount += TryComp<StackComponent>(item, out var stack) ? stack.Count : 1;
+                    case CyberLimbModuleType.Cpu:
+                        cpuCount += TryComp<StackComponent>(item, out var stack) ? stack.Count : 1;
                         break;
                     case CyberLimbModuleType.Capacitor:
                         capacitorCount += TryComp<StackComponent>(item, out var capStack) ? capStack.Count : 1;
@@ -127,7 +127,7 @@ public sealed class CyberLimbModuleSystem : EntitySystem
             }
         }
 
-        return (matterBins, manipulatorCount, capacitorCount);
+        return (matterBins, cpuCount, capacitorCount);
     }
 
     /// <summary>
@@ -167,11 +167,19 @@ public sealed class CyberLimbModuleSystem : EntitySystem
     }
 
     /// <summary>
-    /// Limb efficiency from manipulators. 100% base, +10% per additional. External modifiers multiply this.
+    /// Power draw multiplier from CPUs. Each CPU adds 1x to base (1 CPU = 2x, 2 CPUs = 3x).
     /// </summary>
-    public float GetLimbEfficiencyFromManipulators(int count)
+    public float GetCpuPowerDrawMultiplier(int cpuCount)
     {
-        return 1f + 0.1f * Math.Max(0, count - 1);
+        return 1f + Math.Max(0, cpuCount);
+    }
+
+    /// <summary>
+    /// Limb efficiency from CPUs. 100% base, +10% per CPU. External modifiers multiply this.
+    /// </summary>
+    public float GetLimbEfficiencyFromCpus(int cpuCount)
+    {
+        return 1f + 0.1f * Math.Max(0, cpuCount);
     }
 
     /// <summary>

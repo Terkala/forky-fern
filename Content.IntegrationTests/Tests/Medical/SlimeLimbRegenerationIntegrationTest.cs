@@ -57,7 +57,7 @@ public sealed class SlimeLimbRegenerationIntegrationTest : InteractionTest
         {
             var regen = SEntMan.EnsureComponent<Content.Server.Medical.LimbRegeneration.Components.SlimeLimbRegenerationComponent>(patient);
             regen.RegenerationDelay = TimeSpan.FromSeconds(5);
-            SEntMan.Dirty(patient, regen);
+            // SlimeLimbRegenerationComponent is server-only (no NetworkedComponentAttribute) - do not call Dirty
         });
 
         // Advance time by 8 seconds (5 s delay + 3 s buffer). At 60 ticks/sec = 480 ticks.

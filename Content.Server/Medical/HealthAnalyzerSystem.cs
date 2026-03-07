@@ -519,6 +519,20 @@ public sealed class HealthAnalyzerSystem : EntitySystem
                 });
             }
 
+            if (TryComp<CyberneticsMaintenanceComponent>(entity, out var maint) && (maint.PanelOpen || !maint.BoltsTight))
+            {
+                var cyberCount = _body.GetAllOrgans(entity).Count(o => HasComp<CyberLimbComponent>(o));
+                var maintenancePenalty = (maint.PanelOpen ? 1 : 0) * cyberCount + (!maint.BoltsTight ? 1 : 0) * cyberCount;
+                if (maintenancePenalty > 0)
+                {
+                    state.IntegrityPenaltyEntries.Add(new IntegrityPenaltyDisplayEntry
+                    {
+                        Description = "health-analyzer-integrity-maintenance-panel-open-indent",
+                        Amount = maintenancePenalty
+                    });
+                }
+            }
+
             foreach (var organ in _body.GetAllOrgans(entity))
             {
                 if (HasComp<CyberLimbComponent>(organ))

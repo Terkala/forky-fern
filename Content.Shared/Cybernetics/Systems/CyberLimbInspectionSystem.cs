@@ -62,8 +62,10 @@ public sealed class CyberLimbInspectionSystem : EntitySystem
         if (stats.BatteryMax > 0)
         {
             var percent = Math.Clamp((int)(100 * stats.BatteryRemaining / stats.BatteryMax), 0, 100);
-            var (_, _, capacitorCount) = _moduleSystem.GetModuleCounts(ent.Owner);
-            var effectiveDrain = stats.BaseBatteryDrainPerSecond * _moduleSystem.GetCapacitorBatteryDrainMultiplier(capacitorCount);
+            var (_, cpuCount, capacitorCount) = _moduleSystem.GetModuleCounts(ent.Owner);
+            var cpuMultiplier = _moduleSystem.GetCpuPowerDrawMultiplier(cpuCount);
+            var capacitorMultiplier = _moduleSystem.GetCapacitorBatteryDrainMultiplier(capacitorCount);
+            var effectiveDrain = stats.BaseBatteryDrainPerSecond * cpuMultiplier * capacitorMultiplier;
             string remainingBattery;
             if (effectiveDrain > 0)
             {
@@ -100,12 +102,12 @@ public sealed class CyberLimbInspectionSystem : EntitySystem
 
         if (armLeftCount > 0 || armRightCount > 0)
         {
-            var armsManipulators = 0;
+            var armsCpus = 0;
             foreach (var organ in limbsByCategory.GetValueOrDefault(ArmLeft) ?? [])
-                armsManipulators += GetManipulatorCount(organ);
+                armsCpus += GetCpuCount(organ);
             foreach (var organ in limbsByCategory.GetValueOrDefault(ArmRight) ?? [])
-                armsManipulators += GetManipulatorCount(organ);
-            var efficiency = (int)(_moduleSystem.GetLimbEfficiencyFromManipulators(armsManipulators) * depletedMultiplier * 100);
+                armsCpus += GetCpuCount(organ);
+            var efficiency = (int)(_moduleSystem.GetLimbEfficiencyFromCpus(armsCpus) * depletedMultiplier * 100);
             var labelKey = (armLeftCount > 0 && armRightCount > 0)
                 ? "cyber-limb-inspection-efficiency-hands"
                 : armLeftCount > 0 ? "cyber-limb-inspection-efficiency-left-arm" : "cyber-limb-inspection-efficiency-right-arm";
@@ -114,12 +116,12 @@ public sealed class CyberLimbInspectionSystem : EntitySystem
 
         if (legLeftCount > 0 || legRightCount > 0)
         {
-            var legsManipulators = 0;
+            var legsCpus = 0;
             foreach (var organ in limbsByCategory.GetValueOrDefault(LegLeft) ?? [])
-                legsManipulators += GetManipulatorCount(organ);
+                legsCpus += GetCpuCount(organ);
             foreach (var organ in limbsByCategory.GetValueOrDefault(LegRight) ?? [])
-                legsManipulators += GetManipulatorCount(organ);
-            var efficiency = (int)(_moduleSystem.GetLimbEfficiencyFromManipulators(legsManipulators) * depletedMultiplier * 100);
+                legsCpus += GetCpuCount(organ);
+            var efficiency = (int)(_moduleSystem.GetLimbEfficiencyFromCpus(legsCpus) * depletedMultiplier * 100);
             var labelKey = legLeftCount > 0 && legRightCount > 0
                 ? "cyber-limb-inspection-efficiency-feet"
                 : legLeftCount > 0 ? "cyber-limb-inspection-efficiency-left-leg" : "cyber-limb-inspection-efficiency-right-leg";
@@ -147,14 +149,14 @@ public sealed class CyberLimbInspectionSystem : EntitySystem
         }
     }
 
-    private int GetManipulatorCount(EntityUid limb)
+    private int GetCpuCount(EntityUid limb)
     {
         if (!TryComp<StorageComponent>(limb, out var storage) || storage.Container == null)
             return 0;
         var count = 0;
         foreach (var item in storage.Container.ContainedEntities)
         {
-            if (TryComp<CyberLimbModuleComponent>(item, out var module) && module.ModuleType == CyberLimbModuleType.Manipulator)
+            if (TryComp<CyberLimbModuleComponent>(item, out var module) && module.ModuleType == CyberLimbModuleType.Cpu)
                 count += TryComp<StackComponent>(item, out var stack) ? stack.Count : 1;
         }
         return count;

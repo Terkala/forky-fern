@@ -107,8 +107,8 @@ public sealed class CyberLimbStatsSystem : EntitySystem
             FillMatterBinsInLimb(organ);
         }
 
-        var (_, manipulatorCount, _) = _moduleSystem.GetModuleCounts(body);
-        stats.Efficiency = _moduleSystem.GetLimbEfficiencyFromManipulators(manipulatorCount);
+        var (_, cpuCount, _) = _moduleSystem.GetModuleCounts(body);
+        stats.Efficiency = _moduleSystem.GetLimbEfficiencyFromCpus(cpuCount);
 
         RecomputeAndRefresh(body);
     }
@@ -166,8 +166,8 @@ public sealed class CyberLimbStatsSystem : EntitySystem
             }
         }
 
-        var (_, manipulatorCount, _) = _moduleSystem.GetModuleCounts(body);
-        var limbEfficiency = _moduleSystem.GetLimbEfficiencyFromManipulators(manipulatorCount);
+        var (_, cpuCount, _) = _moduleSystem.GetModuleCounts(body);
+        var limbEfficiency = _moduleSystem.GetLimbEfficiencyFromCpus(cpuCount);
         var depleted = (stats.ServiceTimeRemaining <= TimeSpan.Zero) || (stats.BatteryMax > 0 && stats.BatteryRemaining <= 0);
         var newEfficiency = limbEfficiency * (depleted ? 0.5f : 1f);
         stats.Efficiency = newEfficiency;
@@ -209,8 +209,8 @@ public sealed class CyberLimbStatsSystem : EntitySystem
             }
             Dirty(body, stats);
             var depleted = (stats.ServiceTimeRemaining <= TimeSpan.Zero) || (stats.BatteryMax > 0 && stats.BatteryRemaining <= 0);
-            var (_, manipulatorCount, _) = _moduleSystem.GetModuleCounts(body);
-            var limbEfficiency = _moduleSystem.GetLimbEfficiencyFromManipulators(manipulatorCount);
+            var (_, cpuCount, _) = _moduleSystem.GetModuleCounts(body);
+            var limbEfficiency = _moduleSystem.GetLimbEfficiencyFromCpus(cpuCount);
             var newEfficiency = limbEfficiency * (depleted ? 0.5f : 1f);
             if (stats.Efficiency != newEfficiency)
             {
@@ -277,12 +277,13 @@ public sealed class CyberLimbStatsSystem : EntitySystem
             if (stats.ServiceTimeRemaining < TimeSpan.Zero)
                 stats.ServiceTimeRemaining = TimeSpan.Zero;
 
+            var (_, cpuCount, capacitorCount) = _moduleSystem.GetModuleCounts(uid);
             var batteries = _moduleSystem.GetBatteryEntities(uid);
             if (batteries.Count > 0)
             {
-                var (_, _, capacitorCount) = _moduleSystem.GetModuleCounts(uid);
-                var drainMultiplier = _moduleSystem.GetCapacitorBatteryDrainMultiplier(capacitorCount);
-                var joulesToDrain = stats.BaseBatteryDrainPerSecond * drainMultiplier;
+                var cpuMultiplier = _moduleSystem.GetCpuPowerDrawMultiplier(cpuCount);
+                var capacitorMultiplier = _moduleSystem.GetCapacitorBatteryDrainMultiplier(capacitorCount);
+                var joulesToDrain = stats.BaseBatteryDrainPerSecond * cpuMultiplier * capacitorMultiplier;
                 var remaining = joulesToDrain;
 
                 foreach (var battery in batteries)
@@ -306,8 +307,7 @@ public sealed class CyberLimbStatsSystem : EntitySystem
                 }
             }
 
-            var (_, manipulatorCount, _) = _moduleSystem.GetModuleCounts(uid);
-            var limbEfficiency = _moduleSystem.GetLimbEfficiencyFromManipulators(manipulatorCount);
+            var limbEfficiency = _moduleSystem.GetLimbEfficiencyFromCpus(cpuCount);
             var depleted = (stats.ServiceTimeRemaining <= TimeSpan.Zero) || (stats.BatteryMax > 0 && stats.BatteryRemaining <= 0);
             var newEfficiency = limbEfficiency * (depleted ? 0.5f : 1f);
 

@@ -163,6 +163,10 @@
   id: ScrewdriverPrecision
   description: A high-precision screwdriver for delicate cybernetic maintenance. Preferred by roboticists.
   components:
+  - type: Tag
+    tags:
+    - Screwdriver
+    - PrecisionRepairTool
   - type: Tool
     qualities:
       - Screwing

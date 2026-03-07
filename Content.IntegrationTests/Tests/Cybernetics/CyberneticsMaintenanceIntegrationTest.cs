@@ -7,7 +7,9 @@ using Content.Shared.Cybernetics.Components;
 using Content.Shared.Cybernetics.Systems;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Interaction;
+using Content.Shared.Interaction.Events;
 using Content.Shared.Medical.Integrity.Components;
+using Content.Shared.Medical.Integrity.Events;
 using Content.Shared.Storage;
 using Content.Shared.Storage.Components;
 using Content.Shared.Storage.EntitySystems;
@@ -23,12 +25,15 @@ namespace Content.IntegrationTests.Tests.Cybernetics;
 [TestOf(typeof(CyberneticsMaintenanceSystem))]
 public sealed class CyberneticsMaintenanceIntegrationTest
 {
-    private static EntityUid GetArmLeft(IEntityManager entityManager, EntityUid body)
+    private static EntityUid GetArmByCategory(IEntityManager entityManager, EntityUid body, string category)
     {
-        var ev = new BodyPartQueryByTypeEvent(body) { Category = new ProtoId<OrganCategoryPrototype>("ArmLeft") };
+        var ev = new BodyPartQueryByTypeEvent(body) { Category = new ProtoId<OrganCategoryPrototype>(category) };
         entityManager.EventBus.RaiseLocalEvent(body, ref ev);
         return ev.Parts[0];
     }
+
+    private static EntityUid GetArmLeft(IEntityManager entityManager, EntityUid body) =>
+        GetArmByCategory(entityManager, body, "ArmLeft");
 
     /// <summary>
     /// Removes the left arm and inserts OrganCyberArmLeft into the body's container.
@@ -45,6 +50,27 @@ public sealed class CyberneticsMaintenanceIntegrationTest
         var bodyComp = entityManager.GetComponent<BodyComponent>(body);
         Assert.That(bodyComp.Organs, Is.Not.Null, "Body should have Organs container");
         Assert.That(containerSystem.Insert(cyberArm, bodyComp.Organs!), Is.True, "Insert cyber arm should succeed");
+    }
+
+    private static void ReplaceArmWithCyberArmRight(IEntityManager entityManager, SharedContainerSystem containerSystem,
+        EntityUid body, EntityCoordinates coords)
+    {
+        var arm = GetArmByCategory(entityManager, body, "ArmRight");
+        var removeEv = new OrganRemoveRequestEvent(arm) { Destination = coords };
+        entityManager.EventBus.RaiseLocalEvent(arm, ref removeEv);
+        Assert.That(removeEv.Success, Is.True, "Remove right arm should succeed");
+
+        var cyberArm = entityManager.SpawnEntity("OrganCyberArmRight", coords);
+        var bodyComp = entityManager.GetComponent<BodyComponent>(body);
+        Assert.That(bodyComp.Organs, Is.Not.Null, "Body should have Organs container");
+        Assert.That(containerSystem.Insert(cyberArm, bodyComp.Organs!), Is.True, "Insert cyber right arm should succeed");
+    }
+
+    private static int GetIntegrityPenaltyTotal(IEntityManager entityManager, EntityUid body)
+    {
+        var ev = new IntegrityPenaltyTotalRequestEvent(body);
+        entityManager.EventBus.RaiseLocalEvent(body, ref ev);
+        return ev.Total;
     }
 
     [Test]
@@ -555,8 +581,8 @@ public sealed class CyberneticsMaintenanceIntegrationTest
 
         await server.WaitAssertion(() =>
         {
-            Assert.That(entityManager.HasComponent<IntegrityPenaltyComponent>(cyberArm), Is.False,
-                "Cyber limb should have no penalty before maintenance");
+            Assert.That(GetIntegrityPenaltyTotal(entityManager, patient), Is.EqualTo(0),
+                "Total penalty should be 0 before maintenance");
         });
 
         var integrityDoAfterTicks = 150;
@@ -570,8 +596,8 @@ public sealed class CyberneticsMaintenanceIntegrationTest
 
         await server.WaitAssertion(() =>
         {
-            Assert.That(entityManager.TryGetComponent(cyberArm, out IntegrityPenaltyComponent? penalty), Is.True);
-            Assert.That(penalty!.Penalty, Is.EqualTo(1), "Screwdriver open should add +1 penalty per cyber limb");
+            Assert.That(GetIntegrityPenaltyTotal(entityManager, patient), Is.EqualTo(6),
+                "Screwdriver open should add +1 panel penalty and +5 unskilled repair penalty");
         });
 
         await server.WaitPost(() =>
@@ -585,8 +611,8 @@ public sealed class CyberneticsMaintenanceIntegrationTest
 
         await server.WaitAssertion(() =>
         {
-            Assert.That(entityManager.TryGetComponent(cyberArm, out IntegrityPenaltyComponent? penalty), Is.True);
-            Assert.That(penalty!.Penalty, Is.EqualTo(2), "Wrench loosen should add +1 more penalty");
+            Assert.That(GetIntegrityPenaltyTotal(entityManager, patient), Is.EqualTo(7),
+                "Wrench loosen should add +1 more penalty (panel+bolts+unskilled)");
         });
 
         await server.WaitPost(() =>
@@ -610,8 +636,8 @@ public sealed class CyberneticsMaintenanceIntegrationTest
 
         await server.WaitAssertion(() =>
         {
-            Assert.That(entityManager.TryGetComponent(cyberArm, out IntegrityPenaltyComponent? penalty), Is.True);
-            Assert.That(penalty!.Penalty, Is.EqualTo(1), "Wrench tighten should remove 1 penalty");
+            Assert.That(GetIntegrityPenaltyTotal(entityManager, patient), Is.EqualTo(1),
+                "Wrench tighten should clear unskilled and bolts, leaving only panel open penalty");
         });
 
         await server.WaitPost(() =>
@@ -625,8 +651,192 @@ public sealed class CyberneticsMaintenanceIntegrationTest
 
         await server.WaitAssertion(() =>
         {
-            Assert.That(entityManager.HasComponent<IntegrityPenaltyComponent>(cyberArm), Is.False,
-                "Screwdriver lock should clear all penalties from cyber limb");
+            Assert.That(GetIntegrityPenaltyTotal(entityManager, patient), Is.EqualTo(0),
+                "Screwdriver lock should clear all penalties");
+        });
+
+        await pair.CleanReturnAsync();
+    }
+
+    [Test]
+    public async Task IntegrityPenalty_DoesNotAccumulate_WhenPanelOpenedAndClosedRepeatedly()
+    {
+        await using var pair = await PoolManager.GetServerClient();
+        var server = pair.Server;
+
+        await server.WaitIdleAsync();
+
+        var entityManager = server.ResolveDependency<IEntityManager>();
+        var bodySystem = entityManager.System<BodySystem>();
+        var containerSystem = entityManager.System<SharedContainerSystem>();
+        var handsSystem = entityManager.System<SharedHandsSystem>();
+        var mapData = await pair.CreateTestMap();
+
+        EntityUid technician = default;
+        EntityUid patient = default;
+        EntityUid screwdriver = default;
+        EntityCoordinates coords = default;
+
+        await server.WaitPost(() =>
+        {
+            coords = mapData.GridCoords;
+            technician = entityManager.SpawnEntity("MobHuman", coords);
+            patient = entityManager.SpawnEntity("MobHuman", coords);
+            screwdriver = entityManager.SpawnEntity("Screwdriver", coords);
+
+            ReplaceArmWithCyberArm(entityManager, bodySystem, containerSystem, patient, coords);
+        });
+
+        var integrityDoAfterTicks = 150;
+        for (var i = 0; i < 3; i++)
+        {
+            await server.WaitPost(() =>
+            {
+                handsSystem.TryPickupAnyHand(technician, screwdriver, checkActionBlocker: false);
+                var ev = new InteractUsingEvent(technician, screwdriver, patient, coords);
+                entityManager.EventBus.RaiseLocalEvent(patient, ev);
+            });
+            await pair.RunTicksSync(integrityDoAfterTicks);
+
+            await server.WaitAssertion(() =>
+            {
+                Assert.That(GetIntegrityPenaltyTotal(entityManager, patient), Is.EqualTo(6),
+                    $"Open #{i + 1}: total should be 6 (1 panel + 5 unskilled), unskilled does not accumulate");
+            });
+
+            await server.WaitPost(() =>
+            {
+                var ev = new InteractUsingEvent(technician, screwdriver, patient, coords);
+                entityManager.EventBus.RaiseLocalEvent(patient, ev);
+            });
+            await pair.RunTicksSync(integrityDoAfterTicks);
+
+            await server.WaitAssertion(() =>
+            {
+                Assert.That(GetIntegrityPenaltyTotal(entityManager, patient), Is.EqualTo(5),
+                    $"Close #{i + 1}: total should be 5 (unskilled persists until repair complete)");
+            });
+        }
+
+        await pair.CleanReturnAsync();
+    }
+
+    [Test]
+    public async Task IntegrityPenalty_OpeningWithPrecisionScrewdriver_DoesNotAddUnskilledPenalty()
+    {
+        await using var pair = await PoolManager.GetServerClient();
+        var server = pair.Server;
+
+        await server.WaitIdleAsync();
+
+        var entityManager = server.ResolveDependency<IEntityManager>();
+        var bodySystem = entityManager.System<BodySystem>();
+        var containerSystem = entityManager.System<SharedContainerSystem>();
+        var handsSystem = entityManager.System<SharedHandsSystem>();
+        var mapData = await pair.CreateTestMap();
+
+        EntityUid technician = default;
+        EntityUid patient = default;
+        EntityUid precisionScrewdriver = default;
+        EntityCoordinates coords = default;
+
+        await server.WaitPost(() =>
+        {
+            coords = mapData.GridCoords;
+            technician = entityManager.SpawnEntity("MobHuman", coords);
+            patient = entityManager.SpawnEntity("MobHuman", coords);
+            precisionScrewdriver = entityManager.SpawnEntity("ScrewdriverPrecision", coords);
+
+            ReplaceArmWithCyberArm(entityManager, bodySystem, containerSystem, patient, coords);
+        });
+
+        var integrityDoAfterTicks = 150;
+        await server.WaitPost(() =>
+        {
+            handsSystem.TryPickupAnyHand(technician, precisionScrewdriver, checkActionBlocker: false);
+            var ev = new InteractUsingEvent(technician, precisionScrewdriver, patient, coords);
+            entityManager.EventBus.RaiseLocalEvent(patient, ev);
+        });
+        await pair.RunTicksSync(integrityDoAfterTicks);
+
+        await server.WaitAssertion(() =>
+        {
+            var maint = entityManager.GetComponent<CyberneticsMaintenanceComponent>(patient);
+            Assert.That(maint.UnskilledRepairThisSession, Is.False,
+                "Precision screwdriver should not set UnskilledRepairThisSession");
+            Assert.That(GetIntegrityPenaltyTotal(entityManager, patient), Is.EqualTo(1),
+                "Precision screwdriver open should add only +1 panel penalty, not +5 unskilled");
+        });
+
+        await pair.CleanReturnAsync();
+    }
+
+    [Test]
+    public async Task IntegrityPenalty_ScalesWithCyberLimbCount()
+    {
+        await using var pair = await PoolManager.GetServerClient();
+        var server = pair.Server;
+
+        await server.WaitIdleAsync();
+
+        var entityManager = server.ResolveDependency<IEntityManager>();
+        var bodySystem = entityManager.System<BodySystem>();
+        var containerSystem = entityManager.System<SharedContainerSystem>();
+        var handsSystem = entityManager.System<SharedHandsSystem>();
+        var mapData = await pair.CreateTestMap();
+
+        EntityUid technician = default;
+        EntityUid patient = default;
+        EntityUid screwdriver = default;
+        EntityUid wrench = default;
+        EntityCoordinates coords = default;
+
+        await server.WaitPost(() =>
+        {
+            coords = mapData.GridCoords;
+            technician = entityManager.SpawnEntity("MobHuman", coords);
+            patient = entityManager.SpawnEntity("MobHuman", coords);
+            screwdriver = entityManager.SpawnEntity("Screwdriver", coords);
+            wrench = entityManager.SpawnEntity("Wrench", coords);
+
+            ReplaceArmWithCyberArm(entityManager, bodySystem, containerSystem, patient, coords);
+            ReplaceArmWithCyberArmRight(entityManager, containerSystem, patient, coords);
+        });
+
+        await server.WaitAssertion(() =>
+        {
+            Assert.That(GetIntegrityPenaltyTotal(entityManager, patient), Is.EqualTo(0),
+                "Total penalty should be 0 before maintenance");
+        });
+
+        var integrityDoAfterTicks = 150;
+        await server.WaitPost(() =>
+        {
+            handsSystem.TryPickupAnyHand(technician, screwdriver, checkActionBlocker: false);
+            var ev = new InteractUsingEvent(technician, screwdriver, patient, coords);
+            entityManager.EventBus.RaiseLocalEvent(patient, ev);
+        });
+        await pair.RunTicksSync(integrityDoAfterTicks);
+
+        await server.WaitAssertion(() =>
+        {
+            Assert.That(GetIntegrityPenaltyTotal(entityManager, patient), Is.EqualTo(7),
+                "Open panel with 2 cyber limbs should add +2 panel penalty and +5 unskilled");
+        });
+
+        await server.WaitPost(() =>
+        {
+            handsSystem.TryDrop(technician, targetDropLocation: null, checkActionBlocker: false);
+            handsSystem.TryPickupAnyHand(technician, wrench, checkActionBlocker: false);
+            var ev = new InteractUsingEvent(technician, wrench, patient, coords);
+            entityManager.EventBus.RaiseLocalEvent(patient, ev);
+        });
+        await pair.RunTicksSync(integrityDoAfterTicks);
+
+        await server.WaitAssertion(() =>
+        {
+            Assert.That(GetIntegrityPenaltyTotal(entityManager, patient), Is.EqualTo(9),
+                "Loosen bolts with 2 cyber limbs should add +2 panel + +2 bolts + +5 unskilled");
         });
 
         await pair.CleanReturnAsync();

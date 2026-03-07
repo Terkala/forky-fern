@@ -26,4 +26,11 @@ public sealed partial class CyberneticsMaintenanceComponent : Component
     /// </summary>
     [DataField, AutoNetworkedField]
     public int WiresInsertedCount { get; set; }
+
+    /// <summary>
+    /// Set when panel is opened with a non-precision tool. Adds flat +5 integrity penalty (binary, once per repair).
+    /// Cleared when repair completes (bolts tightened).
+    /// </summary>
+    [DataField, AutoNetworkedField]
+    public bool UnskilledRepairThisSession { get; set; }
 }

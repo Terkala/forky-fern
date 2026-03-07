@@ -77,7 +77,7 @@ public sealed class CyberLimbStorageSystem : EntitySystem
     }
 
     /// <summary>
-    /// When inserting a stackable item (e.g. Modular Machine Part / manipulator) into cyber limb storage,
+    /// When inserting a stackable item (e.g. Supercharged CPU) into cyber limb storage,
     /// automatically de-stack so only 1 goes in per slot. Each module takes one tile.
     /// </summary>
     private void OnContainerInsertAttempt(Entity<CyberLimbComponent> ent, ref ContainerIsInsertingAttemptEvent args)
