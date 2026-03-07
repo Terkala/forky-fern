@@ -3,6 +3,7 @@ using Content.Shared.Body;
 using Content.Shared.Body.Components;
 using Content.Shared.Cybernetics.Components;
 using Content.Shared.Cybernetics.Events;
+using Content.Shared.Item;
 using Content.Shared.Storage;
 using Content.Shared.Storage.Components;
 using Content.Shared.Storage.EntitySystems;
@@ -16,6 +17,7 @@ public sealed class CyberLimbStorageSystem : EntitySystem
 {
     [Dependency] private readonly BodySystem _body = default!;
     [Dependency] private readonly SharedContainerSystem _container = default!;
+    [Dependency] private readonly SharedTransformSystem _transform = default!;
     [Dependency] private readonly StackSystem _stack = default!;
     [Dependency] private readonly UserInterfaceSystem _ui = default!;
 
@@ -27,6 +29,7 @@ public sealed class CyberLimbStorageSystem : EntitySystem
         SubscribeLocalEvent<CyberneticsMaintenanceComponent, CyberMaintenanceStateChangedEvent>(OnMaintenanceStateChanged);
         SubscribeLocalEvent<StorageComponent, EntGotInsertedIntoContainerMessage>(OnStorageInserted);
         SubscribeLocalEvent<CyberLimbComponent, ContainerIsInsertingAttemptEvent>(OnContainerInsertAttempt, before: [typeof(SharedStorageSystem)]);
+        SubscribeLocalEvent<ItemComponent, EntGotRemovedFromContainerMessage>(OnEntityRemovedFromContainer);
     }
 
     private void OnStorageInteractAttempt(Entity<CyberLimbComponent> ent, ref StorageInteractAttemptEvent args)
@@ -74,6 +77,45 @@ public sealed class CyberLimbStorageSystem : EntitySystem
             return;
 
         _ui.CloseUi(ent.Owner, StorageComponent.StorageUiKey.Key);
+    }
+
+    /// <summary>
+    /// Failsafe: when an entity is removed from a container inside cyber limb storage (e.g. cycling a bullet from a gun)
+    /// and ends up in nullspace (insert into storage failed, AttachToGridOrMap failed), drop it at the body's position.
+    /// This prevents items from being deleted when object interactions try to insert into full storage.
+    /// </summary>
+    private void OnEntityRemovedFromContainer(Entity<ItemComponent> entity, ref EntGotRemovedFromContainerMessage args)
+    {
+        if (TerminatingOrDeleted(entity))
+            return;
+
+        // Check if the container we were removed from belongs to something inside cyber limb storage
+        var containerOwner = args.Container.Owner;
+        var uid = entity.Owner;
+        if (!_container.TryGetContainingContainer(containerOwner, out var outer) ||
+            outer.ID != StorageComponent.ContainerId ||
+            !HasComp<CyberLimbComponent>(outer.Owner))
+        {
+            return;
+        }
+
+        // Entity ended up in nullspace (insert failed, AttachToGridOrMap detached to nullspace)
+        var xform = Transform(uid);
+        if (xform.ParentUid.IsValid())
+            return;
+
+        // Find the body to drop at
+        var cyberLimb = outer.Owner;
+        if (!_container.TryGetContainingContainer(cyberLimb, out var bodyContainer) ||
+            bodyContainer.ID != BodyComponent.ContainerID ||
+            !HasComp<BodyComponent>(bodyContainer.Owner))
+        {
+            return;
+        }
+
+        var body = bodyContainer.Owner;
+        var dropCoords = Transform(body).Coordinates;
+        _transform.SetCoordinates(uid, xform, dropCoords);
     }
 
     /// <summary>

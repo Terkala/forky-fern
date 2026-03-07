@@ -363,6 +363,10 @@ public abstract class SharedMeleeWeaponSystem : EntitySystem
                 return true;
             }
 
+            // Funkystation: Cyber arm virtual item that isn't a melee weapon: suppress punching so the item is used via interaction instead.
+            if (HasComp<CyberArmVirtualItemComponent>(held)) 
+                return false;
+
             if (!HasComp<VirtualItemComponent>(held))
                 return false;
         }

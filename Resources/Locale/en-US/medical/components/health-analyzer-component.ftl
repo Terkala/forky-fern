@@ -122,6 +122,7 @@ health-analyzer-integrity-usage = Organ usage
 health-analyzer-integrity-cybernetics = Cybernetics
 health-analyzer-integrity-maintenance-panel-open = Maintenance panel open ({ $limbName })
 health-analyzer-integrity-maintenance-panel-open-indent = Maintenance panel open
+health-analyzer-integrity-unskilled-repair = Unskilled repair
 health-analyzer-integrity-no-penalties = No penalties
 health-analyzer-integrity-improvised-tool = Improvised tool
 health-analyzer-integrity-unsanitary-surgery = Unsanitary surgery
