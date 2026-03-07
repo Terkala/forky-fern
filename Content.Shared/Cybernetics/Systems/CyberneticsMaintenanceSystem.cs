@@ -7,7 +7,6 @@ using Content.Shared.DoAfter;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Interaction;
 using Content.Shared.Interaction.Events;
-using Content.Shared.Medical.Integrity.Events;
 using Content.Shared.Popups;
 using Content.Shared.Stacks;
 using Content.Shared.Tag;
@@ -298,51 +297,8 @@ public sealed class CyberneticsMaintenanceSystem : EntitySystem
         comp.WiresInsertedCount++;
         Dirty(ent, comp);
 
-        // Use event value; fallback to screwdriver entity or re-check hands at completion (event data may be lost during DoAfter replication)
-        var isPrecision = args.IsPrecisionScrewing;
-        if (!isPrecision && args.ScrewdriverEntity is { } netScrewdriver)
-        {
-            if (TryGetEntity(netScrewdriver, out var screwdriverEnt) && _tag.HasTag(screwdriverEnt.Value, "PrecisionRepairTool"))
-                isPrecision = true;
-        }
-        if (!isPrecision)
-        {
-            foreach (var held in _hands.EnumerateHeld(args.User))
-            {
-                if (held == used)
-                    continue;
-                if (_tool.HasQuality(held, "Screwing"))
-                {
-                    isPrecision = _tag.HasTag(held, "PrecisionRepairTool");
-                    break;
-                }
-            }
-        }
-
-        if (isPrecision)
-        {
-            foreach (var organ in _body.GetAllOrgans(body))
-            {
-                if (HasComp<CyberLimbComponent>(organ) && HasComp<LowQualityMaintenancePenaltyComponent>(organ))
-                {
-                    var ev = new SurgeryPenaltyRemovedEvent(organ, 2);
-                    RaiseLocalEvent(organ, ref ev);
-                    RemComp<LowQualityMaintenancePenaltyComponent>(organ);
-                }
-            }
-        }
-        else
-        {
-            foreach (var organ in _body.GetAllOrgans(body))
-            {
-                if (HasComp<CyberLimbComponent>(organ))
-                {
-                    EnsureComp<LowQualityMaintenancePenaltyComponent>(organ);
-                    var ev = new SurgeryPenaltyAppliedEvent(organ, 2);
-                    RaiseLocalEvent(organ, ref ev);
-                }
-            }
-        }
+        // Wire insertion does not add integrity penalty. The only penalty for non-precision tools
+        // is UnskilledRepairThisSession (+5 flat), set when opening the panel with screwdriver.
 
         if (comp.WiresInsertedCount >= cyberCount)
         {

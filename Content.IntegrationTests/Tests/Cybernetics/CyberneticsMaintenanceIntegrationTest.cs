@@ -911,11 +911,14 @@ public sealed class CyberneticsMaintenanceIntegrationTest
 
         await server.WaitAssertion(() =>
         {
-            Assert.That(entityManager.HasComponent<LowQualityMaintenancePenaltyComponent>(cyberArm), Is.True,
-                "Cyber limb should have LowQualityMaintenancePenaltyComponent after wire repair with normal screwdriver");
-            Assert.That(entityManager.TryGetComponent(cyberArm, out IntegrityPenaltyComponent? penalty), Is.True);
-            Assert.That(penalty!.Penalty, Is.GreaterThanOrEqualTo(2),
-                "Wire repair with normal screwdriver should add +2 penalty (expose+open=2, low-quality=2, total>=2)");
+            // Wire insertion does not add per-limb penalty. Only UnskilledRepairThisSession (+5) from opening with normal screwdriver.
+            Assert.That(entityManager.HasComponent<LowQualityMaintenancePenaltyComponent>(cyberArm), Is.False,
+                "Wire insertion no longer adds LowQualityMaintenancePenaltyComponent");
+            Assert.That(entityManager.TryGetComponent(patient, out CyberneticsMaintenanceComponent? maint), Is.True);
+            Assert.That(maint!.UnskilledRepairThisSession, Is.True,
+                "Opening with normal screwdriver should set UnskilledRepairThisSession");
+            Assert.That(GetIntegrityPenaltyTotal(entityManager, patient), Is.GreaterThanOrEqualTo(5),
+                "Unskilled repair (opening with normal screwdriver) adds +5 penalty");
         });
 
         await pair.CleanReturnAsync();
@@ -990,14 +993,14 @@ public sealed class CyberneticsMaintenanceIntegrationTest
         await server.WaitAssertion(() =>
         {
             Assert.That(entityManager.HasComponent<LowQualityMaintenancePenaltyComponent>(cyberArm), Is.False,
-                "Precision screwdriver wire repair should not add LowQualityMaintenancePenaltyComponent");
+                "Wire insertion does not add LowQualityMaintenancePenaltyComponent (precision or otherwise)");
         });
 
         await pair.CleanReturnAsync();
     }
 
     [Test]
-    [Ignore("Second wire insert DoAfter does not complete in integration test environment; removal logic works in-game")]
+    [Ignore("Second wire insert DoAfter does not complete in integration test environment; wire-insert penalty removed - only UnskilledRepairThisSession from panel open applies")]
     public async Task WireRepair_WithPrecisionScrewdriver_RemovesLowQualityPenalty()
     {
         await using var pair = await PoolManager.GetServerClient();
