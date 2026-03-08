@@ -12,15 +12,15 @@
   name: species-name-diona
   roundStart: true
   prototype: MobDiona
-  sprites: MobDionaSprites
   defaultSkinTone: "#cdb369"
-  markingLimits: MobDionaMarkingLimits
   dollPrototype: AppearanceDiona
   skinColoration: Hues
   maleFirstNames: NamesDionaFirst
   femaleFirstNames: NamesDionaFirst
   lastNames: NamesDionaLast
   naming: TheFirstofLast
+  sexes:
+  - Unsexed
   limbOrganPrototypes:
     ArmLeft: OrganDionaArmLeft
     ArmRight: OrganDionaArmRight

@@ -1,5 +1,37 @@
-# SPDX-FileCopyrightText: 2026 pathetic meowmeow <uhhadd@gmail.com>
-# SPDX-License-Identifier: MIT
+- type: markingsGroup
+  parent: Undergarments
+  id: Arachnid
+  onlyGroupWhitelisted: true
+  limits:
+    enum.HumanoidVisualLayers.Hair:
+      limit: 0
+      required: false
+    enum.HumanoidVisualLayers.FacialHair:
+      limit: 0
+      required: false
+    enum.HumanoidVisualLayers.Tail:
+      limit: 1
+      required: true
+      default: [ ArachnidAppendagesDefault ]
+    enum.HumanoidVisualLayers.Chest:
+      limit: 2
+      required: false
+    enum.HumanoidVisualLayers.HeadSide:
+      limit: 1
+      required: true
+      default: [ ArachnidCheliceraeDownwards ]
+    enum.HumanoidVisualLayers.LArm:
+      limit: 1
+      required: false
+    enum.HumanoidVisualLayers.RArm:
+      limit: 1
+      required: false
+    enum.HumanoidVisualLayers.LLeg:
+      limit: 1
+      required: false
+    enum.HumanoidVisualLayers.RLeg:
+      limit: 1
+      required: false
 
 - type: entity
   parent: BaseSpeciesAppearance
@@ -19,7 +51,7 @@
         - id: OrganArachnidArmRight
         - id: OrganArachnidLegLeft
         - id: OrganArachnidLegRight
-  - type: HumanoidAppearance
+  - type: HumanoidProfile
     species: Arachnid
 
 - type: entity
@@ -116,7 +148,18 @@
     sprite: Mobs/Species/Arachnid/organs.rsi
 
 - type: entity
-  parent: OrganArachnid
+  id: OrganArachnidVisual
+  abstract: true
+  components:
+  - type: VisualOrgan
+    data:
+      sprite: Mobs/Species/Arachnid/parts.rsi
+  - type: VisualOrganMarkings
+    markingData:
+      group: Arachnid
+
+- type: entity
+  parent: [ OrganArachnid, OrganArachnidVisual ]
   id: OrganArachnidExternal
   abstract: true
   components:
@@ -224,7 +267,7 @@
   id: OrganArachnidBrain
 
 - type: entity
-  parent: [ OrganBaseEyes, OrganArachnidInternal ]
+  parent: [ OrganArachnidVisual, OrganBaseEyes, OrganArachnidInternal ]
   id: OrganArachnidEyes
 
 - type: entity
@@ -248,13 +291,13 @@
   id: OrganArachnidHeart
 
 - type: entity
-  parent: [ OrganBaseStomach, OrganArachnidInternal, OrganArachnidMetabolizer ]
+  parent: [ OrganBaseStomach, OrganArachnidInternal, OrganAnimalMetabolizer ]
   id: OrganArachnidStomach
 
 - type: entity
-  parent: [ OrganBaseLiver, OrganSpriteHumanInternal, OrganArachnidInternal, OrganArachnidMetabolizer ]
+  parent: [ OrganBaseLiver, OrganSpriteHumanInternal, OrganArachnidInternal, OrganAnimalMetabolizer ]
   id: OrganArachnidLiver
 
 - type: entity
-  parent: [ OrganBaseKidneys, OrganSpriteHumanInternal, OrganArachnidInternal, OrganArachnidMetabolizer ]
+  parent: [ OrganBaseKidneys, OrganSpriteHumanInternal, OrganArachnidInternal, OrganAnimalMetabolizer ]
   id: OrganArachnidKidneys

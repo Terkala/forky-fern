@@ -46,6 +46,7 @@ using Robust.Shared.Prototypes;
 using Robust.Shared.Serialization;
 using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype;
 using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype.Array;
+using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype.List;
 using Robust.Shared.Utility;
 
 namespace Content.Shared.Maps
@@ -79,7 +80,13 @@ namespace Content.Shared.Maps
         [DataField("isSubfloor")] public bool IsSubFloor { get; private set; }
 
         [DataField("baseTurf")]
-        public string BaseTurf { get; private set; } = string.Empty;
+        public ProtoId<ContentTileDefinition>? BaseTurf { get; private set; }
+
+        /// <summary>
+        /// On what tiles this tile can be placed on. BaseTurf is already included.
+        /// </summary>
+        [DataField]
+        public List<ProtoId<ContentTileDefinition>> BaseWhitelist { get; private set; } = new();
 
         [DataField]
         public PrototypeFlags<ToolQualityPrototype> DeconstructTools { get; set; } = new();
@@ -164,6 +171,11 @@ namespace Content.Shared.Maps
         /// Whether this tile provides a sterile surface for surgery (reduces unsanitary penalty).
         /// </summary>
         [DataField("sterileSurgerySurface")] public bool SterileSurgerySurface { get; private set; }
+		
+		/// <summary>
+        ///     Hide this tile in the tile placement editor.
+        /// </summary>
+        [DataField] public bool EditorHidden { get; private set; } = false;
 
         public void AssignTileId(ushort id)
         {

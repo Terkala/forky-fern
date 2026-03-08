@@ -10,8 +10,6 @@
   name: species-name-human
   roundStart: true
   prototype: MobHuman
-  sprites: MobHumanSprites
-  markingLimits: MobHumanMarkingLimits
   dollPrototype: AppearanceHuman
   skinColoration: HumanToned
   limbOrganPrototypes:

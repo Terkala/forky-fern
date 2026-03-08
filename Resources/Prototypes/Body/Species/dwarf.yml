@@ -23,7 +23,7 @@
         - id: OrganHumanArmRight
         - id: OrganHumanLegLeft
         - id: OrganHumanLegRight
-  - type: HumanoidAppearance
+  - type: HumanoidProfile
     species: Dwarf
   - type: ScaleVisuals
     scale: 1, 0.8

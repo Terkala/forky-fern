@@ -14,9 +14,7 @@
   name: species-name-slime
   roundStart: true
   prototype: MobSlimePerson
-  sprites: MobSlimeSprites
   defaultSkinTone: "#b8b8b8"
-  markingLimits: MobSlimeMarkingLimits
   dollPrototype: AppearanceSlimePerson
   skinColoration: Hues
   limbOrganPrototypes:

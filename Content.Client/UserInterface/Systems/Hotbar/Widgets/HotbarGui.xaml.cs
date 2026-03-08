@@ -26,9 +26,8 @@ public sealed partial class HotbarGui : UIWidget
     public HotbarGui()
     {
         RobustXamlLoader.Load(this);
-        // Panel textures: left panel has cutout on left (Right texture), right panel has cutout on right (Left texture)
-        StatusPanelLeft.SetSide(HandUILocation.Right);
-        StatusPanelRight.SetSide(HandUILocation.Left);
+        StatusPanelRight.SetSide(HandLocation.Right);
+        StatusPanelLeft.SetSide(HandLocation.Left);
         var hotbarController = UserInterfaceManager.GetUIController<HotbarUIController>();
 
         hotbarController.Setup(HandContainer);
@@ -61,18 +60,10 @@ public sealed partial class HotbarGui : UIWidget
             StatusPanelLeft.Update(entity, hand);
     }
 
-    public void SetHighlightHand(HandUILocation? hand)
+    public void SetHighlightHand(HandLocation? hand)
     {
-        if (_leftmostHandIsLeft)
-        {
-            StatusPanelLeft.UpdateHighlight(hand is HandUILocation.Left);
-            StatusPanelRight.UpdateHighlight(hand is HandUILocation.Right);
-        }
-        else
-        {
-            StatusPanelLeft.UpdateHighlight(hand is HandUILocation.Right);
-            StatusPanelRight.UpdateHighlight(hand is HandUILocation.Left);
-        }
+        StatusPanelLeft.UpdateHighlight(hand is HandLocation.Left);
+        StatusPanelRight.UpdateHighlight(hand is HandLocation.Right);
     }
 
     public void UpdateStatusVisibility(bool left, bool right)

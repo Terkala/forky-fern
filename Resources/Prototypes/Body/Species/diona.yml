@@ -1,5 +1,36 @@
-# SPDX-FileCopyrightText: 2026 pathetic meowmeow <uhhadd@gmail.com>
-# SPDX-License-Identifier: MIT
+- type: markingsGroup
+  parent: Undergarments
+  id: Diona
+  onlyGroupWhitelisted: true
+  limits:
+    enum.HumanoidVisualLayers.Head:
+      limit: 2
+      required: false
+    enum.HumanoidVisualLayers.HeadTop:
+      limit: 1
+      required: false
+    enum.HumanoidVisualLayers.HeadSide:
+      limit: 1
+      required: false
+    enum.HumanoidVisualLayers.Chest:
+      limit: 2
+      required: false
+    enum.HumanoidVisualLayers.LArm:
+      limit: 1
+      required: false
+    enum.HumanoidVisualLayers.RArm:
+      limit: 1
+      required: false
+    enum.HumanoidVisualLayers.LLeg:
+      limit: 1
+      required: false
+    enum.HumanoidVisualLayers.RLeg:
+      limit: 1
+      required: false
+    enum.HumanoidVisualLayers.Overlay:
+      limit: 1
+      required: true
+      default: [ DionaVineOverlay ]
 
 - type: entity
   parent: BaseSpeciesAppearance
@@ -24,7 +55,7 @@
         - id: OrganDionaArmRight
         - id: OrganDionaLegLeft
         - id: OrganDionaLegRight
-  - type: HumanoidAppearance
+  - type: HumanoidProfile
     species: Diona
 
 - type: entity
@@ -156,7 +187,18 @@
     sprite: Mobs/Species/Diona/organs.rsi
 
 - type: entity
-  parent: OrganDiona
+  id: OrganDionaVisual
+  abstract: true
+  components:
+  - type: VisualOrgan
+    data:
+      sprite: Mobs/Species/Diona/parts.rsi
+  - type: VisualOrganMarkings
+    markingData:
+      group: Diona
+
+- type: entity
+  parent: [ OrganDiona, OrganDionaVisual ]
   id: OrganDionaExternal
   abstract: true
   components:
@@ -258,8 +300,13 @@
   id: OrganDionaBrain
 
 - type: entity
-  parent: [ OrganBaseEyes, OrganDionaInternal ]
+  parent: [ OrganDionaVisual, OrganBaseEyes, OrganDionaInternal ]
   id: OrganDionaEyes
+  components:
+  - type: VisualOrgan
+    data:
+      sprite: Mobs/Customization/eyes.rsi
+      state: diona
 
 - type: entity
   parent: [ OrganBaseLungs, OrganDionaInternal, OrganDionaMetabolizer ]
@@ -275,14 +322,7 @@
   components:
   - type: Metabolizer
     maxReagents: 6
-    removeEmpty: true
-    groups:
-    - id: Food
-    - id: Drink
-    - id: Medicine
-    - id: Poison
-    - id: Narcotic
-    - id: Alcohol
+    stages: [ Digestion, Bloodstream, Metabolites ]
 
 - type: entity
   parent: OrganDionaBrain
@@ -290,6 +330,7 @@
   id: OrganDionaBrainNymphing
   components:
   - type: Nymph
+    transferMind: true
     entityPrototype: OrganDionaNymphBrain
     transferMind: true
 
