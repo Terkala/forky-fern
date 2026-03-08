@@ -124,6 +124,9 @@ namespace Content.Shared.Movement.Systems
             if (_timing.ApplyingState)
                 return;
 
+            if (!Exists(uid) || TerminatingOrDeleted(uid))
+                return;
+
             EnsureComp<MovementSpeedModifierComponent>(uid);
             var moveComp = Comp<MovementSpeedModifierComponent>(uid);
 

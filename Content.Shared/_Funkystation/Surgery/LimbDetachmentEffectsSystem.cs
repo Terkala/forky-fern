@@ -37,7 +37,6 @@ public sealed class LimbDetachmentEffectsSystem : EntitySystem
 
     [Dependency] private readonly BodySystem _body = default!;
     [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
-    [Dependency] private readonly SharedHumanoidAppearanceSystem _humanoid = default!;
     [Dependency] private readonly MovementSpeedModifierSystem _movementSpeed = default!;
     [Dependency] private readonly SharedStunSystem _stun = default!;
     [Dependency] private readonly IGameTiming _timing = default!;
@@ -60,6 +59,9 @@ public sealed class LimbDetachmentEffectsSystem : EntitySystem
         if (!_body.TryGetRootBodyFromOrganContainer(args.Container, out var body))
             return;
 
+        if (!Exists(body) || TerminatingOrDeleted(body))
+            return;
+
         var organ = ent.Comp;
         if (organ.Category is not { } category)
             return;
@@ -71,13 +73,7 @@ public sealed class LimbDetachmentEffectsSystem : EntitySystem
         if (!LimbCategories.Contains(categoryStr) && !HandCategories.Contains(categoryStr) && !FootCategories.Contains(categoryStr))
             return;
 
-        if (LifeStage(body) >= EntityLifeStage.Terminating)
-            return;
-
-        if (TryComp<HumanoidAppearanceComponent>(body, out var humanoid))
-        {
-            _humanoid.SetLayersVisibility((body, humanoid), layers, false);
-        }
+        // Limb visibility is handled by VisualBodySystem when organ is removed (sets layer to Invalid).
 
         if (TryComp<AppearanceComponent>(body, out var appearance))
         {
@@ -101,6 +97,9 @@ public sealed class LimbDetachmentEffectsSystem : EntitySystem
         if (!_body.TryGetRootBodyFromOrganContainer(args.Container, out var body))
             return;
 
+        if (!Exists(body) || TerminatingOrDeleted(body))
+            return;
+
         var organ = ent.Comp;
         if (organ.Category is not { } category)
             return;
@@ -112,17 +111,7 @@ public sealed class LimbDetachmentEffectsSystem : EntitySystem
         if (!LimbCategories.Contains(categoryStr) && !HandCategories.Contains(categoryStr) && !FootCategories.Contains(categoryStr))
             return;
 
-        if (LifeStage(body) >= EntityLifeStage.Terminating)
-            return;
-
-        // Cyber limbs: CyberLimbAppearanceSystem sets sprite and visibility together to avoid organic flash
-        if (!HasComp<CyberLimbComponent>(ent))
-        {
-            if (TryComp<HumanoidAppearanceComponent>(body, out var humanoid))
-            {
-                _humanoid.SetLayersVisibility((body, humanoid), layers, true);
-            }
-        }
+        // Limb visibility is handled by VisualBodySystem when organ is inserted (applies organ's VisualOrganComponent.Data).
 
         // Cyber limbs set BloodDisabled via CyberLimbAppearanceSystem - don't overwrite with AllEnabled
         if (TryComp<AppearanceComponent>(body, out var appearance) && !HasComp<CyberLimbComponent>(ent))
@@ -162,7 +151,7 @@ public sealed class LimbDetachmentEffectsSystem : EntitySystem
 
     private void UpdateLegMovement(EntityUid body)
     {
-        if (LifeStage(body) >= EntityLifeStage.Terminating)
+        if (!Exists(body) || TerminatingOrDeleted(body))
             return;
 
         var legCount = 0;

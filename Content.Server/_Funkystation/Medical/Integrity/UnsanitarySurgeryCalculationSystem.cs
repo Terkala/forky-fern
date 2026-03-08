@@ -24,6 +24,7 @@ public sealed class UnsanitarySurgeryCalculationSystem : EntitySystem
     private const float VoidPressureThreshold = 5000f; // 5 kPa - no bacteria in void
     private const int FloodFillMaxDistance = 3;
     private const string WaterReagentId = "Water";
+    private static readonly ProtoId<TagPrototype> RustyWallTag = "RustyWall";
 
     [Dependency] private readonly AtmosphereSystem _atmosphere = default!;
     [Dependency] private readonly EntityLookupSystem _lookup = default!;
@@ -81,7 +82,7 @@ public sealed class UnsanitarySurgeryCalculationSystem : EntitySystem
 
     private int CalculateUnsanitaryPenalty(EntityUid patient)
     {
-        if (!TryComp<TransformComponent>(patient, out var xform))
+        if (!TryComp(patient, out TransformComponent? xform))
             return 0;
 
         EntityUid gridUid;
@@ -270,7 +271,7 @@ public sealed class UnsanitarySurgeryCalculationSystem : EntitySystem
     {
         foreach (var uid in _map.GetAnchoredEntities(gridUid, grid, indices))
         {
-            if (_tag.HasTag(uid, "RustyWall"))
+            if (_tag.HasTag(uid, RustyWallTag))
                 yield return uid;
         }
     }

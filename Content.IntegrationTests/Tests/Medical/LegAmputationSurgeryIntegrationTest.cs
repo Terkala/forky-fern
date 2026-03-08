@@ -191,6 +191,10 @@ public sealed class LegAmputationSurgeryIntegrationTest : InteractionTest
         // After DetachLimb we hold the scalpel; drop it to free a hand for the leg.
         await Server.WaitPost(() =>
         {
+            var legUid = SEntMan.GetEntity(legNet);
+            var transformSys = SEntMan.System<SharedTransformSystem>();
+            transformSys.PlaceNextTo(SPlayer, legUid);
+
             var scalpelUid = SEntMan.GetEntity(scalpelNet);
             foreach (var hand in HandSys.EnumerateHands((SPlayer, Hands!)))
             {
@@ -201,7 +205,7 @@ public sealed class LegAmputationSurgeryIntegrationTest : InteractionTest
                     break;
                 }
             }
-            Assert.That(HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(legNet), checkActionBlocker: false),
+            Assert.That(HandSys.TryPickupAnyHand(SPlayer, legUid, checkActionBlocker: false),
                 Is.True, "Player should be able to pick up the detached leg");
         });
         await RunTicks(1);

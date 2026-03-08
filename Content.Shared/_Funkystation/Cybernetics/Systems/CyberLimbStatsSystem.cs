@@ -3,6 +3,7 @@ using Content.Shared.Body;
 using Content.Shared.Body.Components;
 using Content.Shared.Cybernetics.Components;
 using Content.Shared.Cybernetics.Events;
+using Content.Shared.Emp;
 using Content.Shared.Movement.Systems;
 using Content.Shared.Power.Components;
 using Content.Shared.Power.EntitySystems;
@@ -34,6 +35,7 @@ public sealed class CyberLimbStatsSystem : EntitySystem
         SubscribeLocalEvent<BodyComponent, CyberLimbDetachedFromBodyEvent>(OnCyberLimbDetached);
         SubscribeLocalEvent<BodyComponent, CyberMaintenanceStateChangedEvent>(OnMaintenanceStateChanged);
         SubscribeLocalEvent<BodyComponent, CyberLimbStatsRecalcEvent>(OnStatsRecalc);
+        SubscribeLocalEvent<CyberLimbStatsComponent, EmpPulseEvent>(OnEmpPulse);
         SubscribeLocalEvent<CyberLimbStatsComponent, RefreshMovementSpeedModifiersEvent>(OnRefreshMovementSpeed);
 
         _nextUpdate = _timing.CurTime + TimeSpan.FromSeconds(UpdateInterval);
@@ -124,6 +126,12 @@ public sealed class CyberLimbStatsSystem : EntitySystem
         RecomputeAndRefresh(ent.Owner);
     }
 
+    private void OnEmpPulse(Entity<CyberLimbStatsComponent> ent, ref EmpPulseEvent args)
+    {
+        TryUseBatteryCharge(ent.Owner, args.EnergyConsumption);
+        args.Affected = true;
+    }
+
     private void OnRefreshMovementSpeed(Entity<CyberLimbStatsComponent> ent, ref RefreshMovementSpeedModifiersEvent args)
     {
         args.ModifySpeed(ent.Comp.Efficiency);
@@ -195,9 +203,14 @@ public sealed class CyberLimbStatsSystem : EntitySystem
             if (remaining <= 0f)
                 break;
 
-            var drained = _battery.UseCharge(battery, remaining);
-            totalDrained += drained;
-            remaining -= drained;
+            var currentCharge = _battery.GetCharge(battery);
+            var toDrain = Math.Min(remaining, currentCharge);
+            if (toDrain <= 0f)
+                continue;
+
+            _battery.SetCharge(battery, currentCharge - toDrain);
+            totalDrained += toDrain;
+            remaining -= toDrain;
         }
 
         if (totalDrained > 0f && TryComp<CyberLimbStatsComponent>(body, out var stats))
@@ -291,8 +304,13 @@ public sealed class CyberLimbStatsSystem : EntitySystem
                     if (remaining <= 0f)
                         break;
 
-                    var drained = _battery.UseCharge(battery, remaining);
-                    remaining -= drained;
+                    var currentCharge = _battery.GetCharge(battery);
+                    var toDrain = Math.Min(remaining, currentCharge);
+                    if (toDrain <= 0f)
+                        continue;
+
+                    _battery.SetCharge(battery, currentCharge - toDrain);
+                    remaining -= toDrain;
                 }
 
                 stats.BatteryRemaining = 0f;

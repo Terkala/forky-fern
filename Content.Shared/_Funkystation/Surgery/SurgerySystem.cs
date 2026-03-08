@@ -80,9 +80,9 @@ public sealed class SurgerySystem : EntitySystem
         }
 
         // Slime-specific: cannot receive organ or limb implants (design doc: Slime-Specific Systems)
-        if (TryComp<HumanoidAppearanceComponent>(ent.Owner, out var appearance))
+        if (TryComp<HumanoidProfileComponent>(ent.Owner, out var humanoidProfile))
         {
-            if (appearance.Species == (ProtoId<SpeciesPrototype>)"SlimePerson" &&
+            if (humanoidProfile.Species == (ProtoId<SpeciesPrototype>)"SlimePerson" &&
                 (args.ProcedureId == "InsertOrgan" || args.ProcedureId == "AttachLimb"))
             {
                 args.RejectReason = "slime-cannot-receive-implants";
@@ -90,7 +90,7 @@ public sealed class SurgerySystem : EntitySystem
             }
 
             // Skeleton-specific: cannot receive organ implants; only limb detach/attach
-            if (appearance.Species == (ProtoId<SpeciesPrototype>)"Skeleton" &&
+            if (humanoidProfile.Species == (ProtoId<SpeciesPrototype>)"Skeleton" &&
                 args.ProcedureId == "InsertOrgan")
             {
                 args.RejectReason = "skeleton-cannot-receive-organs";
@@ -271,12 +271,12 @@ public sealed class SurgerySystem : EntitySystem
                 args.RejectReason = "invalid-limb-type";
                 return;
             }
-            if (!TryComp<HumanoidAppearanceComponent>(ent.Owner, out var humanoid))
+            if (!TryComp<HumanoidProfileComponent>(ent.Owner, out var speciesProfile))
             {
                 args.RejectReason = "unknown-species-or-category";
                 return;
             }
-            stepsConfig = _surgeryLayer.GetStepsConfig(humanoid.Species, limbCategory);
+            stepsConfig = _surgeryLayer.GetStepsConfig(speciesProfile.Species, limbCategory);
         }
         else
         {

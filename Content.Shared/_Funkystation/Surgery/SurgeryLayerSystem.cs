@@ -47,10 +47,10 @@ public sealed class SurgeryLayerSystem : EntitySystem
             return GetStepsConfig(surgeryBodyPart.SpeciesId, surgeryBodyPart.OrganCategory);
         }
 
-        if (!TryComp<HumanoidAppearanceComponent>(body, out var humanoid) || !TryComp<OrganComponent>(bodyPart, out var organ) || organ.Category is not { } category)
+        if (!TryComp<HumanoidProfileComponent>(body, out var humanoidProfile) || !TryComp<OrganComponent>(bodyPart, out var organ) || organ.Category is not { } category)
             return null;
 
-        return GetStepsConfig(humanoid.Species, category);
+        return GetStepsConfig(humanoidProfile.Species, category);
     }
 
     /// <summary>
@@ -383,11 +383,11 @@ public sealed class SurgeryLayerSystem : EntitySystem
     /// </summary>
     public IReadOnlyList<string> GetAvailableStepsForEmptySlot(EntityUid body, string categoryId)
     {
-        if (!TryComp<HumanoidAppearanceComponent>(body, out var humanoid))
+        if (!TryComp<HumanoidProfileComponent>(body, out var humanoidProfile))
             return Array.Empty<string>();
 
         var category = new ProtoId<OrganCategoryPrototype>(categoryId);
-        var stepsConfig = GetStepsConfig(humanoid.Species, category);
+        var stepsConfig = GetStepsConfig(humanoidProfile.Species, category);
         if (stepsConfig == null)
             return Array.Empty<string>();
 

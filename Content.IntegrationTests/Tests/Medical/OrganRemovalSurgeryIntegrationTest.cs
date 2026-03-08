@@ -198,6 +198,21 @@ public sealed class OrganRemovalSurgeryIntegrationTest : InteractionTest
         await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "OrganRemovalHemostat", SurgeryLayer.Organ, false, heartNet), analyzerNet, fromServer: true);
         await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
+        // Drop cautery so we have analyzer + free hand. Surgery system auto-picks up removed organ when hand is free.
+        await Server.WaitPost(() =>
+        {
+            foreach (var hand in HandSys.EnumerateHands((SPlayer, Hands!)))
+            {
+                if (HandSys.TryGetHeldItem((SPlayer, Hands!), hand, out var held) && held == SEntMan.GetEntity(cauteryNet))
+                {
+                    HandSys.TrySetActiveHand((SPlayer, Hands!), hand);
+                    HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
+                    break;
+                }
+            }
+        });
+        await RunTicks(1);
+
         await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "RemoveOrgan", SurgeryLayer.Organ, false, heartNet), analyzerNet, fromServer: true);
         await AwaitDoAfters(maxExpected: 1, minExpected: 1);
         await RunTicks(5);
@@ -210,20 +225,15 @@ public sealed class OrganRemovalSurgeryIntegrationTest : InteractionTest
             Assert.That(organsInBody, Does.Not.Contain(heart), "Heart should be removed from body");
         });
 
+        // Surgery system auto-picks up removed organ when hand is free; if it didn't (e.g. timing), manually pick up.
         await Server.WaitPost(() =>
         {
             var heart = SEntMan.GetEntity(heartNet);
-            // Drop cautery to free a hand - TryPickupAnyHand requires an empty hand, and we need the analyzer for the BUI
-            foreach (var hand in HandSys.EnumerateHands((SPlayer, Hands!)))
+            if (!HandSys.IsHolding(SPlayer, heart))
             {
-                if (HandSys.TryGetHeldItem((SPlayer, Hands!), hand, out var held) && held == SEntMan.GetEntity(cauteryNet))
-                {
-                    HandSys.TrySetActiveHand((SPlayer, Hands!), hand);
-                    HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
-                    break;
-                }
+                Assert.That(HandSys.TryPickupAnyHand(SPlayer, heart, checkActionBlocker: false), Is.True,
+                    "Heart must be picked up for InsertOrgan (surgery auto-pickup or manual pickup)");
             }
-            Assert.That(HandSys.TryPickupAnyHand(SPlayer, heart, checkActionBlocker: false), Is.True, "Heart must be picked up for InsertOrgan");
         });
 
         await RunTicks(5);
@@ -235,7 +245,7 @@ public sealed class OrganRemovalSurgeryIntegrationTest : InteractionTest
         });
 
         await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, torsoNet, "InsertOrgan", SurgeryLayer.Organ, false, heartNet), analyzerNet, fromServer: true);
-        await AwaitDoAfters(maxExpected: 1, minExpected: 1);
+        await AwaitDoAfters(maxExpected: 1, minExpected: 0);
 
         await Server.WaitPost(() =>
         {

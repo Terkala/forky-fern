@@ -695,7 +695,7 @@ public sealed class HealthAnalyzerSystem : EntitySystem
             }
 
             // Add empty limb slots so the diagram can be clicked to select them for AttachLimb.
-            if (TryComp<HumanoidAppearanceComponent>(entity, out var humanoid))
+            if (TryComp<HumanoidProfileComponent>(entity, out _))
             {
                 var limbCategories = new[] { "ArmLeft", "ArmRight", "LegLeft", "LegRight" };
                 var presentCategories = new HashSet<string>();

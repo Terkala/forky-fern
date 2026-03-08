@@ -7,26 +7,19 @@ using Content.Shared.Humanoid;
 namespace Content.Shared.Cybernetics.Systems;
 
 /// <summary>
-/// Applies cyber limb appearance (humanoidBaseSprite) to the body when cyber limbs are attached,
-/// and reverts to species default when removed.
+/// Applies cyber limb damage overlay state (BloodDisabled) when cyber limbs are attached.
+/// Limb sprite visuals come from VisualOrganComponent on the organ; VisualBodySystem applies them.
 /// </summary>
 public sealed class CyberLimbAppearanceSystem : EntitySystem
 {
-    private static readonly IReadOnlyDictionary<string, (HumanoidVisualLayers Layer, string Id)[]> CategoryToLayers = new Dictionary<string, (HumanoidVisualLayers Layer, string Id)[]>
+    private static readonly IReadOnlyDictionary<string, HumanoidVisualLayers[]> CategoryToLayers = new Dictionary<string, HumanoidVisualLayers[]>
     {
-        ["ArmLeft"] = [(HumanoidVisualLayers.LArm, "MobCyberLArm"), (HumanoidVisualLayers.LHand, "MobCyberLHand")],
-        ["ArmRight"] = [(HumanoidVisualLayers.RArm, "MobCyberRArm"), (HumanoidVisualLayers.RHand, "MobCyberRHand")],
-        ["LegLeft"] = [(HumanoidVisualLayers.LLeg, "MobCyberLLeg")],
-        ["LegRight"] = [(HumanoidVisualLayers.RLeg, "MobCyberRLeg")],
+        ["ArmLeft"] = [HumanoidVisualLayers.LArm, HumanoidVisualLayers.LHand],
+        ["ArmRight"] = [HumanoidVisualLayers.RArm, HumanoidVisualLayers.RHand],
+        ["LegLeft"] = [HumanoidVisualLayers.LLeg],
+        ["LegRight"] = [HumanoidVisualLayers.RLeg],
     };
 
-    private static readonly IReadOnlyDictionary<string, HumanoidVisualLayers[]> CategoryToFootLayers = new Dictionary<string, HumanoidVisualLayers[]>
-    {
-        ["LegLeft"] = [HumanoidVisualLayers.LFoot],
-        ["LegRight"] = [HumanoidVisualLayers.RFoot],
-    };
-
-    [Dependency] private readonly SharedHumanoidAppearanceSystem _humanoid = default!;
     [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
 
     public override void Initialize()
@@ -49,29 +42,9 @@ public sealed class CyberLimbAppearanceSystem : EntitySystem
         if (LifeStage(body) >= EntityLifeStage.Terminating)
             return;
 
-        if (TryComp<HumanoidAppearanceComponent>(body, out var humanoid))
-        {
-            // Force hidden first, then set cyber sprite, then reveal - ensures no flash of organic arm
-            var layerArray = new HumanoidVisualLayers[layers.Length];
-            for (var i = 0; i < layers.Length; i++)
-                layerArray[i] = layers[i].Layer;
-            _humanoid.SetLayersVisibility((body, humanoid), layerArray, visible: false);
-            foreach (var (layer, id) in layers)
-            {
-                _humanoid.SetBaseLayerId(body, layer, id, humanoid: humanoid);
-            }
-            _humanoid.SetLayersVisibility((body, humanoid), layerArray, visible: true);
-
-            // Hide the separate foot layer when using combined-foot leg sprite (avoids double-drawing)
-            if (CategoryToFootLayers.TryGetValue(categoryStr, out var footLayers))
-            {
-                _humanoid.SetLayersVisibility((body, humanoid), footLayers, visible: false);
-            }
-        }
-
         if (TryComp<AppearanceComponent>(body, out var appearance))
         {
-            foreach (var (layer, _) in layers)
+            foreach (var layer in layers)
             {
                 _appearance.SetData(body, layer, DamageOverlayLayerState.BloodDisabled, appearance);
             }
@@ -81,34 +54,8 @@ public sealed class CyberLimbAppearanceSystem : EntitySystem
 
     private void OnCyberLimbRemoved(Entity<CyberLimbComponent> ent, ref OrganGotRemovedEvent args)
     {
-        var body = args.Target;
-        if (!TryComp<OrganComponent>(ent, out var organ) || organ.Category is not { } category)
-            return;
-
-        var categoryStr = category.ToString();
-        if (!CategoryToLayers.TryGetValue(categoryStr, out var layers))
-            return;
-
-        if (LifeStage(body) >= EntityLifeStage.Terminating)
-            return;
-
-        if (TryComp<HumanoidAppearanceComponent>(body, out var humanoid))
-        {
-            foreach (var (layer, _) in layers)
-            {
-                humanoid.CustomBaseLayers.Remove(layer);
-            }
-
-            // Restore foot layer visibility when removing cyber leg
-            if (CategoryToFootLayers.TryGetValue(categoryStr, out var footLayers))
-            {
-                _humanoid.SetLayersVisibility((body, humanoid), footLayers, visible: true);
-            }
-
-            Dirty(body, humanoid);
-        }
-
         // Do not set damage overlay appearance data on remove - LimbDetachmentEffectsSystem
         // sets AllDisabled when the organ is removed; we must not overwrite that.
+        // Limb visibility is handled by VisualBodySystem (sets layer to Invalid).
     }
 }

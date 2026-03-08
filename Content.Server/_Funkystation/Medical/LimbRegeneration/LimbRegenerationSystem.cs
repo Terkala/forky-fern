@@ -45,7 +45,7 @@ public sealed class LimbRegenerationSystem : EntitySystem
         if (TerminatingOrDeleted(ent))
             return;
 
-        if (!TryComp<HumanoidAppearanceComponent>(ent, out var humanoid) || humanoid.Species != SlimePerson)
+        if (!TryComp<HumanoidProfileComponent>(ent, out var humanoidProfile) || humanoidProfile.Species != SlimePerson)
             return;
 
         if (!TryComp<OrganComponent>(args.Organ, out var organ) || organ.Category is not { } category)
@@ -63,9 +63,9 @@ public sealed class LimbRegenerationSystem : EntitySystem
         base.Update(frameTime);
 
         var curTime = _timing.CurTime;
-        var query = EntityQueryEnumerator<SlimeLimbRegenerationComponent, BodyComponent, HumanoidAppearanceComponent>();
+        var query = EntityQueryEnumerator<SlimeLimbRegenerationComponent, BodyComponent, HumanoidProfileComponent>();
 
-        while (query.MoveNext(out var uid, out var regen, out var bodyComp, out var humanoid))
+        while (query.MoveNext(out var uid, out var regen, out var bodyComp, out var humanoidProfile))
         {
             if (regen.PendingRegenerations.Count == 0)
                 continue;
@@ -77,7 +77,7 @@ public sealed class LimbRegenerationSystem : EntitySystem
                 if (curTime - entry.RegenerationStartTime < regen.RegenerationDelay)
                     continue;
 
-                if (RestoreSingleLimb(uid, humanoid.Species, entry.Category, bodyComp))
+                if (RestoreSingleLimb(uid, humanoidProfile.Species, entry.Category, bodyComp))
                     toRemove.Add(i);
             }
 
@@ -112,12 +112,12 @@ public sealed class LimbRegenerationSystem : EntitySystem
 
     public void RestoreAllLimbs(EntityUid body)
     {
-        if (!TryComp<HumanoidAppearanceComponent>(body, out var humanoid))
+        if (!TryComp<HumanoidProfileComponent>(body, out var humanoidProfile))
             return;
 
         foreach (var category in LimbAndHeadCategories)
         {
-            RestoreSingleLimb(body, humanoid.Species, category);
+            RestoreSingleLimb(body, humanoidProfile.Species, category);
         }
     }
 

@@ -300,7 +300,7 @@
   flavor: medicine
   color: "#8B7355"
   metabolisms:
-    Medicine:
+    Bloodstream:
       metabolismRate: 0.5
       effects:
       - !type:AddIntegrityImmunityBoost

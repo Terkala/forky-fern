@@ -344,6 +344,13 @@ public sealed class SurgeryFixesIntegrationTest : InteractionTest
         await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "RetractTissue", SurgeryLayer.Tissue, false), analyzerNet, fromServer: true);
         await AwaitDoAfters(maxExpected: 1, minExpected: 1);
 
+        // DetachLimb requires CuttingTool (scalpel); swap from retractor
+        await Server.WaitPost(() =>
+        {
+            HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
+            HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(scalpelNet), checkActionBlocker: false);
+        });
+        await RunTicks(1);
         await SendBui(HealthAnalyzerUiKey.Key, new SurgeryRequestBuiMessage(patientNet, legNet, "DetachLimb", SurgeryLayer.Organ, false), analyzerNet, fromServer: true);
         await AwaitDoAfters(maxExpected: 1, minExpected: 1);
         await RunTicks(5);

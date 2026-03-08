@@ -67,27 +67,19 @@ public sealed class CyberArmAppearanceNoFlashIntegrationTest
 
         await server.WaitAssertion(() =>
         {
-            Assert.That(entityManager.TryGetComponent<HumanoidAppearanceComponent>(user, out var humanoid), Is.True,
-                "User should have HumanoidAppearanceComponent");
+            Assert.That(entityManager.TryGetComponent<HumanoidProfileComponent>(user, out _), Is.True,
+                "User should have HumanoidProfileComponent");
 
-            // First step of attach must be: sprite set to cybernetic, then reveal.
-            // Verify cyber sprites are set for arm and hand
-            Assert.That(humanoid!.CustomBaseLayers.TryGetValue(HumanoidVisualLayers.LArm, out var lairmInfo), Is.True,
-                "CustomBaseLayers should contain LArm");
-            Assert.That(lairmInfo.Id?.ToString(), Is.EqualTo("MobCyberLArm"),
-                "LArm should use MobCyberLArm sprite (not organic)");
-
-            Assert.That(humanoid.CustomBaseLayers.TryGetValue(HumanoidVisualLayers.LHand, out var lhandInfo), Is.True,
-                "CustomBaseLayers should contain LHand");
-            Assert.That(lhandInfo.Id?.ToString(), Is.EqualTo("MobCyberLHand"),
-                "LHand should use MobCyberLHand sprite (not organic)");
-
-            // Arm and hand layers must be visible (not hidden) - ensures no flash of organic arm
-            // when layer was revealed before sprite was set
-            Assert.That(humanoid.PermanentlyHidden.Contains(HumanoidVisualLayers.LArm), Is.False,
-                "LArm should be visible after cyber arm attach");
-            Assert.That(humanoid.PermanentlyHidden.Contains(HumanoidVisualLayers.LHand), Is.False,
-                "LHand should be visible after cyber arm attach");
+            // In the organ-based visual system, cyber arm has VisualOrganComponent with cyber sprite.
+            // VisualBodySystem applies it on insert - no flash since the organ's data is correct from the start.
+            var ev = new BodyPartQueryByTypeEvent(user) { Category = new ProtoId<OrganCategoryPrototype>("ArmLeft") };
+            entityManager.EventBus.RaiseLocalEvent(user, ref ev);
+            Assert.That(ev.Parts, Has.Count.GreaterThanOrEqualTo(1), "User should have left arm");
+            var arm = ev.Parts[0];
+            Assert.That(entityManager.TryGetComponent(arm, out VisualOrganComponent? visualOrgan), Is.True,
+                "Cyber arm should have VisualOrganComponent");
+            Assert.That(visualOrgan!.Data.State, Is.EqualTo("l_arm-combined-hand"),
+                "Cyber arm should use l_arm-combined-hand sprite (combined arm+hand, no organic flash)");
         });
 
         await pair.CleanReturnAsync();

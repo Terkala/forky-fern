@@ -437,7 +437,7 @@ public sealed partial class AdminVerbSystem
             };
             args.Verbs.Add(handRemoval);
 
-            if (HasComp<HumanoidAppearanceComponent>(args.Target))
+            if (HasComp<HumanoidProfileComponent>(args.Target))
             {
                 var removeAllLimbsName = Loc.GetString("admin-smite-remove-all-limbs-name").ToLowerInvariant();
                 Verb removeAllLimbs = new()

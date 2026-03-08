@@ -1,7 +1,6 @@
 using Content.Shared.Body;
 using Content.Shared.Body.Components;
 using Content.Shared.Body.Events;
-using Content.Shared.Body.Prototypes;
 using Robust.Shared.Prototypes;
 using Content.Shared.Cybernetics.Components;
 using Content.Shared.Damage;

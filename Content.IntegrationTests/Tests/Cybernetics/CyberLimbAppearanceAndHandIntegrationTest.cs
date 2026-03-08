@@ -78,18 +78,16 @@ public sealed class CyberLimbAppearanceAndHandIntegrationTest
 
         await server.WaitAssertion(() =>
         {
-            Assert.That(entityManager.TryGetComponent<HumanoidAppearanceComponent>(user, out var humanoid), Is.True,
-                "User should have HumanoidAppearanceComponent");
+            Assert.That(entityManager.TryGetComponent<HumanoidProfileComponent>(user, out _), Is.True,
+                "User should have HumanoidProfileComponent");
 
-            Assert.That(humanoid!.CustomBaseLayers.TryGetValue(HumanoidVisualLayers.LArm, out var lairmInfo), Is.True,
-                "CustomBaseLayers should contain LArm");
-            Assert.That(lairmInfo.Id?.ToString(), Is.EqualTo("MobCyberLArm"),
-                "LArm should use MobCyberLArm sprite");
-
-            Assert.That(humanoid.CustomBaseLayers.TryGetValue(HumanoidVisualLayers.LHand, out var lhandInfo), Is.True,
-                "CustomBaseLayers should contain LHand");
-            Assert.That(lhandInfo.Id?.ToString(), Is.EqualTo("MobCyberLHand"),
-                "LHand should use MobCyberLHand sprite");
+            var arm = GetLimbByCategory(entityManager, user, "ArmLeft");
+            Assert.That(entityManager.TryGetComponent(arm, out VisualOrganComponent? visualOrgan), Is.True,
+                "Cyber arm should have VisualOrganComponent");
+            Assert.That(visualOrgan!.Layer, Is.EqualTo(HumanoidVisualLayers.LArm),
+                "Cyber arm should map to LArm layer");
+            Assert.That(visualOrgan.Data.State, Is.EqualTo("l_arm-combined-hand"),
+                "Cyber arm should use l_arm-combined-hand sprite state");
         });
 
         await pair.CleanReturnAsync();
@@ -163,13 +161,16 @@ public sealed class CyberLimbAppearanceAndHandIntegrationTest
 
         await server.WaitAssertion(() =>
         {
-            Assert.That(entityManager.TryGetComponent<HumanoidAppearanceComponent>(user, out var humanoid), Is.True,
-                "User should have HumanoidAppearanceComponent");
+            Assert.That(entityManager.TryGetComponent<HumanoidProfileComponent>(user, out _), Is.True,
+                "User should have HumanoidProfileComponent");
 
-            Assert.That(humanoid!.CustomBaseLayers.TryGetValue(HumanoidVisualLayers.LLeg, out var llegInfo), Is.True,
-                "CustomBaseLayers should contain LLeg");
-            Assert.That(llegInfo.Id?.ToString(), Is.EqualTo("MobCyberLLeg"),
-                "LLeg should use MobCyberLLeg sprite (l_leg-combined-foot for correct side views)");
+            var leg = GetLimbByCategory(entityManager, user, "LegLeft");
+            Assert.That(entityManager.TryGetComponent(leg, out VisualOrganComponent? visualOrgan), Is.True,
+                "Cyber leg should have VisualOrganComponent");
+            Assert.That(visualOrgan!.Layer, Is.EqualTo(HumanoidVisualLayers.LLeg),
+                "Cyber leg should map to LLeg layer");
+            Assert.That(visualOrgan.Data.State, Is.EqualTo("l_leg-combined-foot"),
+                "Cyber leg should use l_leg-combined-foot sprite state");
         });
 
         await pair.CleanReturnAsync();

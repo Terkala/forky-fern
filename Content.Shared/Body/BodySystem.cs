@@ -87,11 +87,13 @@ public sealed partial class BodySystem : EntitySystem
 
             // Re-attached limbs: keep skin and tissue layers fully open so user can immediately attach hand/foot.
             // Clear organ steps so limb can be amputated again later.
+            // Include ClampVessels so RetractSkin can be re-performed after ReleaseRetractor (1:1 pairing).
             if (_surgeryLayerQuery.TryComp(args.Entity, out var surgeryLayer) &&
                 (surgeryLayer.PerformedSkinSteps.Count > 0 || surgeryLayer.PerformedTissueSteps.Count > 0 || surgeryLayer.PerformedOrganSteps.Count > 0))
             {
                 surgeryLayer.PerformedSkinSteps.Clear();
                 surgeryLayer.PerformedSkinSteps.Add("CreateIncision");
+                surgeryLayer.PerformedSkinSteps.Add("ClampVessels");
                 surgeryLayer.PerformedSkinSteps.Add("RetractSkin");
                 surgeryLayer.PerformedTissueSteps.Clear();
                 surgeryLayer.PerformedTissueSteps.Add("RetractTissue");

@@ -1,10 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using Content.Client.Humanoid;
+using Content.Shared.Body;
 using Content.Shared.Humanoid;
 using Content.Shared.Humanoid.Prototypes;
 using Content.Shared.MedicalScanner;
+using Content.Shared.Preferences;
 using Content.Shared.Rotation;
 using Robust.Client.Graphics;
 using Robust.Client.UserInterface;
@@ -158,26 +159,54 @@ public sealed class SurgeryBodyPartDiagramControl : Control
     }
 
     /// <summary>
-    /// Re-copies HumanoidAppearanceComponent from patient to preview so limb visibility (PermanentlyHidden) stays in sync.
+    /// Syncs preview body appearance and organ structure to match patient (limb visibility from organ presence).
     /// </summary>
     private void RefreshPreviewAppearance(EntityUid patient)
     {
         if (_previewEntity == null)
             return;
-        if (_entManager.TryGetComponent(patient, out HumanoidAppearanceComponent? srcHumanoid) &&
-            _entManager.TryGetComponent(_previewEntity.Value, out HumanoidAppearanceComponent? destHumanoid) &&
-            _entManager.TryGetComponent(_previewEntity.Value, out SpriteComponent? spriteComp))
+        var visualBody = _entManager.System<SharedVisualBodySystem>();
+        if (_entManager.TryGetComponent(patient, out BodyComponent? patientBody) &&
+            _entManager.TryGetComponent(_previewEntity.Value, out BodyComponent? previewBody))
         {
-            _entManager.CopyComponent(patient, _previewEntity.Value, srcHumanoid);
-            _entManager.System<HumanoidAppearanceSystem>().RefreshSprite((_previewEntity.Value, destHumanoid, spriteComp));
+            SyncPreviewBodyToPatient(patient, patientBody, _previewEntity.Value, previewBody);
+            visualBody.CopyAppearanceFrom((patient, patientBody), (_previewEntity.Value, previewBody));
+        }
+    }
+
+    private void SyncPreviewBodyToPatient(EntityUid patient, BodyComponent patientBody, EntityUid preview, BodyComponent previewBody)
+    {
+        var containerSystem = _entManager.System<Robust.Shared.Containers.SharedContainerSystem>();
+        if (!containerSystem.TryGetContainer(patient, BodyComponent.ContainerID, out var patientContainer) ||
+            !containerSystem.TryGetContainer(preview, BodyComponent.ContainerID, out var previewContainer))
+            return;
+
+        var patientCategories = new HashSet<string>();
+        foreach (var ent in patientContainer.ContainedEntities)
+        {
+            if (_entManager.TryGetComponent(ent, out OrganComponent? organ) && organ.Category is { } cat)
+                patientCategories.Add(cat.ToString());
+        }
+
+        foreach (var ent in previewContainer.ContainedEntities.ToArray())
+        {
+            if (_entManager.TryGetComponent(ent, out OrganComponent? organ) && organ.Category is { } cat)
+            {
+                if (!patientCategories.Contains(cat.ToString()))
+                {
+                    // Preview is in Nullspace; reparenting would fail. Remove without reparent and delete.
+                    containerSystem.Remove(ent, previewContainer, reparent: false, force: true);
+                    _entManager.DeleteEntity(ent);
+                }
+            }
         }
     }
 
     private EntityUid SpawnStandingPreview(EntityUid patient)
     {
-        var species = SharedHumanoidAppearanceSystem.DefaultSpecies;
-        if (_entManager.TryGetComponent(patient, out HumanoidAppearanceComponent? humanoid))
-            species = humanoid.Species;
+        var species = HumanoidCharacterProfile.DefaultSpecies;
+        if (_entManager.TryGetComponent(patient, out HumanoidProfileComponent? humanoidProfile))
+            species = humanoidProfile.Species;
 
         EntityUid preview;
         if (_prototypes.TryIndex<SpeciesPrototype>(species, out var speciesProto))
@@ -185,10 +214,12 @@ public sealed class SurgeryBodyPartDiagramControl : Control
         else
             preview = _entManager.SpawnEntity("MobHuman", MapCoordinates.Nullspace);
 
-        if (_entManager.TryGetComponent(patient, out HumanoidAppearanceComponent? srcHumanoid) &&
-            _entManager.TryGetComponent(preview, out HumanoidAppearanceComponent? _))
+        var visualBody = _entManager.System<SharedVisualBodySystem>();
+        if (_entManager.TryGetComponent(patient, out BodyComponent? patientBody) &&
+            _entManager.TryGetComponent(preview, out BodyComponent? previewBody))
         {
-            _entManager.CopyComponent(patient, preview, srcHumanoid);
+            SyncPreviewBodyToPatient(patient, patientBody, preview, previewBody);
+            visualBody.CopyAppearanceFrom((patient, patientBody), (preview, previewBody));
         }
 
         if (_entManager.TryGetComponent(preview, out AppearanceComponent? appearance))
