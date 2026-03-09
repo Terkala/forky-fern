@@ -1,0 +1,202 @@
+- type: entity
+  name: mini dragon
+  id: BaseMobMiniDragon
+  parent: [ SimpleSpaceMobBase, FlyingMobBase ]
+  description: It's a mini dragon, sometimes also known as a poodle dragon. These small and surprisingly hardy space dragons are not actually baby dragons, but are closely related to full sized dragons.
+  abstract: true
+  components:
+    - type: InputMover
+    - type: MobMover
+    - type: HTN
+      rootTask:
+        task: XenoCompound
+      blackboard:
+        NavSmash: !type:Bool
+          true
+    - type: NpcFactionMember
+      factions:
+      - Dragon
+    - type: Sprite
+      drawdepth: Mobs
+      sprite: _Funkystation/Mobs/Pets/minidragon.rsi
+      layers:
+      - map: [ "enum.DamageStateVisualLayers.Base" ]
+        state: alive
+      - map: [ "enum.DamageStateVisualLayers.BaseUnshaded" ]
+        state: mouth
+        shader: unshaded
+    - type: DamageStateVisuals
+      states:
+        Alive:
+          Base: alive
+          BaseUnshaded: mouth
+        Critical:
+          Base: crit
+          BaseUnshaded: crit_mouth
+        Dead:
+          Base: dead
+          BaseUnshaded: dead_mouth
+    - type: CombatMode
+    - type: Physics
+    - type: Fixtures
+      fixtures:
+        fix1:
+          shape:
+            !type:PhysShapeCircle
+            radius: 0.3
+          density: 60
+          mask:
+            - FlyingMobMask
+          layer:
+            - FlyingMobLayer
+    - type: MobState
+    - type: MobThresholds
+      thresholds:
+        0: Alive
+        200: Critical
+        250: Dead
+    - type: Stamina
+      critThreshold: 200
+    - type: Butcherable
+      spawned:
+        - id: FoodMeatDragon
+          amount: 1
+        - id: MaterialToothSpaceCarp1
+          amount: 4
+    - type: MeleeWeapon
+      altDisarm: false
+      soundHit:
+        path: /Audio/Weapons/Xeno/alien_claw_flesh3.ogg
+      damage:
+        types:
+          Piercing: 10
+          Slash: 10
+    - type: TypingIndicator
+      proto: lizard
+    - type: Tag
+      tags:
+        - DoorBumpOpener
+        - CannotSuicide
+    - type: LizardAccent
+    - type: Speech
+      speechSounds: Lizard
+      speechVerb: Reptilian
+      allowedEmotes: ['Thump', 'Chirp', 'Gurgle', 'Weh']
+    - type: InteractionPopup
+      successChance: 0.5
+      interactSuccessString: petting-success-minidragon
+      interactFailureString: petting-failure-minidragon
+      interactFailureSound:
+        path: /Audio/Effects/bite.ogg
+    - type: MovementSpeedModifier
+      baseWalkSpeed: 3
+      baseSprintSpeed: 4
+      weightlessModifier: 1.5
+    - type: MobStateActions
+      actions:
+        Critical:
+        - ActionCritSuccumb
+        - ActionCritLastWords
+    - type: SlowOnDamage
+      speedModifierThresholds:
+        125: 0.85
+        175: 0.7
+    - type: StatusEffects
+      allowed:
+      - SlowedDown
+      - Electrocution
+      - ForcedSleep
+      - TemporaryBlindness
+      - Pacified
+      - RadiationProtection
+      - Drowsiness
+      - Adrenaline
+    - type: Flammable
+      damage:
+        types: {}
+    - type: Temperature
+    - type: TemperatureDamage
+      heatDamageThreshold: 1200
+    - type: Metabolizer
+      solutionOnBody: false
+      updateInterval: 0.25
+      metabolizerTypes: [ Dragon ]
+      groups:
+      - id: Medicine
+      - id: Poison
+    - type: Bloodstream
+      bloodReferenceSolution:
+        reagents:
+        - ReagentId: Blood
+          Quantity: 650
+    - type: Prying
+      pryPowered: true
+      force: true
+      speedModifier: 3
+      useSound:
+        path: /Audio/Items/crowbar.ogg
+    - type: Puller
+      needsHands: false
+    - type: GhostRole
+      allowMovement: true
+      allowSpeech: true
+      makeSentient: true
+      name: ghost-role-information-mini-dragon-name
+      description: ghost-role-information-mini-dragon-description
+      rules: ghost-role-information-mini-dragon-rules
+      raffle:
+        settings: default
+      mindRoles:
+      - MindRoleGhostRoleSoloAntagonist
+    - type: GhostTakeoverAvailable
+    - type: RandomSprite
+      available:
+      - enum.DamageStateVisualLayers.Base:
+          alive: Rainbow
+      - enum.DamageStateVisualLayers.BaseUnshaded:
+          mouth: ""
+
+- type: entity
+  name: wizard's mini dragon familiar
+  parent: BaseMobMiniDragon
+  id: MobMiniDragonFamiliar
+  description: A mini dragon summoned by a wizard to serve as a loyal familiar. It follows its master's commands.
+  components:
+    - type: Sprite
+      layers:
+      - map: [ "enum.DamageStateVisualLayers.Base" ]
+        state: alive
+      - map: [ "enum.DamageStateVisualLayers.BaseUnshaded" ]
+        state: mouth
+        shader: unshaded
+    - type: RandomSprite
+      available:
+      - enum.DamageStateVisualLayers.Base:
+          alive: Rainbow
+      - enum.DamageStateVisualLayers.BaseUnshaded:
+          mouth: ""
+    - type: GhostRole
+      prob: 1
+      makeSentient: true
+      allowSpeech: true
+      allowMovement: true
+      name: ghost-role-information-mini-dragon-familiar-name
+      description: ghost-role-information-mini-dragon-familiar-description
+      rules: ghost-role-information-mini-dragon-familiar-rules
+      raffle:
+        settings: default
+      mindRoles:
+      - MindRoleGhostRoleFamiliar
+    - type: GhostTakeoverAvailable
+    - type: NpcFactionMember
+      factions:
+      - Wizard
+    - type: FactionException
+    - type: WizardFamiliar
+    - type: HTN
+      rootTask:
+        task: DragonCarpCompound
+      blackboard:
+        NavSmash: !type:Bool
+          true
+    - type: Actions

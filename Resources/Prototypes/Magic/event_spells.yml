@@ -8,6 +8,40 @@
 
 - type: entity
   parent: BaseAction
+  id: ActionSummonMiniDragon
+  name: Summon Mini Dragon
+  description: Summons a loyal mini dragon familiar to aid you in your magical endeavors.
+  components:
+  - type: Magic
+    requiresClothes: true
+  - type: Action
+    useDelay: 600
+    itemIconStyle: BigAction
+    icon:
+      sprite: _Funkystation/Mobs/Pets/minidragon.rsi
+      state: icon
+  - type: InstantAction
+    event: !type:InstantSpawnSpellEvent
+      prototype: MobMiniDragonFamiliar
+      posData: !type:TargetCasterPos
+
+- type: entity
+  parent: BaseAction
+  id: ActionMiniDragonTeleportToWizard
+  name: Teleport to Wizard
+  description: Teleport to your wizard master's location.
+  components:
+  - type: Action
+    useDelay: 300
+    itemIconStyle: BigAction
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: blink
+  - type: InstantAction
+    event: !type:MiniDragonTeleportToWizardEvent
+
+- type: entity
+  parent: BaseAction
   id: ActionSummonGhosts
   name: Summon Ghosts
   description: Makes all current ghosts permanently visible

@@ -325,6 +325,19 @@
     stock: 1
   disableRefund: true
 
+- type: listing
+  id: SpellbookEventSummonMiniDragon
+  name: spellbook-event-summon-minidragon-name
+  description: spellbook-event-summon-minidragon-description
+  productAction: ActionSummonMiniDragon
+  cost:
+    WizCoin: 2
+  categories:
+  - SpellbookEvents
+  conditions:
+  - !type:ListingLimitedStockCondition
+    stock: 1
+
 # Upgrades
 - type: listing
   id: SpellbookFireballUpgrade
