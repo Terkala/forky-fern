@@ -24,9 +24,12 @@
   - type: Organ
     category: ArmLeft
     integrityCost: 1
+  - type: Item
+    size: Normal
   - type: BodyPart
     containerId: limb_organs
     slots: []
+  - type: SurgeryLayer
   - type: CyberLimb
   - type: Storage
     maxItemSize: Normal
@@ -35,6 +38,10 @@
   - type: ContainerContainer
     containers:
       storagebase: !type:Container
+        ents: []
+      limb_organs: !type:Container
+        showEnts: False
+        occludes: True
         ents: []
   - type: UserInterface
     interfaces:
@@ -68,9 +75,12 @@
   - type: Organ
     category: ArmRight
     integrityCost: 1
+  - type: Item
+    size: Normal
   - type: BodyPart
     containerId: limb_organs
     slots: []
+  - type: SurgeryLayer
   - type: CyberLimb
   - type: Storage
     maxItemSize: Normal
@@ -79,6 +89,10 @@
   - type: ContainerContainer
     containers:
       storagebase: !type:Container
+        ents: []
+      limb_organs: !type:Container
+        showEnts: False
+        occludes: True
         ents: []
   - type: UserInterface
     interfaces:
@@ -108,9 +122,12 @@
   - type: Organ
     category: LegLeft
     integrityCost: 1
+  - type: Item
+    size: Normal
   - type: BodyPart
     containerId: limb_organs
     slots: []
+  - type: SurgeryLayer
   - type: CyberLimb
   - type: Storage
     maxItemSize: Normal
@@ -119,6 +136,10 @@
   - type: ContainerContainer
     containers:
       storagebase: !type:Container
+        ents: []
+      limb_organs: !type:Container
+        showEnts: False
+        occludes: True
         ents: []
   - type: UserInterface
     interfaces:
@@ -146,9 +167,12 @@
   - type: Organ
     category: LegRight
     integrityCost: 1
+  - type: Item
+    size: Normal
   - type: BodyPart
     containerId: limb_organs
     slots: []
+  - type: SurgeryLayer
   - type: CyberLimb
   - type: Storage
     maxItemSize: Normal
@@ -157,6 +181,10 @@
   - type: ContainerContainer
     containers:
       storagebase: !type:Container
+        ents: []
+      limb_organs: !type:Container
+        showEnts: False
+        occludes: True
         ents: []
   - type: UserInterface
     interfaces:

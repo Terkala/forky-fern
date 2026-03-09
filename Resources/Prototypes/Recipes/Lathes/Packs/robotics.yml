@@ -93,6 +93,15 @@
 - type: latheRecipePack
   id: Cybernetics
   recipes:
+  - OrganCyberArmLeft
+  - OrganCyberArmRight
+  - OrganCyberLegLeft
+  - OrganCyberLegRight
+  - OrganCyberHeartBasic
+  - OrganCyberLungsBasic
+  - OrganCyberLiverBasic
+  - OrganCyberStomachBasic
+  - OrganCyberEyesBasic
   - OrganCyberArmLeftT1
   - OrganCyberArmRightT1
   - OrganCyberLegLeftT1

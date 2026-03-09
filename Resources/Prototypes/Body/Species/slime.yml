@@ -211,6 +211,13 @@
   components:
   - type: BodyPart
     containerId: internal_organs
+  - type: SurgeryLayer
+  - type: ContainerContainer
+    containers:
+      internal_organs: !type:Container
+        showEnts: False
+        occludes: True
+        ents: []
   - type: EntityTableContainerFill
     containers:
       internal_organs: !type:AllSelector
@@ -224,6 +231,13 @@
   components:
   - type: BodyPart
     containerId: head_organs
+  - type: SurgeryLayer
+  - type: ContainerContainer
+    containers:
+      head_organs: !type:Container
+        showEnts: False
+        occludes: True
+        ents: []
 
 - type: entity
   parent: [ OrganBaseArmLeft, OrganSlimePersonExternal ]
@@ -231,6 +245,13 @@
   components:
   - type: BodyPart
     containerId: limb_organs
+  - type: SurgeryLayer
+  - type: ContainerContainer
+    containers:
+      limb_organs: !type:Container
+        showEnts: False
+        occludes: True
+        ents: []
   - type: EntityTableContainerFill
     containers:
       limb_organs: !type:AllSelector
@@ -243,6 +264,13 @@
   components:
   - type: BodyPart
     containerId: limb_organs
+  - type: SurgeryLayer
+  - type: ContainerContainer
+    containers:
+      limb_organs: !type:Container
+        showEnts: False
+        occludes: True
+        ents: []
   - type: EntityTableContainerFill
     containers:
       limb_organs: !type:AllSelector
@@ -263,6 +291,13 @@
   components:
   - type: BodyPart
     containerId: limb_organs
+  - type: SurgeryLayer
+  - type: ContainerContainer
+    containers:
+      limb_organs: !type:Container
+        showEnts: False
+        occludes: True
+        ents: []
   - type: EntityTableContainerFill
     containers:
       limb_organs: !type:AllSelector
@@ -275,6 +310,13 @@
   components:
   - type: BodyPart
     containerId: limb_organs
+  - type: SurgeryLayer
+  - type: ContainerContainer
+    containers:
+      limb_organs: !type:Container
+        showEnts: False
+        occludes: True
+        ents: []
   - type: EntityTableContainerFill
     containers:
       limb_organs: !type:AllSelector

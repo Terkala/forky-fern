@@ -119,6 +119,10 @@
   tier: 1
   cost: 5000
   recipeUnlocks:
+  - OrganCyberArmLeft
+  - OrganCyberArmRight
+  - OrganCyberLegLeft
+  - OrganCyberLegRight
   - OrganCyberArmLeftT1
   - OrganCyberArmRightT1
   - OrganCyberLegLeftT1
