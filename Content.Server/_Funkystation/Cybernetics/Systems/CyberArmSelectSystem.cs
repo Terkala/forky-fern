@@ -10,7 +10,7 @@ using Content.Shared.Hands.EntitySystems;
 using Content.Shared.IdentityManagement;
 using Content.Shared.Interaction.Components;
 using Content.Shared.Inventory.VirtualItem;
-using Content.Shared.Power.Components;
+using Content.Shared.PowerCell.Components;
 using Robust.Server.GameObjects;
 using Robust.Shared.Prototypes;
 
@@ -47,8 +47,9 @@ public sealed class CyberArmSelectSystem : EntitySystem
 
         // Determine which arm the activated hand belongs to - only show that arm's contents
         var armCategory = GetArmCategoryForHand(ev.User, ev.HandName, ent.Comp);
+        // Exclude cyber modules and items that contain batteries but are not batteries themselves (e.g. flashlights with power cell slots)
         var items = _cyberArmStorage.GetCyberArmStorageItems(ev.User, armCategory)
-            .Where(x => !HasComp<CyberLimbModuleComponent>(x.Item) && !HasComp<BatteryComponent>(x.Item))
+            .Where(x => !HasComp<CyberLimbModuleComponent>(x.Item) && !(HasComp<PowerCellSlotComponent>(x.Item) && !HasComp<PowerCellComponent>(x.Item)))
             .ToList();
         if (items.Count == 0)
             return;
@@ -101,7 +102,7 @@ public sealed class CyberArmSelectSystem : EntitySystem
 
         // Only allow selecting items from this specific arm's storage
         var items = _cyberArmStorage.GetCyberArmStorageItems(user, null)
-            .Where(x => x.Limb == ent.Owner && !HasComp<CyberLimbModuleComponent>(x.Item) && !HasComp<BatteryComponent>(x.Item))
+            .Where(x => x.Limb == ent.Owner && !HasComp<CyberLimbModuleComponent>(x.Item) && !(HasComp<PowerCellSlotComponent>(x.Item) && !HasComp<PowerCellComponent>(x.Item)))
             .ToList();
         if (!items.Any(x => x.Item == selectedEntity))
             return;

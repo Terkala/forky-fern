@@ -164,31 +164,32 @@
         type: StorageBoundUserInterface
 
 # Civilian variants - roundstart (6 arm / 4 leg slots)
-# Box2i format: left, bottom, right, top (inclusive). 6 slots = 2x3 = 0,0,1,2
+# Box2i format: left, bottom, right, top (inclusive). All grids 2 rows high.
+# Tier 0 = rudimentary
 - type: entity
   parent: OrganCyberArmLeftBase
   id: OrganCyberArmLeft
-  name: left cyber arm
+  name: left rudimentary cyber arm
   components:
   - type: Storage
     maxItemSize: Normal
     grid:
-    - 0,0,1,2
+    - 0,0,2,1
 
 - type: entity
   parent: OrganCyberArmRightBase
   id: OrganCyberArmRight
-  name: right cyber arm
+  name: right rudimentary cyber arm
   components:
   - type: Storage
     maxItemSize: Normal
     grid:
-    - 0,0,1,2
+    - 0,0,2,1
 
 - type: entity
   parent: OrganCyberLegLeftBase
   id: OrganCyberLegLeft
-  name: left cyber leg
+  name: left rudimentary cyber leg
   components:
   - type: Storage
     maxItemSize: Normal
@@ -198,163 +199,163 @@
 - type: entity
   parent: OrganCyberLegRightBase
   id: OrganCyberLegRight
-  name: right cyber leg
+  name: right rudimentary cyber leg
   components:
   - type: Storage
     maxItemSize: Normal
     grid:
     - 0,0,1,1
 
-# Civilian T1 (8 arm / 6 leg slots)
+# Civilian T1 (8 arm / 6 leg slots) - Tier 1 = basic
 - type: entity
   parent: OrganCyberArmLeftBase
   id: OrganCyberArmLeftT1
-  name: left cyber arm
+  name: left basic cyber arm
   components:
   - type: Storage
     maxItemSize: Normal
     grid:
-    - 0,0,1,3
+    - 0,0,3,1
 
 - type: entity
   parent: OrganCyberArmRightBase
   id: OrganCyberArmRightT1
-  name: right cyber arm
+  name: right basic cyber arm
   components:
   - type: Storage
     maxItemSize: Normal
     grid:
-    - 0,0,1,3
+    - 0,0,3,1
 
 - type: entity
   parent: OrganCyberLegLeftBase
   id: OrganCyberLegLeftT1
-  name: left cyber leg
+  name: left basic cyber leg
   components:
   - type: Storage
     maxItemSize: Normal
     grid:
-    - 0,0,1,2
+    - 0,0,2,1
 
 - type: entity
   parent: OrganCyberLegRightBase
   id: OrganCyberLegRightT1
-  name: right cyber leg
+  name: right basic cyber leg
   components:
   - type: Storage
     maxItemSize: Normal
     grid:
-    - 0,0,1,2
+    - 0,0,2,1
 
-# Civilian T2 (10 arm / 8 leg slots)
+# Civilian T2 (10 arm / 8 leg slots) - Tier 2 = advanced
 - type: entity
   parent: OrganCyberArmLeftBase
   id: OrganCyberArmLeftT2
-  name: left cyber arm
+  name: left advanced cyber arm
   components:
   - type: Storage
     maxItemSize: Normal
     grid:
-    - 0,0,1,4
+    - 0,0,4,1
 
 - type: entity
   parent: OrganCyberArmRightBase
   id: OrganCyberArmRightT2
-  name: right cyber arm
+  name: right advanced cyber arm
   components:
   - type: Storage
     maxItemSize: Normal
     grid:
-    - 0,0,1,4
+    - 0,0,4,1
 
 - type: entity
   parent: OrganCyberLegLeftBase
   id: OrganCyberLegLeftT2
-  name: left cyber leg
+  name: left advanced cyber leg
   components:
   - type: Storage
     maxItemSize: Normal
     grid:
-    - 0,0,1,3
+    - 0,0,3,1
 
 - type: entity
   parent: OrganCyberLegRightBase
   id: OrganCyberLegRightT2
-  name: right cyber leg
+  name: right advanced cyber leg
   components:
   - type: Storage
     maxItemSize: Normal
     grid:
-    - 0,0,1,3
+    - 0,0,3,1
 
-# Civilian T3 (12 arm / 10 leg slots)
+# Civilian T3 (12 arm / 10 leg slots) - Tier 3 = experimental
 - type: entity
   parent: OrganCyberArmLeftBase
   id: OrganCyberArmLeftT3
-  name: left cyber arm
+  name: left experimental cyber arm
   components:
   - type: Storage
     maxItemSize: Normal
     grid:
-    - 0,0,1,5
+    - 0,0,5,1
 
 - type: entity
   parent: OrganCyberArmRightBase
   id: OrganCyberArmRightT3
-  name: right cyber arm
+  name: right experimental cyber arm
   components:
   - type: Storage
     maxItemSize: Normal
     grid:
-    - 0,0,1,5
+    - 0,0,5,1
 
 - type: entity
   parent: OrganCyberLegLeftBase
   id: OrganCyberLegLeftT3
-  name: left cyber leg
+  name: left experimental cyber leg
   components:
   - type: Storage
     maxItemSize: Normal
     grid:
-    - 0,0,1,4
+    - 0,0,4,1
 
 - type: entity
   parent: OrganCyberLegRightBase
   id: OrganCyberLegRightT3
-  name: right cyber leg
+  name: right experimental cyber leg
   components:
   - type: Storage
     maxItemSize: Normal
     grid:
-    - 0,0,1,4
+    - 0,0,4,1
 
-# Military T1 (6 arm / 4 leg slots, 5% brute/heat reduction)
+# Military T1 (6 arm / 4 leg slots, 5% brute/heat reduction) - Tier 1 = basic
 - type: entity
   parent: OrganCyberArmLeftBase
   id: OrganCyberArmLeftMilitaryT1
-  name: left military cyber arm
+  name: left basic military cyber arm
   components:
   - type: MilitaryCyberLimb
   - type: Storage
     maxItemSize: Normal
     grid:
-    - 0,0,1,2
+    - 0,0,2,1
 
 - type: entity
   parent: OrganCyberArmRightBase
   id: OrganCyberArmRightMilitaryT1
-  name: right military cyber arm
+  name: right basic military cyber arm
   components:
   - type: MilitaryCyberLimb
   - type: Storage
     maxItemSize: Normal
     grid:
-    - 0,0,1,2
+    - 0,0,2,1
 
 - type: entity
   parent: OrganCyberLegLeftBase
   id: OrganCyberLegLeftMilitaryT1
-  name: left military cyber leg
+  name: left basic military cyber leg
   components:
   - type: MilitaryCyberLimb
   - type: Storage
@@ -365,7 +366,7 @@
 - type: entity
   parent: OrganCyberLegRightBase
   id: OrganCyberLegRightMilitaryT1
-  name: right military cyber leg
+  name: right basic military cyber leg
   components:
   - type: MilitaryCyberLimb
   - type: Storage
@@ -373,56 +374,57 @@
     grid:
     - 0,0,1,1
 
-# Military T2 (8 arm / 6 leg slots)
+# Military T2 (8 arm / 6 leg slots) - Tier 2 = advanced
 - type: entity
   parent: OrganCyberArmLeftBase
   id: OrganCyberArmLeftMilitaryT2
-  name: left military cyber arm
+  name: left advanced military cyber arm
   components:
   - type: MilitaryCyberLimb
   - type: Storage
     maxItemSize: Normal
     grid:
-    - 0,0,1,3
+    - 0,0,3,1
 
 - type: entity
   parent: OrganCyberArmRightBase
   id: OrganCyberArmRightMilitaryT2
-  name: right military cyber arm
+  name: right advanced military cyber arm
   components:
   - type: MilitaryCyberLimb
   - type: Storage
     maxItemSize: Normal
     grid:
-    - 0,0,1,3
+    - 0,0,3,1
 
 - type: entity
   parent: OrganCyberLegLeftBase
   id: OrganCyberLegLeftMilitaryT2
-  name: left military cyber leg
+  name: left advanced military cyber leg
   components:
   - type: MilitaryCyberLimb
   - type: Storage
     maxItemSize: Normal
     grid:
-    - 0,0,1,2
+    - 0,0,2,1
 
 - type: entity
   parent: OrganCyberLegRightBase
   id: OrganCyberLegRightMilitaryT2
-  name: right military cyber leg
+  name: right advanced military cyber leg
   components:
   - type: MilitaryCyberLimb
   - type: Storage
     maxItemSize: Normal
     grid:
-    - 0,0,1,2
+    - 0,0,2,1
 
 # Pre-filled cyber limbs for CyberSurgery crate - come with capacitor, supercharged CPU, medium battery, and matter bin
 - type: entity
   parent: OrganCyberArmLeft
   id: OrganCyberArmLeftPreFilled
-  name: left cyber arm
+  name: left rudimentary cyber arm
+  suffix: Pre-filled
   components:
   - type: Storage
     maxItemSize: Normal
@@ -440,7 +442,8 @@
 - type: entity
   parent: OrganCyberArmRight
   id: OrganCyberArmRightPreFilled
-  name: right cyber arm
+  name: right rudimentary cyber arm
+  suffix: Pre-filled
   components:
   - type: Storage
     maxItemSize: Normal
@@ -458,7 +461,8 @@
 - type: entity
   parent: OrganCyberLegLeft
   id: OrganCyberLegLeftPreFilled
-  name: left cyber leg
+  name: left rudimentary cyber leg
+  suffix: Pre-filled
   components:
   - type: Storage
     maxItemSize: Normal
@@ -476,7 +480,8 @@
 - type: entity
   parent: OrganCyberLegRight
   id: OrganCyberLegRightPreFilled
-  name: right cyber leg
+  name: right rudimentary cyber leg
+  suffix: Pre-filled
   components:
   - type: Storage
     maxItemSize: Normal

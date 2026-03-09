@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Content.Shared.Body;
+using Content.Shared.Body.Components;
 using Content.Shared.Humanoid;
 using Content.Shared.Humanoid.Prototypes;
 using Content.Shared.MedicalScanner;
@@ -197,6 +198,33 @@ public sealed class SurgeryBodyPartDiagramControl : Control
                     // Preview is in Nullspace; reparenting would fail. Remove without reparent and delete.
                     containerSystem.Remove(ent, previewContainer, reparent: false, force: true);
                     _entManager.DeleteEntity(ent);
+                }
+                else if (_entManager.TryGetComponent(ent, out BodyPartComponent? previewPart) && previewPart.Organs != null)
+                {
+                    // Sync nested organs. Cyber limbs have combined arm+hand (no separate HandLeft/HandRight);
+                    // remove preview's hand/foot organs that the patient doesn't have.
+                    var patientPart = patientContainer.ContainedEntities
+                        .FirstOrDefault(e => _entManager.TryGetComponent(e, out OrganComponent? o) && o.Category == organ.Category);
+                    var patientPartCategories = new HashSet<string>();
+                    if (patientPart != default && _entManager.TryGetComponent(patientPart, out BodyPartComponent? patientPartComp) && patientPartComp.Organs != null)
+                    {
+                        foreach (var patientChild in patientPartComp.Organs.ContainedEntities)
+                        {
+                            if (_entManager.TryGetComponent(patientChild, out OrganComponent? o) && o.Category is { } c)
+                                patientPartCategories.Add(c.ToString());
+                        }
+                    }
+                    foreach (var previewChild in previewPart.Organs.ContainedEntities.ToArray())
+                    {
+                        if (_entManager.TryGetComponent(previewChild, out OrganComponent? o) && o.Category is { } c)
+                        {
+                            if (!patientPartCategories.Contains(c.ToString()))
+                            {
+                                containerSystem.Remove(previewChild, previewPart.Organs, reparent: false, force: true);
+                                _entManager.DeleteEntity(previewChild);
+                            }
+                        }
+                    }
                 }
             }
         }

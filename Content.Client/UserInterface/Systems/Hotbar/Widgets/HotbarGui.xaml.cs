@@ -26,6 +26,8 @@ public sealed partial class HotbarGui : UIWidget
     public HotbarGui()
     {
         RobustXamlLoader.Load(this);
+        // Panel positions: StatusPanelRight is left of hands, StatusPanelLeft is right.
+        // Swap icons so they match the content shown in each position.
         StatusPanelRight.SetSide(HandLocation.Right);
         StatusPanelLeft.SetSide(HandLocation.Left);
         var hotbarController = UserInterfaceManager.GetUIController<HotbarUIController>();
@@ -46,18 +48,20 @@ public sealed partial class HotbarGui : UIWidget
 
     public void UpdatePanelEntityLeft(EntityUid? entity, Hand? hand)
     {
+        // Panel positions: StatusPanelRight is left of hands, StatusPanelLeft is right (per ItemStatusPanel).
+        // When leftmost hand is Right, use normal mapping. When Left, swap.
         if (_leftmostHandIsLeft)
-            StatusPanelLeft.Update(entity, hand);
-        else
             StatusPanelRight.Update(entity, hand);
+        else
+            StatusPanelLeft.Update(entity, hand);
     }
 
     public void UpdatePanelEntityRight(EntityUid? entity, Hand? hand)
     {
         if (_leftmostHandIsLeft)
-            StatusPanelRight.Update(entity, hand);
-        else
             StatusPanelLeft.Update(entity, hand);
+        else
+            StatusPanelRight.Update(entity, hand);
     }
 
     public void SetHighlightHand(HandLocation? hand)
@@ -68,15 +72,16 @@ public sealed partial class HotbarGui : UIWidget
 
     public void UpdateStatusVisibility(bool left, bool right)
     {
+        // Match UpdatePanelEntity mapping: StatusPanelRight is on left, StatusPanelLeft on right.
         if (_leftmostHandIsLeft)
         {
-            StatusPanelLeft.Visible = left;
-            StatusPanelRight.Visible = right;
+            StatusPanelRight.Visible = left;
+            StatusPanelLeft.Visible = right;
         }
         else
         {
-            StatusPanelLeft.Visible = right;
-            StatusPanelRight.Visible = left;
+            StatusPanelLeft.Visible = left;
+            StatusPanelRight.Visible = right;
         }
     }
 }
