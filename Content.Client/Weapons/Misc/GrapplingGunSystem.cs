@@ -2,12 +2,12 @@
 // SPDX-FileCopyrightText: 2024 Pieter-Jan Briers <pieterjan.briers+git@gmail.com>
 // SPDX-License-Identifier: MIT
 
-using System.Net;
 using Content.Client.Hands.Systems;
 using Content.Shared.CombatMode;
 using Content.Shared.Weapons.Misc;
 using Content.Shared.Weapons.Ranged.Components;
 using Robust.Client.GameObjects;
+using Robust.Client.Graphics;
 using Robust.Client.Player;
 using Robust.Shared.Input;
 using Robust.Shared.Physics;
@@ -19,7 +19,20 @@ public sealed class GrapplingGunSystem : SharedGrapplingGunSystem
 {
     [Dependency] private readonly HandsSystem _hands = default!;
     [Dependency] private readonly InputSystem _input = default!;
+    [Dependency] private readonly IOverlayManager _overlay = default!;
     [Dependency] private readonly IPlayerManager _player = default!;
+
+    public override void Initialize()
+    {
+        base.Initialize();
+        _overlay.AddOverlay(new GrapplingRopeOverlay(EntityManager));
+    }
+
+    public override void Shutdown()
+    {
+        base.Shutdown();
+        _overlay.RemoveOverlay<GrapplingRopeOverlay>();
+    }
 
     public override void Update(float frameTime)
     {

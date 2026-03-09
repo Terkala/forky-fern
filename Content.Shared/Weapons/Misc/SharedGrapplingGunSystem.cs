@@ -11,11 +11,13 @@
 // SPDX-FileCopyrightText: 2026 āda <ss.adasts@gmail.com>
 // SPDX-License-Identifier: MIT
 
+using System.Collections.Generic;
 using System.Numerics;
 using Content.Shared.CombatMode;
 using Content.Shared.Hands;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Interaction;
+using Content.Shared.Mobs.Components;
 using Content.Shared.Movement.Events;
 using Content.Shared.Physics;
 using Content.Shared.Projectiles;
@@ -28,9 +30,11 @@ using Robust.Shared.Physics;
 using Robust.Shared.Physics.Components;
 using Robust.Shared.Physics.Controllers;
 using Robust.Shared.Physics.Dynamics.Joints;
+using Robust.Shared.Map;
 using Robust.Shared.Physics.Systems;
 using Robust.Shared.Serialization;
 using Robust.Shared.Timing;
+using Robust.Shared.Utility;
 
 namespace Content.Shared.Weapons.Misc;
 
@@ -49,6 +53,29 @@ public abstract class SharedGrapplingGunSystem : VirtualController
     [Dependency] private readonly SharedContainerSystem _container = default!;
 
     public const string GrapplingJoint = "grappling";
+
+    /// <summary>
+    /// Collision mask for rope path raycasts: anchored pathing-blockers including walls (Opaque), excluding players (MidImpassable).
+    /// </summary>
+    private const int RopePathCollisionMask = (int) (CollisionGroup.Opaque | CollisionGroup.Impassable | CollisionGroup.HighImpassable | CollisionGroup.LowImpassable);
+
+    /// <summary>
+    /// Minimum time between full path recomputations when the rope is bent.
+    /// </summary>
+    private static readonly TimeSpan PathUpdateInterval = TimeSpan.FromSeconds(0.1);
+
+    /// <summary>
+    /// Maximum waypoints for the bent rope path (prevents infinite loops on concave geometry).
+    /// </summary>
+    private const int MaxPathWaypoints = 10;
+
+    /// <summary>
+    /// Extra angle (radians) past 180 degrees required before un-anchoring from a corner.
+    /// Prevents instant un-anchor from jitter or floating-point error.
+    /// </summary>
+    private const float UnAnchorAngleLeeway = 0.5f;
+
+    private List<Vector2> _pathBuffer = new();
 
     public override void Initialize()
     {
@@ -80,13 +107,9 @@ public abstract class SharedGrapplingGunSystem : VirtualController
                 continue;
 
             //todo: this doesn't actually support multigrapple
-            // At least show the visuals.
+            // Rope rendering is handled by GrapplingRopeOverlay on the client (gun-centric, supports PVS-culled hook and bent paths).
             component.Projectile = shotUid.Value;
             DirtyField(uid, component, nameof(GrapplingGunComponent.Projectile));
-            var visuals = EnsureComp<JointVisualsComponent>(shotUid.Value);
-            visuals.Sprite = component.RopeSprite;
-            visuals.Target = uid;
-            Dirty(shotUid.Value, visuals);
         }
 
         TryComp<AppearanceComponent>(uid, out var appearance);
@@ -155,7 +178,12 @@ public abstract class SharedGrapplingGunSystem : VirtualController
 
         SetReeling(grapple.Owner, grapple.Comp, false, user);
         grapple.Comp.Projectile = null;
+        grapple.Comp.RopeEndPosition = null;
+        grapple.Comp.AnchorAngle = null;
+        grapple.Comp.RopePath.Clear();
         DirtyField(grapple.Owner, grapple.Comp, nameof(GrapplingGunComponent.Projectile));
+        DirtyField(grapple.Owner, grapple.Comp, nameof(GrapplingGunComponent.RopeEndPosition));
+        DirtyField(grapple.Owner, grapple.Comp, nameof(GrapplingGunComponent.RopePath));
         _gun.ChangeBasicEntityAmmoCount(grapple.Owner, 1);
     }
 
@@ -236,9 +264,34 @@ public abstract class SharedGrapplingGunSystem : VirtualController
 
             var bodyAWorldPos = _transform.GetWorldPosition(physicalHook);
             var bodyBWorldPos = _transform.GetWorldPosition(physicalGrapple);
+            var gunWorldPos = _transform.GetWorldPosition(uid);
+
+            // Update RopeEndPosition for client rendering when hook may be PVS-culled.
+            // Only dirty when position changes significantly to reduce network jitter.
+            var newRopeEnd = bodyAWorldPos;
+            var ropeEndChanged = !grappling.RopeEndPosition.HasValue ||
+                (grappling.RopeEndPosition.Value - newRopeEnd).LengthSquared() > 0.04f; // ~0.2m threshold
+            grappling.RopeEndPosition = newRopeEnd;
+            if (ropeEndChanged)
+                DirtyField(uid, grappling, nameof(GrapplingGunComponent.RopeEndPosition));
+
+            // Compute rope path from GUN to hook (rope is attached to gun, not player center).
+            // Run on both server and client so client has path for overlay; server is authoritative for physics.
+            var mapId = _transform.GetMapId(uid);
+            var (pathLength, pathChanged) = ComputeRopePath(uid, grappling, gunWorldPos, bodyAWorldPos, mapId);
+
+            var straightDist = (bodyAWorldPos - gunWorldPos).Length();
+            var effectivePathLength = pathLength ?? straightDist;
 
             // The solver does not handle setting the rope's length, but we still need to work with a copy of it to prevent jank.
             var ropeLength = (bodyAWorldPos - bodyBWorldPos).Length();
+
+            // Set MaxLength to path length each tick to allow spooling out when not reeling.
+            // Never set below current rope length to prevent instant snap from path computation errors.
+            distance.MaxLength = MathF.Max(effectivePathLength + grappling.RopeMargin, ropeLength + grappling.RopeMargin);
+
+            if (pathChanged && !prediction)
+                DirtyField(uid, grappling, nameof(GrapplingGunComponent.RopePath));
 
             // Rope should just break, instantly, if the user is teleported past its max length
             if (ropeLength >= distance.MaxLength + grappling.RopeMargin)
@@ -273,7 +326,9 @@ public abstract class SharedGrapplingGunSystem : VirtualController
             }
             else if (ropeLength >= distance.MaxLength - grappling.RopeMargin)
             {
-                var targetDirection = (bodyAWorldPos - bodyBWorldPos).Normalized();
+                // Pull toward the closest waypoint on the path (bent point), not straight toward the hook
+                var pullTarget = GetClosestWaypointToPlayer(grappling.RopePath, bodyBWorldPos, bodyAWorldPos);
+                var targetDirection = (pullTarget - bodyBWorldPos).Normalized();
 
                 var grapplerUidA = _container.TryGetOuterContainer(physicalHook, Transform(physicalHook), out var containerA) ? containerA.Owner : physicalHook;
                 var grapplerBodyA = Comp<PhysicsComponent>(grapplerUidA);
@@ -335,6 +390,185 @@ public abstract class SharedGrapplingGunSystem : VirtualController
 
         _joints.SetRelay(uid, args.Embedded, jointCompHook);
         _joints.RefreshRelay(args.Weapon.Value, jointCompGrapple);
+    }
+
+    /// <summary>
+    /// Computes the rope path from gun to hook, updating the component's RopePath.
+    /// Fast path: raycast gun→hook; if clear, path is straight.
+    /// Full path: when hit, iterative raycasts around obstacles (throttled).
+    /// </summary>
+    /// <returns>Path length and whether the path was updated (for dirtying), or (null, false) if computation failed.</returns>
+    private (float? Length, bool PathChanged) ComputeRopePath(EntityUid gunUid, GrapplingGunComponent grappling, Vector2 gunPos, Vector2 hookPos, MapId mapId)
+    {
+        var projectile = grappling.Projectile;
+        if (projectile is null)
+            return (null, false);
+
+        var dir = hookPos - gunPos;
+        var straightDist = dir.Length();
+        if (straightDist < 0.001f)
+            return (0f, false);
+
+        // Exclude gun, projectile, mobs, and the entity the hook is embedded in (the wall at the endpoint).
+        // Without excluding the embedded entity, we hit it at the ray end, then hit it again when iterating,
+        // triggering the "concave corner" fallback and forcing a straight path.
+        var embeddedInto = CompOrNull<EmbeddableProjectileComponent>(projectile)?.EmbeddedIntoUid;
+        var ray = new CollisionRay(gunPos, dir / straightDist, RopePathCollisionMask);
+        var predicate = (EntityUid uid, (EntityUid Gun, EntityUid? Projectile, EntityUid? EmbeddedInto) state) =>
+            uid == state.Gun || uid == state.Projectile || uid == state.EmbeddedInto || HasComp<MobStateComponent>(uid);
+
+        var results = _physics.IntersectRayWithPredicate(mapId, ray, (gunUid, projectile, embeddedInto), predicate, straightDist, returnOnFirstHit: true);
+        var firstHit = results.FirstOrNull();
+
+        if (!firstHit.HasValue)
+        {
+            // Straight ray is clear. If we have an anchored bent path, stay anchored until player has swung
+            // more than 180 degrees around the corner from when the bend was created.
+            if (grappling.RopePath.Count > 2 && grappling.AnchorAngle.HasValue)
+            {
+                var corner = grappling.RopePath[1];
+                var toGun = gunPos - corner;
+                if (toGun.LengthSquared() > 0.0001f)
+                {
+                    var currentAngle = MathF.Atan2(toGun.Y, toGun.X);
+                    var angleDiff = currentAngle - grappling.AnchorAngle.Value;
+                    // Normalize to [-Pi, Pi]
+                    while (angleDiff > MathF.PI) angleDiff -= 2 * MathF.PI;
+                    while (angleDiff < -MathF.PI) angleDiff += 2 * MathF.PI;
+
+                    // Un-anchor when player has swung more than 180° + leeway around the corner
+                    if (MathF.Abs(angleDiff) < MathF.PI + UnAnchorAngleLeeway)
+                    {
+                        // Update endpoints to current positions; keep corner waypoints fixed
+                        grappling.RopePath[0] = gunPos;
+                        grappling.RopePath[^1] = hookPos;
+
+                        var anchoredPathLength = 0f;
+                        for (var i = 0; i < grappling.RopePath.Count - 1; i++)
+                            anchoredPathLength += (grappling.RopePath[i + 1] - grappling.RopePath[i]).Length();
+
+                        return (anchoredPathLength, true); // pathChanged: endpoints updated
+                    }
+                }
+                grappling.AnchorAngle = null;
+            }
+
+            // Re-straighten: no anchor or player has swung past 180 degrees
+            var pathChanged = grappling.RopePath.Count != 2 ||
+                (grappling.RopePath.Count >= 2 && ((grappling.RopePath[0] - gunPos).LengthSquared() > 0.01f || (grappling.RopePath[1] - hookPos).LengthSquared() > 0.01f));
+            grappling.AnchorAngle = null;
+            grappling.RopePath.Clear();
+            grappling.RopePath.Add(gunPos);
+            grappling.RopePath.Add(hookPos);
+            return (straightDist, pathChanged);
+        }
+
+        // Hit something - run full iterative path (throttled)
+        if (Timing.CurTime < grappling.NextPathUpdate)
+        {
+            // Use cached path; compute length from existing path
+            if (grappling.RopePath.Count >= 2)
+            {
+                var len = 0f;
+                for (var i = 0; i < grappling.RopePath.Count - 1; i++)
+                    len += (grappling.RopePath[i + 1] - grappling.RopePath[i]).Length();
+                return (len, false);
+            }
+            return (straightDist, false);
+        }
+
+        grappling.NextPathUpdate = Timing.CurTime + PathUpdateInterval;
+
+        _pathBuffer.Clear();
+        _pathBuffer.Add(gunPos);
+
+        var from = gunPos;
+        var target = hookPos;
+        var seenEntities = new HashSet<EntityUid>();
+        var iter = 0;
+
+        while (iter++ < MaxPathWaypoints)
+        {
+            var toTarget = target - from;
+            var dist = toTarget.Length();
+            if (dist < 0.001f)
+                break;
+
+            ray = new CollisionRay(from, toTarget / dist, RopePathCollisionMask);
+            results = _physics.IntersectRayWithPredicate(mapId, ray, (gunUid, projectile, embeddedInto), predicate, dist, returnOnFirstHit: true);
+            firstHit = results.FirstOrNull();
+
+            if (!firstHit.HasValue)
+            {
+                _pathBuffer.Add(target);
+                break;
+            }
+
+            var hit = firstHit.Value;
+            if (seenEntities.Add(hit.HitEntity))
+            {
+                _pathBuffer.Add(hit.HitPos);
+                from = hit.HitPos;
+                // Offset along hit normal to avoid immediate re-hit (approximate - we don't have normal, use small offset toward target)
+                from += toTarget.Normalized() * 0.25f; // Offset past surface to avoid immediate re-hit
+            }
+            else
+            {
+                // Concave corner - fall back to straight path
+                _pathBuffer.Clear();
+                _pathBuffer.Add(gunPos);
+                _pathBuffer.Add(hookPos);
+                grappling.AnchorAngle = null;
+                grappling.RopePath.Clear();
+                grappling.RopePath.AddRange(_pathBuffer);
+                return (straightDist, true);
+            }
+        }
+
+        var hadBentPath = grappling.RopePath.Count > 2;
+        grappling.RopePath.Clear();
+        grappling.RopePath.AddRange(_pathBuffer);
+
+        // Store angle from corner to gun only when first creating a bend (straight -> bent transition).
+        // Do not overwrite on rebuild, so the reference angle stays fixed.
+        if (grappling.RopePath.Count > 2 && !hadBentPath)
+        {
+            var corner = grappling.RopePath[1];
+            var toGun = gunPos - corner;
+            if (toGun.LengthSquared() > 0.0001f)
+                grappling.AnchorAngle = MathF.Atan2(toGun.Y, toGun.X);
+        }
+
+        var pathLength = 0f;
+        for (var i = 0; i < grappling.RopePath.Count - 1; i++)
+            pathLength += (grappling.RopePath[i + 1] - grappling.RopePath[i]).Length();
+
+        return (pathLength, true);
+    }
+
+    /// <summary>
+    /// Returns the closest waypoint on the path to the player for pull direction.
+    /// When path is straight, returns the hook position.
+    /// </summary>
+    private static Vector2 GetClosestWaypointToPlayer(List<Vector2> path, Vector2 playerPos, Vector2 hookPos)
+    {
+        if (path.Count == 0)
+            return hookPos;
+
+        var closest = hookPos;
+        var minDistSq = (hookPos - playerPos).LengthSquared();
+
+        foreach (var wp in path)
+        {
+            var d = (wp - playerPos).LengthSquared();
+            if (d < minDistSq)
+            {
+                minDistSq = d;
+                closest = wp;
+            }
+        }
+
+        return closest;
     }
 
     [Serializable, NetSerializable]

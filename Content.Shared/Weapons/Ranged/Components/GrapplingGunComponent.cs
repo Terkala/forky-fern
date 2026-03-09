@@ -3,6 +3,8 @@
 // SPDX-FileCopyrightText: 2024 Nemanja <98561806+EmoGarbage404@users.noreply.github.com>
 // SPDX-License-Identifier: MIT
 
+using System.Collections.Generic;
+using System.Numerics;
 using Robust.Shared.Audio;
 using Robust.Shared.GameStates;
 using Robust.Shared.Utility;
@@ -114,4 +116,30 @@ public sealed partial class GrapplingGunComponent : Component
     /// </summary>
     [ViewVariables]
     public EntityUid? Stream;
+
+    /// <summary>
+    /// World position of the hook for rope rendering when the hook may be PVS-culled.
+    /// </summary>
+    [DataField, AutoNetworkedField]
+    public Vector2? RopeEndPosition;
+
+    /// <summary>
+    /// Waypoints for the rope path from gun to hook, used for bent rope rendering and pull direction.
+    /// Empty or null means straight path.
+    /// </summary>
+    [DataField, AutoNetworkedField]
+    public List<Vector2> RopePath = new();
+
+    /// <summary>
+    /// Next time to recompute the full rope path (throttled). Not networked.
+    /// </summary>
+    [ViewVariables]
+    public TimeSpan NextPathUpdate;
+
+    /// <summary>
+    /// Angle from the anchored corner to the gun when the bend was created (radians).
+    /// Used to un-anchor when the player has swung more than 180 degrees around the corner.
+    /// </summary>
+    [DataField, AutoNetworkedField]
+    public float? AnchorAngle;
 }
