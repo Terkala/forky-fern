@@ -12,5 +12,9 @@ ghost-role-information-mini-dragon-familiar-name = Wizard's Mini Dragon Familiar
 ghost-role-information-mini-dragon-familiar-description = A mini dragon summoned by a wizard to serve as a loyal familiar.
 ghost-role-information-mini-dragon-familiar-rules = You are a wizard's familiar. Follow your wizard's commands.
 
+ghost-role-information-mini-dragon-friendly-name = Domesticated Mini Dragon
+ghost-role-information-mini-dragon-friendly-description = A small dragon-like creature that likes to create hoards. This one seems to have been domesticated!
+ghost-role-information-mini-dragon-friendly-rules = You are a Domesticated Mini Dragon. Help the crew gather wealth!
+
 petting-success-minidragon = You pet {THE($target)} on {POSS-ADJ($target)} scaly little head.
 petting-failure-minidragon = You reach out to pet {THE($target)}, but {SUBJECT($target)} snaps at you!

@@ -39,6 +39,33 @@
   - type: GhostRoleAntagSpawner
 
 - type: entity
+  categories: [ HideSpawnMenu, Spawner ]
+  id: SpawnPointGhostMiniDragon
+  name: ghost role spawn point
+  suffix: mini dragon
+  parent: MarkerBase
+  components:
+  - type: GhostRole
+    name: ghost-role-information-mini-dragon-name
+    description: ghost-role-information-mini-dragon-description
+    rules: ghost-role-information-mini-dragon-rules
+    mindRoles:
+    - MindRoleGhostRoleSoloAntagonist
+    raffle:
+      settings: default
+  - type: GhostRoleMobSpawner
+    prototype: MobMiniDragon
+  - type: Sprite
+    sprite: Markers/jobs.rsi
+    layers:
+      - state: green
+      - sprite: _Funkystation/Mobs/Pets/minidragon.rsi
+        state: icon
+  - type: GuideHelp
+    guides:
+    - MinorAntagonists
+
+- type: entity
   id: SpawnPointGhostRatKing
   name: ghost role spawn point
   suffix: rat king
