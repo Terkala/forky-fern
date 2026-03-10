@@ -70,7 +70,10 @@ using Robust.Shared.Timing;
 using Content.Server.Body.Systems;
 
 namespace Content.Server.Medical;
-
+/// <summary>
+/// Funkystation: HealthAnalyzerSystem mostly re-written to support surgery requests from the BUI
+/// Large changes to the code, so simply noting it up here as much of this was rewritten
+/// </summary>
 public sealed class HealthAnalyzerSystem : EntitySystem
 {
     [Dependency] private readonly IGameTiming _timing = default!;
@@ -104,7 +107,7 @@ public sealed class HealthAnalyzerSystem : EntitySystem
             subs.Event<SurgeryRequestBuiMessage>(OnSurgeryRequestBui);
         });
     }
-
+    
     private void OnSurgeryRequestBui(Entity<HealthAnalyzerComponent> uid, ref SurgeryRequestBuiMessage args)
     {
         if (uid.Comp.ScannedEntity is not { } target)

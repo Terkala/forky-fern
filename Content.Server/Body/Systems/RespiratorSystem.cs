@@ -124,7 +124,8 @@ public sealed class RespiratorSystem : EntitySystem
 
             if (_mobState.IsDead(uid))
                 continue;
-
+                
+            //Funkystation: drainAmount added to support different drain rates for higher/lower quality lungs
             var drainAmount = (float)respirator.UpdateInterval.TotalSeconds;
             var lungs = _body.GetAllOrgans(uid).FirstOrDefault(o =>
                 TryComp<OrganComponent>(o, out var oc) && oc.Category == "Lungs");

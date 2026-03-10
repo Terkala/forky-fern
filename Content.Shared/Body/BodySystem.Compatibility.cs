@@ -12,6 +12,7 @@ public sealed partial class BodySystem
         if (!_bodyQuery.Resolve(ent, ref ent.Comp))
             return false;
 
+        // Funkystation: Changed from ent.comp.organs contained entities. Because the organ structure has changed
         foreach (var organ in GetAllOrgans(ent))
         {
             if (TryComp<TComp>(organ, out var comp))

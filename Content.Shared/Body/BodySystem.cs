@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 pathetic meowmeow <uhhadd@gmail.com>
+// SPDX-License-Identifier: MIT
+
 using System.Collections.Generic;
 using System.Linq;
 using Content.Shared.Body.Components;
@@ -45,7 +48,7 @@ public sealed partial class BodySystem : EntitySystem
 
         InitializeRelay();
     }
-
+    // Funkystation: OnBodyPartInit added
     private void OnBodyPartInit(Entity<BodyPartComponent> ent, ref ComponentInit args)
     {
         ent.Comp.Organs =
@@ -79,7 +82,7 @@ public sealed partial class BodySystem : EntitySystem
         if (!_organQuery.TryComp(args.Entity, out var organ))
             return;
 
-        // Set BodyPart.Body when a body part is inserted, and propagate to any organs already in it
+        // Funkystation: Set BodyPart.Body when a body part is inserted, and propagate to any organs already in it
         if (_bodyPartQuery.TryComp(args.Entity, out var bodyPart))
         {
             bodyPart.Body = ent;
@@ -91,6 +94,7 @@ public sealed partial class BodySystem : EntitySystem
             if (_surgeryLayerQuery.TryComp(args.Entity, out var surgeryLayer) &&
                 (surgeryLayer.PerformedSkinSteps.Count > 0 || surgeryLayer.PerformedTissueSteps.Count > 0 || surgeryLayer.PerformedOrganSteps.Count > 0))
             {
+                // Hardcoded for now, but should be configurable in the future
                 surgeryLayer.PerformedSkinSteps.Clear();
                 surgeryLayer.PerformedSkinSteps.Add("CreateIncision");
                 surgeryLayer.PerformedSkinSteps.Add("ClampVessels");

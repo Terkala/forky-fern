@@ -18,7 +18,8 @@ namespace Content.Shared.Damage
     }
 
     /// <summary>
-    /// Per-layer state for damage overlays. Controls which overlay groups are visible.
+    /// Funkystation: Per-layer state for damage overlays. Controls which overlay groups are visible.
+    /// This is so cyberlimbs hide brute damage, but show burn damage
     /// </summary>
     [Serializable, NetSerializable]
     public enum DamageOverlayLayerState : byte

@@ -165,7 +165,7 @@ public sealed partial class GunSystem : SharedGunSystem
                     // Something like ballistic might want to leave it in the container still
                     if (!cartridge.DeleteOnSpawn && !Containers.IsEntityInContainer(ent!.Value))
                     {
-                        // When gun is in cyberlimb storage, try to insert spent shell into spare slots.
+                        // Funkystation: When gun is in cyberlimb storage, try to insert spent shell into spare slots.
                         // If storage is full, eject normally instead of letting it end up in nullspace.
                         if (!TryInsertSpentShellIntoCyberlimbStorage(gun, ent.Value))
                             EjectCartridge(ent.Value, angle);
@@ -297,7 +297,7 @@ public sealed partial class GunSystem : SharedGunSystem
     protected override void Popup(string message, EntityUid? uid, EntityUid? user) { }
 
     /// <summary>
-    /// When the gun is in cyberlimb storage, tries to insert the spent shell into spare slots.
+    /// Funkystation: When the gun is in cyberlimb storage, tries to insert the spent shell into spare slots.
     /// Returns true if the shell was inserted (caller should not eject), false if it should be ejected normally.
     /// </summary>
     private bool TryInsertSpentShellIntoCyberlimbStorage(EntityUid gun, EntityUid shell)

@@ -436,7 +436,7 @@ public sealed partial class AdminVerbSystem
                 Message = string.Join(": ", handRemovalName, Loc.GetString("admin-smite-remove-hand-description"))
             };
             args.Verbs.Add(handRemoval);
-
+            // Funkystation: removeAllLimbs and restoreAllLimbs and cyberneticsReplacement added
             if (HasComp<HumanoidProfileComponent>(args.Target))
             {
                 var removeAllLimbsName = Loc.GetString("admin-smite-remove-all-limbs-name").ToLowerInvariant();

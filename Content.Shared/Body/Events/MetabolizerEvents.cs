@@ -31,7 +31,7 @@ public readonly record struct ApplyMetabolicMultiplierEvent(float Multiplier)
 }
 
 /// <summary>
-/// Raised on the body before applying a metabolism effect. Allows organs (e.g. cyber heart) to modify the scale.
+/// Funkystation:Raised on the body before applying a metabolism effect. Allows organs (e.g. cyber heart) to modify the scale.
 /// </summary>
 [ByRefEvent]
 public record struct GetOrganMetabolismScaleModifierEvent(EntityUid Organ, EntityEffect Effect)

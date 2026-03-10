@@ -21,7 +21,9 @@ public sealed class MedTekCartridgeSystem : EntitySystem
 
     private void OnCartridgeAdded(Entity<MedTekCartridgeComponent> ent, ref CartridgeAddedEvent args)
     {
+        //Funkystation: HealthAnalyzerComponent not a var, not sure why it was defined as one here
         EnsureComp<HealthAnalyzerComponent>(args.Loader);
+        // Funkystation: SharedHealthAnalyzerComponent 
         EnsureComp<SharedHealthAnalyzerComponent>(args.Loader);
     }
 
@@ -31,6 +33,7 @@ public sealed class MedTekCartridgeSystem : EntitySystem
         if (!_cartridgeLoaderSystem.HasProgram<MedTekCartridgeComponent>(args.Loader))
         {
             RemComp<HealthAnalyzerComponent>(args.Loader);
+            // Funkystation: SharedHealthAnalyzerComponent
             RemComp<SharedHealthAnalyzerComponent>(args.Loader);
         }
     }

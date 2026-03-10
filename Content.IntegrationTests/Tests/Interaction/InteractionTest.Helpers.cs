@@ -582,6 +582,7 @@ public abstract partial class InteractionTest
     /// <summary>
     /// Wait for any currently active DoAfters to finish.
     /// </summary>
+    /// Funkystation: minExpected added and is optional. Used in some funkystation tests
     /// <param name="minExpected">When &gt; 0, asserts at least this many DoAfters are active (fails fast if surgery/action was rejected).</param>
     protected async Task AwaitDoAfters(int maxExpected = 1, int minExpected = 0)
     {
@@ -1188,6 +1189,7 @@ public abstract partial class InteractionTest
     /// <summary>
     ///     Sends a bui message using the given bui key.
     /// </summary>
+    /// Funkystation: fromServer added and is optional. Used in some funkystation tests
     /// <param name="fromServer">When true, raises the message on the server directly (bypasses client prediction).
     /// Use for integration tests where client BUI messages may not reach the server reliably.</param>
     protected async Task SendBui(Enum key, BoundUserInterfaceMessage msg, NetEntity? target = null, bool fromServer = false)
