@@ -302,7 +302,7 @@
   penalty: 0
   requiresTool: false
   primaryTool:
-    tag: SurgeryTool
+    isHand: true
     doAfterDelay: 1
   improvisedTools: []
   triggersOrganRemoval: true
@@ -319,7 +319,7 @@
   penalty: 0
   requiresTool: false
   primaryTool:
-    tag: SurgeryTool
+    isHand: true
     doAfterDelay: 3
     sound: /Audio/Weapons/bladeslice.ogg
   improvisedTools: []
@@ -417,7 +417,7 @@
   penalty: 0
   requiresTool: false
   primaryTool:
-    tag: SurgeryTool
+    isHand: true
     doAfterDelay: 4
     healAmount:
       types:

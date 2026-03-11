@@ -47,15 +47,31 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
         var retractorNet = NetEntity.Invalid;
         var legNet = NetEntity.Invalid;
 
+        var skinOpenProcs = Array.Empty<ProtoId<SurgeryProcedurePrototype>>();
+        var skinCloseProcs = Array.Empty<ProtoId<SurgeryProcedurePrototype>>();
+        var tissueOpenProcs = Array.Empty<ProtoId<SurgeryProcedurePrototype>>();
+        var organStepProcs = Array.Empty<ProtoId<SurgeryProcedurePrototype>>();
+
         await Server.WaitPost(() =>
         {
+            var leg = GetLeg(SEntMan, patient);
+            var surgeryLayer = SEntMan.System<SurgeryLayerSystem>();
+            var stepsConfig = surgeryLayer.GetStepsConfig(patient, leg)!;
+            var skinOpen = stepsConfig.GetSkinOpenStepIds(ProtoMan);
+            var skinClose = stepsConfig.GetSkinCloseStepIds(ProtoMan);
+            var tissueOpen = stepsConfig.GetTissueOpenStepIds(ProtoMan);
+            var organSteps = stepsConfig.GetOrganStepIds(ProtoMan);
+            skinOpenProcs = skinOpen.Select(s => (ProtoId<SurgeryProcedurePrototype>)BodyPartSurgeryStepsPrototype.GetProcedureForStep(s)).ToArray();
+            skinCloseProcs = skinClose.Select(s => (ProtoId<SurgeryProcedurePrototype>)BodyPartSurgeryStepsPrototype.GetProcedureForStep(s)).ToArray();
+            tissueOpenProcs = tissueOpen.Select(s => (ProtoId<SurgeryProcedurePrototype>)BodyPartSurgeryStepsPrototype.GetProcedureForStep(s)).ToArray();
+            organStepProcs = organSteps.Select(s => (ProtoId<SurgeryProcedurePrototype>)s).ToArray();
+
             var analyzer = SEntMan.SpawnEntity("HandheldHealthAnalyzer", SEntMan.GetCoordinates(TargetCoords));
             var scalpel = SEntMan.SpawnEntity("Scalpel", SEntMan.GetCoordinates(TargetCoords));
             var wirecutter = SEntMan.SpawnEntity("Wirecutter", SEntMan.GetCoordinates(TargetCoords));
             var saw = SEntMan.SpawnEntity("Saw", SEntMan.GetCoordinates(TargetCoords));
             var cautery = SEntMan.SpawnEntity("Cautery", SEntMan.GetCoordinates(TargetCoords));
             var retractor = SEntMan.SpawnEntity("Retractor", SEntMan.GetCoordinates(TargetCoords));
-            var leg = GetLeg(SEntMan, patient);
 
             HandSys.TryPickupAnyHand(SPlayer, analyzer, checkActionBlocker: false);
             HandSys.TryPickupAnyHand(SPlayer, scalpel, checkActionBlocker: false);
@@ -86,9 +102,9 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
                     break;
                 }
             }
-            var ev = new SurgeryRequestEvent(analyzer, SPlayer, patient, leg, (ProtoId<SurgeryProcedurePrototype>)"CreateIncision", SurgeryLayer.Skin, false);
+            var ev = new SurgeryRequestEvent(analyzer, SPlayer, patient, leg, skinOpenProcs[0], SurgeryLayer.Skin, false);
             SEntMan.EventBus.RaiseLocalEvent(patient, ref ev);
-            Assert.That(ev.Valid, Is.True, $"CreateIncision: {ev.RejectReason}");
+            Assert.That(ev.Valid, Is.True, $"{skinOpenProcs[0]}: {ev.RejectReason}");
         });
         await RunSeconds(4);
 
@@ -96,9 +112,9 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
         {
             HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
             HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(wirecutterNet), checkActionBlocker: false);
-            var ev = new SurgeryRequestEvent(analyzer, SPlayer, patient, leg, (ProtoId<SurgeryProcedurePrototype>)"ClampVessels", SurgeryLayer.Skin, false);
+            var ev = new SurgeryRequestEvent(analyzer, SPlayer, patient, leg, skinOpenProcs[1], SurgeryLayer.Skin, false);
             SEntMan.EventBus.RaiseLocalEvent(patient, ref ev);
-            Assert.That(ev.Valid, Is.True, $"ClampVessels: {ev.RejectReason}");
+            Assert.That(ev.Valid, Is.True, $"{skinOpenProcs[1]}: {ev.RejectReason}");
         });
         await RunSeconds(4);
 
@@ -106,9 +122,9 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
         {
             HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
             HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(retractorNet), checkActionBlocker: false);
-            var ev = new SurgeryRequestEvent(analyzer, SPlayer, patient, leg, (ProtoId<SurgeryProcedurePrototype>)"RetractSkin", SurgeryLayer.Skin, false);
+            var ev = new SurgeryRequestEvent(analyzer, SPlayer, patient, leg, skinOpenProcs[2], SurgeryLayer.Skin, false);
             SEntMan.EventBus.RaiseLocalEvent(patient, ref ev);
-            Assert.That(ev.Valid, Is.True, $"RetractSkin: {ev.RejectReason}");
+            Assert.That(ev.Valid, Is.True, $"{skinOpenProcs[2]}: {ev.RejectReason}");
         });
         await RunSeconds(4);
 
@@ -116,9 +132,9 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
         {
             HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
             HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(sawNet), checkActionBlocker: false);
-            var ev = new SurgeryRequestEvent(analyzer, SPlayer, patient, leg, (ProtoId<SurgeryProcedurePrototype>)"CutBone", SurgeryLayer.Tissue, false);
+            var ev = new SurgeryRequestEvent(analyzer, SPlayer, patient, leg, tissueOpenProcs[0], SurgeryLayer.Tissue, false);
             SEntMan.EventBus.RaiseLocalEvent(patient, ref ev);
-            Assert.That(ev.Valid, Is.True, $"CutBone: {ev.RejectReason}");
+            Assert.That(ev.Valid, Is.True, $"{tissueOpenProcs[0]}: {ev.RejectReason}");
         });
         await RunSeconds(4);
 
@@ -126,9 +142,9 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
         {
             HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
             HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(cauteryNet), checkActionBlocker: false);
-            var ev = new SurgeryRequestEvent(analyzer, SPlayer, patient, leg, (ProtoId<SurgeryProcedurePrototype>)"MarrowBleeding", SurgeryLayer.Tissue, false);
+            var ev = new SurgeryRequestEvent(analyzer, SPlayer, patient, leg, tissueOpenProcs[1], SurgeryLayer.Tissue, false);
             SEntMan.EventBus.RaiseLocalEvent(patient, ref ev);
-            Assert.That(ev.Valid, Is.True, $"MarrowBleeding: {ev.RejectReason}");
+            Assert.That(ev.Valid, Is.True, $"{tissueOpenProcs[1]}: {ev.RejectReason}");
         });
         await RunSeconds(4);
 
@@ -136,9 +152,9 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
         {
             HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
             HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(retractorNet), checkActionBlocker: false);
-            var ev = new SurgeryRequestEvent(analyzer, SPlayer, patient, leg, (ProtoId<SurgeryProcedurePrototype>)"RetractTissue", SurgeryLayer.Tissue, false);
+            var ev = new SurgeryRequestEvent(analyzer, SPlayer, patient, leg, tissueOpenProcs[2], SurgeryLayer.Tissue, false);
             SEntMan.EventBus.RaiseLocalEvent(patient, ref ev);
-            Assert.That(ev.Valid, Is.True, $"RetractTissue: {ev.RejectReason}");
+            Assert.That(ev.Valid, Is.True, $"{tissueOpenProcs[2]}: {ev.RejectReason}");
         });
         await RunSeconds(4);
 
@@ -146,9 +162,10 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
         {
             HandSys.TryDrop((SPlayer, Hands!), targetDropLocation: null, checkActionBlocker: false);
             HandSys.TryPickupAnyHand(SPlayer, SEntMan.GetEntity(scalpelNet), checkActionBlocker: false);
-            var ev = new SurgeryRequestEvent(analyzer, SPlayer, patient, leg, (ProtoId<SurgeryProcedurePrototype>)"DetachLimb", SurgeryLayer.Organ, false);
+            var detachLimb = organStepProcs.First(p => p.ToString() == "DetachLimb");
+            var ev = new SurgeryRequestEvent(analyzer, SPlayer, patient, leg, detachLimb, SurgeryLayer.Organ, false);
             SEntMan.EventBus.RaiseLocalEvent(patient, ref ev);
-            Assert.That(ev.Valid, Is.True, $"DetachLimb: {ev.RejectReason}");
+            Assert.That(ev.Valid, Is.True, $"{detachLimb}: {ev.RejectReason}");
         });
         await RunSeconds(5);
 
@@ -195,8 +212,9 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
         await Server.WaitPost(() =>
         {
             var leg = SEntMan.GetEntity(legNet);
-            var procedure = ProtoMan.Index(new ProtoId<SurgeryProcedurePrototype>("ReleaseRetractor"));
-            var ev = new SurgeryStepCompletedEvent(SPlayer, patient, leg, (ProtoId<SurgeryProcedurePrototype>)"ReleaseRetractor", SurgeryLayer.Skin, null, null, procedure);
+            var releaseRetractor = skinCloseProcs[0];
+            var procedure = ProtoMan.Index(releaseRetractor);
+            var ev = new SurgeryStepCompletedEvent(SPlayer, patient, leg, releaseRetractor, SurgeryLayer.Skin, null, null, procedure);
             SEntMan.EventBus.RaiseLocalEvent(leg, ref ev);
         });
         await RunTicks(1);
@@ -205,20 +223,23 @@ public sealed class ReattachedLimbSurgeryIntegrationTest : InteractionTest
         {
             var leg = SEntMan.GetEntity(legNet);
             var layerComp = SEntMan.GetComponent<SurgeryLayerComponent>(leg);
-            Assert.That(layerComp.PerformedSkinSteps, Does.Contain("ReleaseRetractor"),
+            var releaseRetractorProc = skinCloseProcs[0].ToString();
+            var retractSkinProc = skinOpenProcs[2].ToString();
+            var createIncisionProc = skinOpenProcs[0].ToString();
+            Assert.That(layerComp.PerformedSkinSteps, Does.Contain(releaseRetractorProc),
                 "ReleaseRetractor should have been applied to re-attached leg");
             // With 1:1 pairing, ReleaseRetractor undoes RetractSkin, so RetractSkin is removed from performed
-            Assert.That(layerComp.PerformedSkinSteps, Does.Not.Contain("RetractSkin"),
+            Assert.That(layerComp.PerformedSkinSteps, Does.Not.Contain(retractSkinProc),
                 "RetractSkin should be removed by ReleaseRetractor (1:1 pairing)");
-            Assert.That(layerComp.PerformedSkinSteps, Does.Contain("CreateIncision"),
+            Assert.That(layerComp.PerformedSkinSteps, Does.Contain(createIncisionProc),
                 "CreateIncision should remain (ReleaseRetractor only undoes RetractSkin)");
 
             var surgeryLayer = SEntMan.System<SurgeryLayerSystem>();
             var stepsConfig = surgeryLayer.GetStepsConfig(patient, leg);
             Assert.That(stepsConfig, Is.Not.Null, "Re-attached leg should have steps config");
-            Assert.That(surgeryLayer.CanPerformStep("RetractSkin", SurgeryLayer.Skin, layerComp, stepsConfig!, leg), Is.True,
+            Assert.That(surgeryLayer.CanPerformStep(retractSkinProc, SurgeryLayer.Skin, layerComp, stepsConfig!, leg), Is.True,
                 "RetractSkin should be available again after ReleaseRetractor (CreateIncision still performed)");
-            Assert.That(surgeryLayer.GetAvailableSteps(patient, leg), Does.Contain("RetractSkin"),
+            Assert.That(surgeryLayer.GetAvailableSteps(patient, leg), Does.Contain(retractSkinProc),
                 "GetAvailableSteps should include RetractSkin");
         });
     }

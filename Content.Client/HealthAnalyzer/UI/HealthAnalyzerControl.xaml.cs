@@ -432,38 +432,59 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
         if (!_prototypes.TryIndex<SurgeryProcedurePrototype>(stepId, out var procedure))
             return stepId;
 
-        if (procedure.RequiresTool == false)
+        if (procedure.RequiresTool == false || procedure.PrimaryTool.IsHand)
             return Loc.GetString("health-analyzer-surgery-step-no-tool", ("step", Loc.GetString(procedure.Name ?? stepId)));
 
         var baseName = procedure.Name != null ? Loc.GetString(procedure.Name) : stepId;
-        var toolName = GetToolShortName(procedure.PrimaryTool.Tag.ToString());
+        var toolName = GetToolDisplayName(procedure.PrimaryTool);
         var improvisedName = GetImprovisedShortName(procedure, stepId);
+
+        if (procedure.ImprovisedTools.Count == 0)
+            return Loc.GetString("health-analyzer-surgery-step-primary-only", ("step", baseName), ("tool", toolName));
+
         return Loc.GetString("health-analyzer-surgery-step-with-tool",
             ("step", baseName),
             ("tool", toolName),
             ("improvised", improvisedName));
     }
 
-    private static string GetToolShortName(string tagId)
+    private string GetToolDisplayName(PrimaryToolSpec primaryTool)
     {
-        return tagId switch
+        if (primaryTool.IsHand)
+            return "-";
+        if (primaryTool.Tag.HasValue)
+            return GetToolDisplayNameByTag(primaryTool.Tag.Value.ToString());
+        if (primaryTool.DamageType.HasValue)
+            return GetDamageTypeDisplayName(primaryTool.DamageType.Value, "CreateIncision");
+        return "-";
+    }
+
+    private string GetToolDisplayNameByTag(string tagId)
+    {
+        foreach (var proto in _prototypes.EnumeratePrototypes<SurgicalToolPrototype>())
         {
-            "CuttingTool" => Loc.GetString("health-analyzer-surgery-tool-scalpel"),
-            "Wirecutter" => Loc.GetString("health-analyzer-surgery-tool-wirecutter"),
-            "PryingTool" => Loc.GetString("health-analyzer-surgery-tool-retractor"),
-            "SawingTool" => Loc.GetString("health-analyzer-surgery-tool-saw"),
-            "HeatWeapon" => Loc.GetString("health-analyzer-surgery-tool-cautery"),
-            "ManipulatingTool" => Loc.GetString("health-analyzer-surgery-tool-hemostat"),
-            "HemostatTool" => Loc.GetString("health-analyzer-surgery-tool-hemostat"),
-            "AnchoringTool" => Loc.GetString("health-analyzer-surgery-tool-wrench"),
-            "BoneGelTool" => Loc.GetString("health-analyzer-surgery-tool-bone-gel"),
-            "SurgeryTool" => Loc.GetString("health-analyzer-surgery-tool-retractor"),
-            "Screwdriver" => Loc.GetString("health-analyzer-surgery-tool-screwdriver"),
-            _ => tagId
+            if (proto.Tag.ToString() == tagId || proto.ID == tagId)
+                return Loc.GetString(proto.DisplayName);
+        }
+        return tagId;
+    }
+
+    private static string GetDamageTypeDisplayName(ImprovisedDamageType damageType, string stepId)
+    {
+        return damageType switch
+        {
+            ImprovisedDamageType.Slash => stepId is "DetachLimb" or "DetachFoot"
+                ? Loc.GetString("health-analyzer-surgery-improvised-cutting")
+                : Loc.GetString("health-analyzer-surgery-improvised-slash"),
+            ImprovisedDamageType.Heat => Loc.GetString("health-analyzer-surgery-improvised-heat"),
+            ImprovisedDamageType.Blunt => stepId is "RetractSkin" or "ReleaseRetractor" or "RetractTissue"
+                ? Loc.GetString("health-analyzer-surgery-improvised-prying")
+                : Loc.GetString("health-analyzer-surgery-improvised-blunt"),
+            _ => "-"
         };
     }
 
-    private static string GetImprovisedShortName(SurgeryProcedurePrototype procedure, string stepId)
+    private string GetImprovisedShortName(SurgeryProcedurePrototype procedure, string stepId)
     {
         if (procedure.ImprovisedTools.Count == 0)
             return "-";
@@ -471,18 +492,7 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
         var first = procedure.ImprovisedTools[0];
         if (first.DamageType.HasValue)
         {
-            var display = first.DamageType.Value switch
-            {
-                ImprovisedDamageType.Slash => stepId is "DetachLimb" or "DetachFoot"
-                    ? Loc.GetString("health-analyzer-surgery-improvised-cutting")
-                    : Loc.GetString("health-analyzer-surgery-improvised-slash"),
-                ImprovisedDamageType.Heat => Loc.GetString("health-analyzer-surgery-improvised-heat"),
-                ImprovisedDamageType.Blunt => stepId is "RetractSkin" or "ReleaseRetractor" or "RetractTissue"
-                    ? Loc.GetString("health-analyzer-surgery-improvised-prying")
-                    : Loc.GetString("health-analyzer-surgery-improvised-blunt"),
-                _ => "-"
-            };
-            return display;
+            return GetDamageTypeDisplayName(first.DamageType.Value, stepId);
         }
 
         if (first.Tag.HasValue)
@@ -490,7 +500,7 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
             var tagStr = first.Tag.Value.ToString();
             return stepId == "ClampVessels" && tagStr == "Wirecutter"
                 ? Loc.GetString("health-analyzer-surgery-tool-wirecutters")
-                : GetToolShortName(tagStr);
+                : GetToolDisplayNameByTag(tagStr);
         }
         return "-";
     }
@@ -514,8 +524,9 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
                 ("step", Loc.GetString("health-analyzer-surgery-step-detach-foot")));
         }
 
-        // RemoveOrgan and InsertOrgan (when no tool): show "Remove Organ (lungs) (-/-)" or "Insert Organ (lungs) (-/-)"
-        if ((stepId == "RemoveOrgan" || stepId == "InsertOrgan") && !procedure.RequiresTool)
+        // RemoveOrgan, InsertOrgan, AttachLimb (when no tool): show "Remove Organ (lungs) (-/-)" etc.
+        if ((stepId == "RemoveOrgan" || stepId == "InsertOrgan" || stepId == "AttachLimb") &&
+            (!procedure.RequiresTool || procedure.PrimaryTool.IsHand))
         {
             var stepName = Loc.GetString(procedure.Name);
             var label = $"{stepName} ({organName})";
@@ -524,8 +535,12 @@ public sealed partial class HealthAnalyzerControl : BoxContainer
 
         var baseName = Loc.GetString(procedure.Name);
         var stepWithOrgan = $"{baseName} ({organName})";
-        var toolName = GetToolShortName(procedure.PrimaryTool.Tag.ToString());
+        var toolName = GetToolDisplayName(procedure.PrimaryTool);
         var improvisedName = GetImprovisedShortName(procedure, stepId);
+
+        if (procedure.ImprovisedTools.Count == 0)
+            return Loc.GetString("health-analyzer-surgery-step-primary-only", ("step", stepWithOrgan), ("tool", toolName));
+
         return Loc.GetString("health-analyzer-surgery-step-with-tool",
             ("step", stepWithOrgan),
             ("tool", toolName),

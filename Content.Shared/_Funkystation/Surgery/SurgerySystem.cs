@@ -13,6 +13,7 @@ using Content.Shared.Medical.Surgery.Components;
 using Content.Shared.Medical.Surgery.Events;
 using Content.Shared.Humanoid;
 using Content.Shared.Humanoid.Prototypes;
+using Content.Shared.IdentityManagement;
 using Content.Shared.Medical.Surgery.Prototypes;
 using Content.Shared.Popups;
 using Content.Shared.Standing;
@@ -89,13 +90,6 @@ public sealed class SurgerySystem : EntitySystem
                 return;
             }
 
-            // Skeleton-specific: cannot receive organ implants; only limb detach/attach
-            if (humanoidProfile.Species == (ProtoId<SpeciesPrototype>)"Skeleton" &&
-                args.ProcedureId == "InsertOrgan")
-            {
-                args.RejectReason = "skeleton-cannot-receive-organs";
-                return;
-            }
         }
 
         SurgeryProcedurePrototype? procedure = null;
@@ -130,9 +124,9 @@ public sealed class SurgerySystem : EntitySystem
         var isImprovised = false;
         if (procedure != null)
         {
-            if (!procedure.RequiresTool)
+            if (!procedure.RequiresTool || procedure.PrimaryTool.IsHand)
             {
-                // AttachLimb: limb in hand counts as "tool". DetachFoot: no tool needed.
+                // AttachLimb: limb in hand counts as "tool". InsertOrgan/RemoveOrgan: no tool needed.
                 if (args.ProcedureId == "AttachLimb" && args.Organ.HasValue)
                 {
                     foreach (var held in _hands.EnumerateHeld((args.User, null)))
@@ -144,50 +138,55 @@ public sealed class SurgerySystem : EntitySystem
                         }
                     }
                 }
-                // If we still don't have a tool, that's ok for procedures like DetachFoot
+                // If we still don't have a tool, that's ok for procedures like InsertOrgan, RemoveOrgan
             }
             else
             {
-            var primaryTag = procedure.PrimaryTool.Tag;
-            foreach (var held in _hands.EnumerateHeld((args.User, null)))
-            {
-                if (_tag.HasTag(held, primaryTag))
+                // Primary: Tag or DamageType
+                if (procedure.PrimaryTool.Tag.HasValue)
                 {
-                    tool = held;
-                    break;
+                    var primaryTag = procedure.PrimaryTool.Tag.Value;
+                    foreach (var held in _hands.EnumerateHeld((args.User, null)))
+                    {
+                        if (_tag.HasTag(held, primaryTag))
+                        {
+                            tool = held;
+                            break;
+                        }
+                    }
                 }
-            }
-            if (!tool.HasValue)
-            {
-                foreach (var improvised in procedure.ImprovisedTools)
+                else if (procedure.PrimaryTool.DamageType.HasValue)
                 {
-                    if (improvised.Tag.HasValue)
+                    var damageKey = procedure.PrimaryTool.DamageType.Value switch
+                    {
+                        ImprovisedDamageType.Slash => "Slash",
+                        ImprovisedDamageType.Heat => "Heat",
+                        ImprovisedDamageType.Blunt => "Blunt",
+                        _ => null
+                    };
+                    if (damageKey != null)
                     {
                         foreach (var held in _hands.EnumerateHeld((args.User, null)))
                         {
-                            if (_tag.HasTag(held, improvised.Tag.Value))
+                            var damage = _melee.GetDamage(held, args.User);
+                            if (damage.DamageDict.TryGetValue(damageKey, out var val) && val.Float() > 0)
                             {
                                 tool = held;
-                                isImprovised = true;
                                 break;
                             }
                         }
                     }
-                    else if (improvised.DamageType.HasValue)
+                }
+
+                if (!tool.HasValue)
+                {
+                    foreach (var improvised in procedure.ImprovisedTools)
                     {
-                        var damageKey = improvised.DamageType.Value switch
-                        {
-                            ImprovisedDamageType.Slash => "Slash",
-                            ImprovisedDamageType.Heat => "Heat",
-                            ImprovisedDamageType.Blunt => "Blunt",
-                            _ => null
-                        };
-                        if (damageKey != null)
+                        if (improvised.Tag.HasValue)
                         {
                             foreach (var held in _hands.EnumerateHeld((args.User, null)))
                             {
-                                var damage = _melee.GetDamage(held, args.User);
-                                if (damage.DamageDict.TryGetValue(damageKey, out var val) && val.Float() > 0)
+                                if (_tag.HasTag(held, improvised.Tag.Value))
                                 {
                                     tool = held;
                                     isImprovised = true;
@@ -195,16 +194,38 @@ public sealed class SurgerySystem : EntitySystem
                                 }
                             }
                         }
+                        else if (improvised.DamageType.HasValue)
+                        {
+                            var damageKey = improvised.DamageType.Value switch
+                            {
+                                ImprovisedDamageType.Slash => "Slash",
+                                ImprovisedDamageType.Heat => "Heat",
+                                ImprovisedDamageType.Blunt => "Blunt",
+                                _ => null
+                            };
+                            if (damageKey != null)
+                            {
+                                foreach (var held in _hands.EnumerateHeld((args.User, null)))
+                                {
+                                    var damage = _melee.GetDamage(held, args.User);
+                                    if (damage.DamageDict.TryGetValue(damageKey, out var val) && val.Float() > 0)
+                                    {
+                                        tool = held;
+                                        isImprovised = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (tool.HasValue)
+                            break;
                     }
-                    if (tool.HasValue)
-                        break;
                 }
-            }
-            if (!tool.HasValue)
-            {
-                args.RejectReason = "missing-tool";
-                return;
-            }
+                if (!tool.HasValue)
+                {
+                    args.RejectReason = "missing-tool";
+                    return;
+                }
             }
         }
         else if (!string.IsNullOrEmpty(step!.RequiredToolTag))
@@ -671,7 +692,17 @@ public sealed class SurgerySystem : EntitySystem
                 if (!_hands.TryPickupAnyHand(user, organ, checkActionBlocker: false))
                     Transform(organ).Coordinates = Transform(user).Coordinates;
                 if (triggersOrganRemoval)
-                    ClearOrganRemovalProgress(layerComp!, organNet!.Value);
+                {
+                    // Store removal steps on the organ so re-insertion only shows repair steps
+                    var removalSteps = layerComp!.OrganRemovalProgress
+                        .FirstOrDefault(e => e.Organ == organNet!.Value)?.Steps.ToList() ?? new List<string>();
+                    if (!removalSteps.Contains(stepId))
+                        removalSteps.Add(stepId);
+                    var stateComp = EnsureComp<OrganRemovedSurgeryStateComponent>(organ);
+                    stateComp.PerformedRemovalSteps = removalSteps;
+                    Dirty(organ, stateComp);
+                    ClearOrganRemovalProgress(layerComp, organNet!.Value);
+                }
                 else
                     AddOrganRemovalProgress(layerComp!, organNet!.Value, stepId);
                 // Clear organ progress when organ leaves the body so re-insertion shows correct procedures
@@ -796,6 +827,8 @@ public sealed class SurgerySystem : EntitySystem
                     layerComp!.PerformedOrganSteps.Add(stepId);
                     Dirty(bodyPart, layerComp);
                 }
+                var limbName = Identity.Name(limb, EntityManager, user);
+                _popup.PopupClient(Loc.GetString("health-analyzer-surgery-organ-fully-attached", ("organName", limbName)), user, user, PopupType.Medium);
                 var penaltyEv = new SurgeryPenaltyAppliedEvent(limb, penalty);
                 RaiseLocalEvent(limb, ref penaltyEv);
                 var uiRefreshEv = new SurgeryUiRefreshRequestEvent();
@@ -815,6 +848,14 @@ public sealed class SurgerySystem : EntitySystem
                 else if (organProcs.InsertionProcedures.Any(p => p.ToString() == stepId))
                 {
                     AddOrganInsertProgress(layerComp, organNet.Value, stepId);
+                    // Organ is fully repaired; clear removal state so future removals show removal steps
+                    var insertSteps = layerComp.OrganInsertProgress.FirstOrDefault(e => e.Organ == organNet.Value)?.Steps ?? [];
+                    if (organProcs.InsertionProcedures.All(p => insertSteps.Contains(p.ToString())))
+                    {
+                        RemComp<OrganRemovedSurgeryStateComponent>(organUid.Value);
+                        var organName = Identity.Name(organUid.Value, EntityManager, user);
+                        _popup.PopupClient(Loc.GetString("health-analyzer-surgery-organ-fully-attached", ("organName", organName)), user, user, PopupType.Medium);
+                    }
                 }
             }
             Dirty(bodyPart, layerComp);

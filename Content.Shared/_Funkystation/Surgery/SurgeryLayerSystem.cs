@@ -20,6 +20,7 @@ public sealed class SurgeryLayerSystem : EntitySystem
     /// <summary>
     /// Resolves BodyPartSurgeryStepsPrototype for the given species and organ category.
     /// Excludes CyberLimb* configs (they are only used via StepsConfigId on the body part).
+    /// Falls back to Human prototype when no config exists for the species (e.g. new mod species).
     /// </summary>
     public BodyPartSurgeryStepsPrototype? GetStepsConfig(ProtoId<Humanoid.Prototypes.SpeciesPrototype> speciesId, ProtoId<OrganCategoryPrototype> organCategory)
     {
@@ -30,7 +31,7 @@ public sealed class SurgeryLayerSystem : EntitySystem
             if (proto.SpeciesId == speciesId && proto.OrganCategory == organCategory)
                 return proto;
         }
-        return null;
+        return _prototypes.TryIndex(new ProtoId<BodyPartSurgeryStepsPrototype>("Human" + organCategory), out var humanProto) ? humanProto : null;
     }
 
     /// <summary>
@@ -121,7 +122,7 @@ public sealed class SurgeryLayerSystem : EntitySystem
                 || stepsConfig.GetSkinCloseStepIds(_prototypes).Contains(stepId),
             SurgeryLayer.Tissue => stepsConfig.GetTissueOpenStepIds(_prototypes).Contains(stepId)
                 || stepsConfig.GetTissueCloseStepIds(_prototypes).Contains(stepId),
-            SurgeryLayer.Organ => stepsConfig.OrganSteps.Any(s => s.ToString() == stepId)
+            SurgeryLayer.Organ => stepsConfig.GetOrganStepIds(_prototypes).Contains(stepId)
                 || (bodyPart.HasValue && IsOrganProcedureInBodyPart(bodyPart.Value, stepId)),
             _ => false
         };
@@ -347,7 +348,7 @@ public sealed class SurgeryLayerSystem : EntitySystem
         var skinClose = config.GetSkinCloseStepIds(_prototypes);
         var tissueOpen = config.GetTissueOpenStepIds(_prototypes);
         var tissueClose = config.GetTissueCloseStepIds(_prototypes);
-        var organ = config.OrganSteps.Select(s => s.ToString()).ToList();
+        var organ = config.GetOrganStepIds(_prototypes).ToList();
 
         // Add organ removal/insertion procedures from organs in this body part
         
@@ -391,7 +392,7 @@ public sealed class SurgeryLayerSystem : EntitySystem
         if (stepsConfig == null)
             return Array.Empty<string>();
 
-        if (!stepsConfig.OrganSteps.Any(s => s.ToString() == "AttachLimb"))
+        if (!stepsConfig.GetOrganStepIds(_prototypes).Contains("AttachLimb"))
             return Array.Empty<string>();
 
         return new[] { "AttachLimb" };
@@ -476,14 +477,24 @@ public sealed class SurgeryLayerSystem : EntitySystem
             var organNet = GetNetEntity(organ);
             if (!TryComp<OrganSurgeryProceduresComponent>(organ, out var organProcs))
                 continue;
-            foreach (var proc in organProcs.RemovalProcedures)
+            // Organs that were surgically detached store their removal state. When re-inserted, only show repair steps.
+            var removalAlreadyDone = TryComp<OrganRemovedSurgeryStateComponent>(organ, out var removedState) &&
+                organProcs.RemovalProcedures.All(p => removedState.PerformedRemovalSteps.Contains(p.ToString()));
+            if (!removalAlreadyDone)
             {
-                var stepId = proc.ToString();
-                if (IsOrganStepPerformed(layerComp, stepId, organNet, forRemoval: true))
-                    continue;
-                if (CanPerformStep(stepId, SurgeryLayer.Organ, layerComp, stepsConfig, bodyPart, organ))
-                    result.Add((stepId, organNet));
+                foreach (var proc in organProcs.RemovalProcedures)
+                {
+                    var stepId = proc.ToString();
+                    if (IsOrganStepPerformed(layerComp, stepId, organNet, forRemoval: true))
+                        continue;
+                    if (CanPerformStep(stepId, SurgeryLayer.Organ, layerComp, stepsConfig, bodyPart, organ))
+                        result.Add((stepId, organNet));
+                }
             }
+            // Insertion procedures (Hemostat, Searing, etc.) are only for organs that were just inserted.
+            // Organs without an OrganInsertProgress entry are native to the body and don't need mend steps.
+            if (!layerComp.OrganInsertProgress.Any(e => e.Organ == organNet))
+                continue;
             foreach (var proc in organProcs.InsertionProcedures)
             {
                 var stepId = proc.ToString();

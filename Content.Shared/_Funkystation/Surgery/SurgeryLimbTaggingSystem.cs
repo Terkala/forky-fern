@@ -16,6 +16,8 @@ namespace Content.Shared.Medical.Surgery;
 /// </summary>
 public sealed class SurgeryLimbTaggingSystem : EntitySystem
 {
+    [Dependency] private readonly SurgeryLayerSystem _surgeryLayer = default!;
+
     private static readonly IReadOnlyDictionary<string, string> CyberLimbStepsConfigIds = new Dictionary<string, string>
     {
         ["ArmLeft"] = "CyberLimbArmLeft",
@@ -48,6 +50,12 @@ public sealed class SurgeryLimbTaggingSystem : EntitySystem
         comp.OrganCategory = category;
         if (HasComp<CyberLimbComponent>(ent) && CyberLimbStepsConfigIds.TryGetValue(category.ToString(), out var stepsConfigId))
             comp.StepsConfigId = new ProtoId<BodyPartSurgeryStepsPrototype>(stepsConfigId);
+        else
+        {
+            var stepsConfig = _surgeryLayer.GetStepsConfig(speciesId, category);
+            if (stepsConfig != null)
+                comp.StepsConfigId = new ProtoId<BodyPartSurgeryStepsPrototype>(stepsConfig.ID);
+        }
         Dirty(ent, comp);
     }
 

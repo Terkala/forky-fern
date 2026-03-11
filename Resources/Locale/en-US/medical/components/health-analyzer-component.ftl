@@ -70,6 +70,7 @@ health-analyzer-surgery-error-organ-not-in-hand = The organ is no longer in your
 health-analyzer-surgery-error-slot-filled = That organ slot is already filled.
 health-analyzer-surgery-error-invalid-surgical-process = The surgical site is no longer valid.
 health-analyzer-surgery-error-missing-tool = You need the correct tool for this procedure. Check which tool the step requires.
+health-analyzer-surgery-error-incorrect-tool = Incorrect tool. Please use the correct tool.
 health-analyzer-surgery-error-already-done = This step has already been performed.
 health-analyzer-surgery-error-layer-not-open = Complete the previous steps first to open this layer.
 health-analyzer-surgery-error-doafter-failed = You cannot start this procedure right now. Ensure you are holding the correct tool and not already performing another action.
@@ -113,11 +114,11 @@ health-analyzer-surgery-improvised-heat = heat
 health-analyzer-surgery-improvised-blunt = blunt
 health-analyzer-surgery-improvised-prying = prying
 health-analyzer-surgery-step-with-tool = { $step } ({ $tool }/{ $improvised })
+health-analyzer-surgery-step-primary-only = { $step } ({ $tool })
 health-analyzer-surgery-step-no-tool = { $step } (-/-)
 health-analyzer-surgery-begin-improvised = You're using the { $tool } as an improvised tool.
 health-analyzer-surgery-error-missing-tool-proper-only = You need a { $proper }.
 health-analyzer-surgery-error-missing-tool-with-improvised = You need a { $proper }, or { $improvised }.
-health-analyzer-integrity-over-capacity = Patient integrity capacity would be exceeded.
 health-analyzer-integrity-usage = Organ usage
 health-analyzer-integrity-cybernetics = Cybernetics
 health-analyzer-integrity-maintenance-panel-open = Maintenance panel open ({ $limbName })
@@ -150,3 +151,5 @@ organ-category-liver = Liver
 organ-category-kidneys = Kidneys
 
 health-analyzer-popup-scan-target = {CAPITALIZE(THE($user))} is trying to scan you!
+
+health-analyzer-surgery-organ-fully-attached = The { $organName } is fully attached.

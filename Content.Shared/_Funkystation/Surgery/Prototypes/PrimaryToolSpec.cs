@@ -7,15 +7,31 @@ namespace Content.Shared.Medical.Surgery.Prototypes;
 
 /// <summary>
 /// Specifies the primary (proper) tool for a surgery procedure.
+/// Primary is exactly one of: Tag, DamageType, or IsHand.
 /// </summary>
 [DataDefinition]
 public sealed partial class PrimaryToolSpec
 {
     /// <summary>
     /// Tag required on the held item (e.g. CuttingTool, Wirecutter).
+    /// Mutually exclusive with DamageType and IsHand.
     /// </summary>
-    [DataField(required: true)]
-    public ProtoId<TagPrototype> Tag { get; private set; }
+    [DataField]
+    public ProtoId<TagPrototype>? Tag { get; private set; }
+
+    /// <summary>
+    /// Match MeleeWeapon by damage type when tag is not specified.
+    /// Mutually exclusive with Tag and IsHand.
+    /// </summary>
+    [DataField]
+    public ImprovisedDamageType? DamageType { get; private set; }
+
+    /// <summary>
+    /// When true, no tool required (e.g. InsertOrgan, AttachLimb). UI shows "-".
+    /// Used when procedure has RequiresTool=false.
+    /// </summary>
+    [DataField]
+    public bool IsHand { get; private set; }
 
     /// <summary>
     /// DoAfter duration in seconds when using the primary tool.
