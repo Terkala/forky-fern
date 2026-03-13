@@ -1,0 +1,65 @@
+- type: entity
+  id: Supermatter
+  name: supermatter crystal
+  description: A highly unstable crystal that converts matter and energy. Handle with extreme care.
+  placement:
+    mode: SnapgridCenter
+  components:
+  - type: Sprite
+    sprite: Structures/Power/Generation/Supermatter/supermatter.rsi
+    offset: "0, 0.25"
+    layers:
+    - map: [ "State" ]
+      state: supermatter
+  - type: SupermatterState
+    power: 0
+    integrity: 1000
+    stability: 10
+  - type: SupermatterProcessing
+  - type: Damageable
+  - type: Physics
+    bodyType: Static
+  - type: Fixtures
+    fixtures:
+      fix1:
+        shape:
+          !type:PhysShapeCircle
+          radius: 0.45
+        density: 190
+        mask:
+        - MachineMask
+        layer:
+        - Opaque
+      SupermatterConsumer:
+        shape:
+          !type:PhysShapeCircle
+          radius: 0.5
+        hard: false
+        mask:
+        - SingularityLayer
+        layer:
+        - SingularityLayer
+  - type: Transform
+    anchored: true
+    noRot: true
+  - type: Anchorable
+  - type: Pullable
+  - type: Clickable
+  - type: InteractionOutline
+  - type: Appearance
+  - type: GenericVisualizer
+    visuals:
+      enum.SupermatterVisualKeys.State:
+       State:
+          0:
+            sprite: Structures/Power/Generation/Supermatter/supermatter.rsi
+            state: supermatter
+          1:
+            sprite: Structures/Power/Generation/Supermatter/supermatter.rsi
+            state: supermatter-glow
+          2:
+            sprite: Structures/Power/Generation/Supermatter/supermatter.rsi
+            state: supermatter-glow-emergency
+          3:
+            sprite: Structures/Power/Generation/Supermatter/supermatter.rsi
+            state: supermatter-glow-delam

@@ -1,0 +1,24 @@
+- type: entity
+  id: SupermatterShard
+  name: supermatter shard
+  description: A small fragment of supermatter crystal. Can merge with others to form a full crystal.
+  placement:
+    mode: SnapgridCenter
+  components:
+  - type: Sprite
+    sprite: Structures/Power/Generation/Supermatter/supermatter.rsi
+    state: supermatter
+  - type: Physics
+    bodyType: Dynamic
+  - type: Fixtures
+    fixtures:
+      fix1:
+        shape:
+          !type:PhysShapeCircle
+          radius: 0.2
+        density: 190
+        mask:
+        - MachineMask
+        layer:
+        - Opaque
+  - type: Transform
