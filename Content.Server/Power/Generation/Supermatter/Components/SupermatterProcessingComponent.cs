@@ -156,7 +156,7 @@ public sealed partial class SupermatterProcessingComponent : Component
     public float AshingMassLarge = 80f;
 
     [DataField("ashingSound")]
-    public SoundSpecifier? AshingSound = new SoundPathSpecifier("/Audio/Effects/Grenades/Supermatter/supermatter.ogg");
+    public SoundSpecifier? AshingSound = new SoundPathSpecifier("/Audio/_Funkystation/Supermatter/supermatter.ogg");
 
     [DataField("ashingAshPrototype")]
     public string AshingAshPrototype = "Ash";
@@ -180,16 +180,16 @@ public sealed partial class SupermatterProcessingComponent : Component
     public float HealiumIntegrityPerHeal = 1f;
 
     [DataField("ambientCalmSound")]
-    public SoundSpecifier? AmbientCalmSound = new SoundPathSpecifier("/Audio/Effects/Grenades/Supermatter/calm.ogg");
+    public SoundSpecifier? AmbientCalmSound = new SoundPathSpecifier("/Audio/_Funkystation/Supermatter/calm.ogg");
 
     [DataField("ambientDelammingSound")]
-    public SoundSpecifier? AmbientDelammingSound = new SoundPathSpecifier("/Audio/Effects/Grenades/Supermatter/delamming.ogg");
+    public SoundSpecifier? AmbientDelammingSound = new SoundPathSpecifier("/Audio/_Funkystation/Supermatter/delamming.ogg");
 
     [DataField("lightningSound")]
-    public SoundSpecifier? LightningSound = new SoundPathSpecifier("/Audio/Effects/Grenades/Supermatter/lightning.ogg");
+    public SoundSpecifier? LightningSound = new SoundPathSpecifier("/Audio/_Funkystation/Supermatter/lightning.ogg");
 
     [DataField("antiLightningSound")]
-    public SoundSpecifier? AntiLightningSound = new SoundPathSpecifier("/Audio/Effects/Grenades/Supermatter/marauder.ogg");
+    public SoundSpecifier? AntiLightningSound = new SoundPathSpecifier("/Audio/_Funkystation/Supermatter/marauder.ogg");
 
     [ViewVariables]
     public EntityUid? AmbientLoopEntity;
