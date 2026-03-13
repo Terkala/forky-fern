@@ -35,6 +35,7 @@ using Content.Shared.NPC.Components;
 using Content.Shared.NPC.Systems;
 using Content.Shared.NPC.Events;
 using Content.Shared.Physics;
+using Content.Shared.Projectiles;
 using Content.Shared.Weapons.Melee;
 using Robust.Shared.Configuration;
 using Robust.Shared.Map;
@@ -89,6 +90,7 @@ public sealed partial class NPCSteeringSystem : SharedNPCSteeringSystem
     private EntityQuery<MovementSpeedModifierComponent> _modifierQuery;
     private EntityQuery<NpcFactionMemberComponent> _factionQuery;
     private EntityQuery<PhysicsComponent> _physicsQuery;
+    private EntityQuery<ProjectileComponent> _projectileQuery;
     private EntityQuery<TransformComponent> _xformQuery;
 
     private ObjectPool<HashSet<EntityUid>> _entSetPool =
@@ -120,6 +122,7 @@ public sealed partial class NPCSteeringSystem : SharedNPCSteeringSystem
         _modifierQuery = GetEntityQuery<MovementSpeedModifierComponent>();
         _factionQuery = GetEntityQuery<NpcFactionMemberComponent>();
         _physicsQuery = GetEntityQuery<PhysicsComponent>();
+        _projectileQuery = GetEntityQuery<ProjectileComponent>();
         _xformQuery = GetEntityQuery<TransformComponent>();
 
         for (var i = 0; i < InterestDirections; i++)
@@ -402,6 +405,9 @@ public sealed partial class NPCSteeringSystem : SharedNPCSteeringSystem
 
         // Blend last and current tick
         Blend(steering, frameTime, interest, danger);
+
+        // Apply projectile danger after blend so it takes effect immediately (bullets are fast).
+        ProjectileAvoidance(uid, offsetRot, worldPos, agentRadius, xform, steering);
 
         // Remove the danger map from the interest map.
         var desiredDirection = -1;

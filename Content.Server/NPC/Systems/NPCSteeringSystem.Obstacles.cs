@@ -89,6 +89,20 @@ public sealed partial class NPCSteeringSystem
             var isAccessRequired = (poly.Data.Flags & PathfindingBreadcrumbFlag.Access) != 0x0;
             var isClimbable = (poly.Data.Flags & PathfindingBreadcrumbFlag.Climb) != 0x0;
 
+            if (isDoor && TryComp<NPCDoorBypassStateComponent>(uid, out var bypassState))
+            {
+                var doorQuery = GetEntityQuery<DoorComponent>();
+                foreach (var ent in obstacleEnts)
+                {
+                    if (doorQuery.TryGetComponent(ent, out var door) && door.State != DoorState.Open)
+                    {
+                        bypassState.TargetDoor = ent;
+                        bypassState.State = NPCDoorBypassState.RequestingOpen;
+                        break;
+                    }
+                }
+            }
+
             // Just walk into it stupid
             if (isDoor && !isAccessRequired)
             {
@@ -105,12 +119,33 @@ public sealed partial class NPCSteeringSystem
                         if (door.State != DoorState.Opening)
                         {
                             _interaction.InteractionActivate(uid, ent);
+                            if (TryComp<NPCDoorBypassStateComponent>(uid, out var bypass))
+                                bypass.State = NPCDoorBypassState.WaitingForOpen;
                             return SteeringObstacleStatus.Continuing;
                         }
                     }
                 }
 
                 // If we get to here then didn't succeed for reasons.
+            }
+
+            // Access doors: try bump/activate first to check if we have access before prying.
+            if (isDoor && isAccessRequired && (component.Flags & PathFlags.Interact) != 0x0)
+            {
+                var doorQuery = GetEntityQuery<DoorComponent>();
+                foreach (var ent in obstacleEnts)
+                {
+                    if (!doorQuery.TryGetComponent(ent, out var door) || door.State == DoorState.Open)
+                        continue;
+
+                    if (door.State != DoorState.Opening)
+                    {
+                        _interaction.InteractionActivate(uid, ent);
+                        if (TryComp<NPCDoorBypassStateComponent>(uid, out var bypass))
+                            bypass.State = NPCDoorBypassState.WaitingForOpen;
+                        return SteeringObstacleStatus.Continuing;
+                    }
+                }
             }
 
             if ((component.Flags & PathFlags.Prying) != 0x0 && isDoor)
@@ -128,6 +163,8 @@ public sealed partial class NPCSteeringSystem
                             _pryingSystem.TryPry(ent, uid, out id, uid);
 
                         component.DoAfterId = id;
+                        if (TryComp<NPCDoorBypassStateComponent>(uid, out var bypassPry))
+                            bypassPry.State = NPCDoorBypassState.WaitingForOpen;
                         return SteeringObstacleStatus.Continuing;
                     }
                 }

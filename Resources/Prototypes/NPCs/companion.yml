@@ -1,0 +1,111 @@
+- type: htnCompound
+  id: CompanionFollowCompound
+  branches:
+    - tasks:
+        - !type:HTNPrimitiveTask
+          preconditions:
+            - !type:CoordinatesNotInRangePrecondition
+              targetKey: FollowTarget
+              rangeKey: FollowRange
+          operator: !type:MoveToOperator
+            pathfindInPlanning: true
+            targetKey: FollowTarget
+            rangeKey: FollowCloseRange
+            removeKeyOnFinish: false
+
+    - tasks:
+        - !type:HTNPrimitiveTask
+          preconditions:
+            - !type:KeyExistsPrecondition
+              key: IdleTime
+            - !type:CoordinatesInRangePrecondition
+              targetKey: FollowTarget
+              rangeKey: FollowRange
+          operator: !type:WaitOperator
+            key: IdleTime
+
+    - tasks:
+        - !type:HTNPrimitiveTask
+          operator: !type:PickCompanionPositionOperator
+            rangeKey: FollowCloseRange
+            targetCoordinates: FollowIdleTarget
+
+        - !type:HTNPrimitiveTask
+          operator: !type:MoveToOperator
+            targetKey: FollowIdleTarget
+            pathfindInPlanning: true
+            rangeKey: MovementRange
+            removeKeyOnFinish: true
+
+        - !type:HTNPrimitiveTask
+          operator: !type:RandomOperator
+            targetKey: IdleTime
+            minKey: MinimumIdleTime
+            maxKey: MaximumIdleTime
+
+        - !type:HTNPrimitiveTask
+          preconditions:
+            - !type:KeyExistsPrecondition
+              key: IdleTime
+            - !type:CoordinatesInRangePrecondition
+              targetKey: FollowTarget
+              rangeKey: FollowRange
+          operator: !type:WaitOperator
+            key: IdleTime
+
+- type: htnCompound
+  id: OrderedMoveCompound
+  branches:
+    - tasks:
+        - !type:HTNPrimitiveTask
+          preconditions:
+            - !type:KeyExistsPrecondition
+              key: OrderedDestination
+          operator: !type:MoveToOperator
+            pathfindInPlanning: true
+            targetKey: OrderedDestination
+            rangeKey: MovementRange
+            removeKeyOnFinish: true
+
+- type: htnCompound
+  id: CompanionRootCompound
+  branches:
+    - tasks:
+        - !type:HTNCompoundTask
+          task: RangedCombatCompound
+    - tasks:
+        - !type:HTNCompoundTask
+          task: MeleeCombatCompound
+    - tasks:
+        - !type:HTNCompoundTask
+          task: OrderedMoveCompound
+    - tasks:
+        - !type:HTNCompoundTask
+          task: CompanionFollowCompound
+    - tasks:
+        - !type:HTNCompoundTask
+          task: IdleCompound
+
+- type: entity
+  parent: MobHuman
+  id: MobCompanion
+  name: companion
+  description: A loyal companion that follows its owner.
+  components:
+    - type: InputMover
+    - type: MobMover
+    - type: RandomHumanoidAppearance
+    - type: HTN
+      rootTask:
+        task: CompanionRootCompound
+      blackboard:
+        NavSmash: !type:Bool
+          true
+        NavInteract: !type:Bool
+          true
+        NavPry: !type:Bool
+          true
+    - type: NpcFactionMember
+      factions: []
+    - type: NPCCompanion
+    - type: NPCDoorBypassState

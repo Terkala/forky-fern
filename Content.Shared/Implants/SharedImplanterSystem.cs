@@ -165,6 +165,8 @@ public abstract class SharedImplanterSystem : EntitySystem
         var ev = new TransferDnaEvent { Donor = target, Recipient = implanter };
         RaiseLocalEvent(target, ref ev);
 
+        RaiseLocalEvent(implanter, new ImplantSuccessfulEvent(user, target, implanter));
+
         Dirty(implanter, component);
     }
 
@@ -364,6 +366,23 @@ public abstract class SharedImplanterSystem : EntitySystem
 [Serializable, NetSerializable]
 public sealed partial class ImplantEvent : SimpleDoAfterEvent
 {
+}
+
+/// <summary>
+/// Raised on the implanter after a successful implant. Allows other systems to react (e.g. companion binding).
+/// </summary>
+public sealed class ImplantSuccessfulEvent : EntityEventArgs
+{
+    public readonly EntityUid User;
+    public readonly EntityUid Target;
+    public readonly EntityUid Implanter;
+
+    public ImplantSuccessfulEvent(EntityUid user, EntityUid target, EntityUid implanter)
+    {
+        User = user;
+        Target = target;
+        Implanter = implanter;
+    }
 }
 
 [Serializable, NetSerializable]

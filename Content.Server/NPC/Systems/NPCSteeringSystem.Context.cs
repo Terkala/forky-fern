@@ -13,6 +13,7 @@ using Content.Server.Examine;
 using Content.Server.NPC.Components;
 using Content.Server.NPC.Pathfinding;
 using Content.Shared.Climbing;
+using Content.Shared.Projectiles;
 using Content.Shared.Interaction;
 using Content.Shared.Movement.Components;
 using Content.Shared.NPC;
@@ -650,6 +651,69 @@ public sealed partial class NPCSteeringSystem
             {
                 var dot = Vector2.Dot(norm, Directions[i]);
                 danger[i] = MathF.Max(dot * weight, danger[i]);
+            }
+        }
+
+        _entSetPool.Return(ents);
+    }
+
+    #endregion
+
+    #region Projectile Avoidance
+
+    /// <summary>
+    /// Adds danger from incoming projectiles so NPCs prioritize dodging over closing distance.
+    /// Applied after Blend so it takes effect immediately (bullets travel fast; blending would delay reaction).
+    /// Uses a large detection radius and high weight to ensure projectiles take precedence.
+    /// </summary>
+    private void ProjectileAvoidance(
+        EntityUid uid,
+        Angle offsetRot,
+        Vector2 worldPos,
+        float agentRadius,
+        TransformComponent xform,
+        NPCSteeringComponent steering)
+    {
+        const float detectionRadius = 15f;
+        const float baseWeight = 3f;
+
+        var ents = _entSetPool.Get();
+        _lookup.GetEntitiesInRange(uid, detectionRadius, ents, LookupFlags.Dynamic | LookupFlags.Approximate);
+
+        foreach (var ent in ents)
+        {
+            if (!_projectileQuery.HasComponent(ent) ||
+                !_physicsQuery.TryGetComponent(ent, out var projBody) ||
+                projBody.LinearVelocity.LengthSquared() < 0.01f)
+            {
+                continue;
+            }
+
+            var projPos = _transform.GetWorldPosition(ent, _xformQuery);
+            var toProj = projPos - worldPos;
+            var dist = toProj.Length();
+
+            if (dist < 0.1f)
+                continue;
+
+            var projVel = projBody.LinearVelocity;
+            var toUsFromProj = worldPos - projPos;
+            var toUsNorm = toUsFromProj.Normalized();
+
+            if (Vector2.Dot(projVel, toUsNorm) < 0.3f)
+                continue;
+
+            var weight = baseWeight * (1f - dist / detectionRadius);
+            weight = Math.Clamp(weight, 0.5f, baseWeight);
+
+            var obstacleDirection = toProj / dist;
+            obstacleDirection = offsetRot.RotateVec(obstacleDirection);
+            var norm = obstacleDirection.Normalized();
+
+            for (var i = 0; i < InterestDirections; i++)
+            {
+                var dot = Vector2.Dot(norm, Directions[i]);
+                steering.Danger[i] = MathF.Max(dot * weight, steering.Danger[i]);
             }
         }
 

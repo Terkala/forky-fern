@@ -209,6 +209,21 @@
   - type: Implanter
     implant: BikeHornImplant
 
+# Companion implanters
+
+- type: entity
+  id: CompanionImplanter
+  name: companion binding injector
+  description: A disposable syringe that injects a neural binding implant into an NPC, making them your loyal companion.
+  parent: BaseImplantOnlyImplanter
+  components:
+  - type: Implanter
+    implant: CompanionImplant
+    implantTime: 3
+    whitelist:
+      components:
+      - MobState
+
 #Security implanters
 
 - type: entity

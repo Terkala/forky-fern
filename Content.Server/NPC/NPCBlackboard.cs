@@ -346,6 +346,11 @@ public sealed partial class NPCBlackboard : IEnumerable<KeyValuePair<string, obj
     /// </summary>
     public const string CurrentOrderedTarget = "CurrentOrderedTarget";
 
+    /// <summary>
+    /// Target coordinates for "Go Here" orders. When set, companion moves there then clears.
+    /// </summary>
+    public const string OrderedDestination = "OrderedDestination";
+
     public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
     {
         return _blackboard.GetEnumerator();
