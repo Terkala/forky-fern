@@ -16,6 +16,8 @@
     integrity: 1000
     stability: 10
   - type: SupermatterProcessing
+  - type: AtmosDevice
+    requireAnchored: true
   - type: Damageable
   - type: Physics
     bodyType: Static
@@ -26,19 +28,12 @@
           !type:PhysShapeCircle
           radius: 0.45
         density: 190
+        hard: true
         mask:
         - MachineMask
+        - MobMask
         layer:
-        - Opaque
-      SupermatterConsumer:
-        shape:
-          !type:PhysShapeCircle
-          radius: 0.5
-        hard: false
-        mask:
-        - SingularityLayer
-        layer:
-        - SingularityLayer
+        - MachineLayer
   - type: Transform
     anchored: true
     noRot: true

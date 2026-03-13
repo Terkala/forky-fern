@@ -113,11 +113,11 @@ public sealed partial class SupermatterProcessingComponent : Component
     [DataField("shardsPerCrystal")]
     public int ShardsPerCrystal = 100;
 
+    /// <summary>
+    /// Reference interval (0.5s) for scaling per-cycle values to maintain tickrate invariance when running on atmos ticks.
+    /// </summary>
     [DataField("processingInterval")]
     public TimeSpan ProcessingInterval = TimeSpan.FromSeconds(0.5);
-
-    [DataField("nextProcessingTime", customTypeSerializer: typeof(TimeOffsetSerializer))]
-    public TimeSpan NextProcessingTime = TimeSpan.Zero;
 
     [DataField("lightningIntervalBase")]
     public float LightningIntervalBase = 10f;
@@ -131,8 +131,8 @@ public sealed partial class SupermatterProcessingComponent : Component
     [DataField("lightningPowerThresholds")]
     public float[] LightningPowerThresholds = [3000f, 6000f, 9000f];
 
-    [DataField("ashingConsumerFixtureId")]
-    public string AshingConsumerFixtureId = "SupermatterConsumer";
+    [DataField("ashingRange")]
+    public float AshingRange = 0.6f;
 
     [DataField("ashingPowerSmall")]
     public float AshingPowerSmall = 200f;

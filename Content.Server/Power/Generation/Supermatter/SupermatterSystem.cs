@@ -1,8 +1,10 @@
 using System.Linq;
 using Content.Server.Atmos.Components;
 using Content.Server.Atmos.EntitySystems;
+using Content.Server.Atmos.Piping.Components;
 using Content.Server.Explosion.EntitySystems;
 using Content.Server.Power.Generation.Supermatter.Components;
+using Content.Server.Power.Generation.Supermatter.Events;
 using Content.Shared.Atmos;
 using Content.Shared.Damage;
 using Content.Shared.Damage.Systems;
@@ -21,18 +23,16 @@ using Robust.Shared.Audio;
 using Robust.Shared.Containers;
 using Robust.Shared.Map;
 using Robust.Shared.Physics.Components;
-using Robust.Shared.Physics.Events;
-using Robust.Shared.Timing;
+using Robust.Shared.Physics.Systems;
 
 namespace Content.Server.Power.Generation.Supermatter;
 
 /// <summary>
-/// Server system for Supermatter processing. Runs on a timer (default 0.5s).
+/// Server system for Supermatter processing. Runs on atmos ticks via AtmosDeviceUpdateEvent.
 /// Reads/writes SupermatterProcessingComponent; updates SupermatterStateComponent for client.
 /// </summary>
 public sealed partial class SupermatterSystem : SharedSupermatterSystem
 {
-    [Dependency] private readonly IGameTiming _timing = default!;
     [Dependency] private readonly AtmosphereSystem _atmosphere = default!;
     [Dependency] private readonly TransformSystem _transform = default!;
     [Dependency] private readonly SharedContainerSystem _container = default!;
@@ -41,12 +41,17 @@ public sealed partial class SupermatterSystem : SharedSupermatterSystem
     [Dependency] private readonly SharedSingularitySystem _singularity = default!;
     [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
     [Dependency] private readonly SharedAudioSystem _audio = default!;
+    [Dependency] private readonly EntityLookupSystem _lookup = default!;
+    [Dependency] private readonly SharedPhysicsSystem _physics = default!;
+
+    private EntityQuery<PhysicsComponent> _physicsQuery = default!;
 
     public override void Initialize()
     {
         base.Initialize();
+        _physicsQuery = GetEntityQuery<PhysicsComponent>();
+        SubscribeLocalEvent<SupermatterProcessingComponent, AtmosDeviceUpdateEvent>(OnSupermatterAtmosUpdate);
         SubscribeLocalEvent<SupermatterProcessingComponent, MapInitEvent>(OnMapInit);
-        SubscribeLocalEvent<SupermatterProcessingComponent, StartCollideEvent>(OnStartCollide);
         SubscribeLocalEvent<SupermatterProcessingComponent, EntityTerminatingEvent>(OnSupermatterTerminating);
         SubscribeLocalEvent<SupermatterStateComponent, DamageChangedEvent>(OnDamageChanged);
     }
@@ -62,9 +67,19 @@ public sealed partial class SupermatterSystem : SharedSupermatterSystem
         Dirty(ent);
     }
 
+    private void OnSupermatterAtmosUpdate(EntityUid uid, SupermatterProcessingComponent processing, ref AtmosDeviceUpdateEvent args)
+    {
+        if (!TryComp<SupermatterStateComponent>(uid, out var state))
+            return;
+
+        var dt = args.dt;
+        var intervalSec = (float)processing.ProcessingInterval.TotalSeconds;
+        var scale = intervalSec > 0 ? Math.Clamp(dt / intervalSec, 0.001f, 20f) : 1f;
+        ProcessSupermatter(uid, state, processing, dt, scale);
+    }
+
     private void OnMapInit(EntityUid uid, SupermatterProcessingComponent comp, MapInitEvent args)
     {
-        comp.NextProcessingTime = _timing.CurTime + comp.ProcessingInterval;
         // Ensure the supermatter's tile exists in GridAtmosphere so gas absorption can run.
         var xform = Transform(uid);
         if (xform.GridUid is { } gridUid && TryComp<GridAtmosphereComponent>(gridUid, out var gridAtmos))
@@ -85,18 +100,51 @@ public sealed partial class SupermatterSystem : SharedSupermatterSystem
             _audio.Stop(loopEnt);
     }
 
-    private void OnStartCollide(EntityUid uid, SupermatterProcessingComponent comp, ref StartCollideEvent args)
+    /// <summary>
+    /// Phase 9: Ash entities within range (similar to singularity ConsumeEntitiesInRange).
+    /// Recursively ashes container contents first.
+    /// </summary>
+    private void AshEntitiesInRange(EntityUid uid, SupermatterStateComponent state, SupermatterProcessingComponent processing)
     {
-        if (args.OurFixtureId != comp.AshingConsumerFixtureId)
-            return;
-        if (!TryComp<SupermatterStateComponent>(uid, out var state))
+        if (!TryComp<PhysicsComponent>(uid, out var body))
             return;
 
-        AshEntity(uid, args.OtherEntity, state, comp);
+        foreach (var entity in _lookup.GetEntitiesInRange(uid, processing.AshingRange, flags: LookupFlags.Uncontained))
+        {
+            if (entity == uid)
+                continue;
+
+            if (_physicsQuery.TryComp(entity, out var otherBody) && !_physics.IsHardCollidable((uid, null, body), (entity, null, otherBody)))
+                continue;
+
+            AttemptAshEntity(uid, entity, state, processing);
+        }
     }
 
     /// <summary>
-    /// Phase 9: Ash an entity that touched the supermatter. Recursively ashes container contents first.
+    /// Attempts to ash an entity. Returns false if cancelled via SupermatterAttemptAshEntityEvent.
+    /// </summary>
+    private bool AttemptAshEntity(EntityUid supermatterUid, EntityUid target, SupermatterStateComponent state, SupermatterProcessingComponent processing)
+    {
+        if (!CanAshEntity(supermatterUid, target, processing))
+            return false;
+
+        AshEntity(supermatterUid, target, state, processing);
+        return true;
+    }
+
+    /// <summary>
+    /// Checks whether the supermatter can ash a given entity.
+    /// </summary>
+    private bool CanAshEntity(EntityUid supermatterUid, EntityUid target, SupermatterProcessingComponent processing)
+    {
+        var ev = new SupermatterAttemptAshEntityEvent(target, supermatterUid, processing);
+        RaiseLocalEvent(target, ref ev);
+        return !ev.Cancelled;
+    }
+
+    /// <summary>
+    /// Ash an entity. Recursively ashes container contents first.
     /// </summary>
     private void AshEntity(EntityUid supermatterUid, EntityUid target, SupermatterStateComponent state, SupermatterProcessingComponent processing)
     {
@@ -166,23 +214,6 @@ public sealed partial class SupermatterSystem : SharedSupermatterSystem
         Dirty(supermatterUid, state);
     }
 
-    public override void Update(float frameTime)
-    {
-        base.Update(frameTime);
-
-        var curTime = _timing.CurTime;
-        var query = EntityQueryEnumerator<SupermatterStateComponent, SupermatterProcessingComponent>();
-
-        while (query.MoveNext(out var uid, out var state, out var processing))
-        {
-            if (processing.NextProcessingTime > curTime)
-                continue;
-
-            processing.NextProcessingTime += processing.ProcessingInterval;
-            ProcessSupermatter(uid, state, processing, (float)(curTime - (processing.NextProcessingTime - processing.ProcessingInterval)).TotalSeconds);
-        }
-    }
-
     /// <summary>
     /// Updates looping ambient: calm.ogg when normal, delamming.ogg when integrity &lt; 750.
     /// </summary>
@@ -210,10 +241,13 @@ public sealed partial class SupermatterSystem : SharedSupermatterSystem
         }
     }
 
-    private void ProcessSupermatter(EntityUid uid, SupermatterStateComponent state, SupermatterProcessingComponent processing, float dt)
+    private void ProcessSupermatter(EntityUid uid, SupermatterStateComponent state, SupermatterProcessingComponent processing, float dt, float scale)
     {
+        // Phase 9: Ash entities in range (range-based, like singularity)
+        AshEntitiesInRange(uid, state, processing);
+
         // Phase 2: Gas absorption - center tile + 4 orthogonals, 9% per tile (no release yet)
-        if (!AbsorbGas(uid, state, processing))
+        if (!AbsorbGas(uid, state, processing, scale))
         {
             Dirty(uid, state);
             return;
@@ -223,11 +257,11 @@ public sealed partial class SupermatterSystem : SharedSupermatterSystem
         ComputeCharacteristics(state, processing);
 
         // Phase 10: Special gas interactions (Healium, Pluoxium, Nibbles)
-        ProcessSpecialGasInteractions(uid, state, processing);
+        ProcessSpecialGasInteractions(uid, state, processing, scale);
 
         // Phase 6: Growth - modifies AbsorbedMixture before release
-        ProcessGrowth(uid, state, processing);
-        ProcessReproduction(uid, state, processing);
+        ProcessGrowth(uid, state, processing, scale);
+        ProcessReproduction(uid, state, processing, scale);
 
         // Release absorbed gas back to center tile (after Growth)
         ReleaseAbsorbedGas(uid, processing);
@@ -237,19 +271,19 @@ public sealed partial class SupermatterSystem : SharedSupermatterSystem
         if (mix != null && mix.TotalMoles > 0 && state.Enthalpy != 0)
         {
             var t = mix.Temperature;
-            state.Power += state.Enthalpy * (t - 293.15f);
+            state.Power += state.Enthalpy * (t - 293.15f) * scale;
         }
 
-        // Phase 4: Power decay
-        state.Power *= MathF.Max(0f, 1f - processing.DecayStabilityMultiplier / 100f * state.Stability);
-        state.Power -= state.Stability;
+        // Phase 4: Power decay (scaled for tickrate invariance)
+        state.Power *= MathF.Max(0f, 1f - processing.DecayStabilityMultiplier / 100f * state.Stability * scale);
+        state.Power -= state.Stability * scale;
         state.Power = MathF.Max(0f, state.Power);
 
         // Phase 5: Apply thermal delta to center tile and integrity damage
-        ApplyEnthalpyThermalDelta(uid, state, processing);
+        ApplyEnthalpyThermalDelta(uid, state, processing, scale);
 
         // Phase 8: Apply integrity changes (heal, damage, matter healing, cap)
-        ApplyIntegrityChanges(uid, state, processing);
+        ApplyIntegrityChanges(uid, state, processing, scale);
 
         // Phase 11: Delamination when Integrity <= 0
         if (state.Integrity <= 0)
@@ -409,7 +443,7 @@ public sealed partial class SupermatterSystem : SharedSupermatterSystem
     /// <summary>
     /// Phase 5: Apply thermal delta (Enthalpy * 1 MJ) to mixture, update temperature, apply integrity damage.
     /// </summary>
-    private void ApplyEnthalpyThermalDelta(EntityUid uid, SupermatterStateComponent state, SupermatterProcessingComponent processing)
+    private void ApplyEnthalpyThermalDelta(EntityUid uid, SupermatterStateComponent state, SupermatterProcessingComponent processing, float scale)
     {
         if (state.Enthalpy == 0)
             return;
@@ -424,7 +458,7 @@ public sealed partial class SupermatterSystem : SharedSupermatterSystem
             return;
 
         const float EnthalpyToEnergy = 1_000_000f; // 1 MJ per Enthalpy point
-        var deltaE = state.Enthalpy * EnthalpyToEnergy;
+        var deltaE = state.Enthalpy * EnthalpyToEnergy * scale;
 
         var heatCap = _atmosphere.GetHeatCapacity(centerMix, true);
         if (heatCap < Atmospherics.MinimumHeatCapacity)
@@ -434,14 +468,14 @@ public sealed partial class SupermatterSystem : SharedSupermatterSystem
         totalThermal -= deltaE;
         centerMix.Temperature = totalThermal / heatCap;
 
-        var integrityDamage = (centerMix.Temperature - 293.15f) / 100f * state.Enthalpy;
+        var integrityDamage = (centerMix.Temperature - 293.15f) / 100f * state.Enthalpy * scale;
         processing.IntegrityDamageThisTick += integrityDamage;
     }
 
     /// <summary>
     /// Phase 8: Apply all integrity changes (heal, damage, matter healing, cap).
     /// </summary>
-    private void ApplyIntegrityChanges(EntityUid uid, SupermatterStateComponent state, SupermatterProcessingComponent processing)
+    private void ApplyIntegrityChanges(EntityUid uid, SupermatterStateComponent state, SupermatterProcessingComponent processing, float scale)
     {
         var delta = 0f;
 
@@ -463,7 +497,8 @@ public sealed partial class SupermatterSystem : SharedSupermatterSystem
             processing.MatterHealing -= matterHeals * processing.MatterHealingThreshold;
         }
 
-        delta = Math.Clamp(delta, -processing.DamageCap, processing.DamageCap);
+        delta *= scale;
+        delta = Math.Clamp(delta, -processing.DamageCap * scale, processing.DamageCap * scale);
         state.Integrity += delta;
         state.Integrity = Math.Clamp(state.Integrity, 0f, processing.IntegrityMax);
     }
@@ -497,14 +532,14 @@ public sealed partial class SupermatterSystem : SharedSupermatterSystem
     /// Uses ratioPerTile (default 9%) per tile. Merges into AbsorbedMixture, processes, releases back.
     /// Returns false if absorption was skipped (no grid/atmos).
     /// </summary>
-    private bool AbsorbGas(EntityUid uid, SupermatterStateComponent state, SupermatterProcessingComponent processing)
+    private bool AbsorbGas(EntityUid uid, SupermatterStateComponent state, SupermatterProcessingComponent processing, float scale)
     {
         var xform = Transform(uid);
         if (xform.GridUid is not { } gridUid || !TryComp<GridAtmosphereComponent>(gridUid, out var gridAtmos))
             return false;
 
         var position = _transform.GetGridTilePositionOrDefault(uid);
-        var ratio = processing.RatioPerTile;
+        var ratio = MathF.Min(1f, processing.RatioPerTile * scale);
 
         // Center tile
         var centerMix = _atmosphere.GetTileMixture((gridUid, gridAtmos), null, position, true);
@@ -553,7 +588,7 @@ public sealed partial class SupermatterSystem : SharedSupermatterSystem
     /// <summary>
     /// Phase 6: Negative Growth produces gas; Positive Growth absorbs gas.
     /// </summary>
-    private void ProcessGrowth(EntityUid uid, SupermatterStateComponent state, SupermatterProcessingComponent processing)
+    private void ProcessGrowth(EntityUid uid, SupermatterStateComponent state, SupermatterProcessingComponent processing, float scale)
     {
         var mix = processing.AbsorbedMixture;
         if (mix == null || mix.Immutable)
@@ -561,7 +596,10 @@ public sealed partial class SupermatterSystem : SharedSupermatterSystem
 
         if (state.Growth < 0)
         {
-            var molsPerGas = MathF.Abs(state.Growth);
+            var molsPerGas = MathF.Abs(state.Growth) * scale;
+            if (float.IsInfinity(molsPerGas) || float.IsNaN(molsPerGas) || molsPerGas <= 0)
+                return;
+            molsPerGas = MathF.Min(molsPerGas, 1e6f);
             var n = (int)MathF.Floor((state.Power + processing.GrowthPowerThreshold) / processing.GrowthPowerThreshold);
             n = Math.Clamp(n, 1, SupermatterGasValues.NegativeGrowthProductionOrder.Length);
 
@@ -576,7 +614,9 @@ public sealed partial class SupermatterSystem : SharedSupermatterSystem
         }
         else if (state.Growth > 0 && mix.TotalMoles > 0)
         {
-            var ratio = MathF.Min(1f, state.Growth / processing.GrowthAbsorptionDivisor);
+            var ratio = MathF.Min(1f, state.Growth / processing.GrowthAbsorptionDivisor * scale);
+            if (float.IsInfinity(ratio) || float.IsNaN(ratio) || ratio <= 0)
+                return;
             var removed = mix.RemoveRatio(ratio);
             var mols = removed.TotalMoles;
             state.Power += mols;
@@ -587,10 +627,10 @@ public sealed partial class SupermatterSystem : SharedSupermatterSystem
     /// <summary>
     /// Phase 6: Reproduction tick and shard spawning.
     /// </summary>
-    private void ProcessReproduction(EntityUid uid, SupermatterStateComponent state, SupermatterProcessingComponent processing)
+    private void ProcessReproduction(EntityUid uid, SupermatterStateComponent state, SupermatterProcessingComponent processing, float scale)
     {
-        processing.SecondTally += processing.Reproduction * 0.1f;
-        processing.Reproduction *= processing.ReproductionDecay;
+        processing.SecondTally += processing.Reproduction * 0.1f * scale;
+        processing.Reproduction *= (float)Math.Pow(processing.ReproductionDecay, scale);
 
         while (processing.SecondTally >= processing.ReproductionShardThreshold)
         {
@@ -642,29 +682,31 @@ public sealed partial class SupermatterSystem : SharedSupermatterSystem
     /// <summary>
     /// Phase 10: Special gas interactions - Healium, Pluoxium, Nibbles (AntiNoblium + Helium).
     /// </summary>
-    private void ProcessSpecialGasInteractions(EntityUid uid, SupermatterStateComponent state, SupermatterProcessingComponent processing)
+    private void ProcessSpecialGasInteractions(EntityUid uid, SupermatterStateComponent state, SupermatterProcessingComponent processing, float scale)
     {
         var mix = processing.AbsorbedMixture;
         if (mix == null || mix.Immutable)
             return;
 
-        // Healium: >= 10 mol Healium -> absorb 10 mol, heal 1 Integrity
+        // Healium: >= 10 mol Healium -> absorb 10 mol, heal 1 Integrity (scaled)
         var healiumMols = mix.GetMoles(Gas.Healium);
-        if (healiumMols >= processing.HealiumHealAmount)
+        var healAmount = processing.HealiumHealAmount * scale;
+        if (healiumMols >= healAmount)
         {
-            mix.AdjustMoles(Gas.Healium, -processing.HealiumHealAmount);
-            state.Integrity = MathF.Min(processing.IntegrityMax, state.Integrity + processing.HealiumIntegrityPerHeal);
+            mix.AdjustMoles(Gas.Healium, -healAmount);
+            state.Integrity = MathF.Min(processing.IntegrityMax, state.Integrity + processing.HealiumIntegrityPerHeal * scale);
         }
 
-        // Pluoxium: >= 10 mol CO2 + O2, Enthalpy > 0 -> consume 10% of each, produce Pluoxium
+        // Pluoxium: >= 10 mol CO2 + O2, Enthalpy > 0 -> consume 10% of each, produce Pluoxium (scaled)
         if (state.Enthalpy > 0)
         {
             var co2 = mix.GetMoles(Gas.CarbonDioxide);
             var o2 = mix.GetMoles(Gas.Oxygen);
+            var consumeRatio = processing.PluoxiumConsumeRatio * scale;
             if (co2 >= processing.PluoxiumMinMols && o2 >= processing.PluoxiumMinMols)
             {
-                var consumeCo2 = co2 * processing.PluoxiumConsumeRatio;
-                var consumeO2 = o2 * processing.PluoxiumConsumeRatio;
+                var consumeCo2 = co2 * consumeRatio;
+                var consumeO2 = o2 * consumeRatio;
                 var pluoxiumProduced = MathF.Min(consumeCo2, consumeO2);
                 mix.AdjustMoles(Gas.CarbonDioxide, -consumeCo2);
                 mix.AdjustMoles(Gas.Oxygen, -consumeO2);
@@ -672,15 +714,16 @@ public sealed partial class SupermatterSystem : SharedSupermatterSystem
             }
         }
 
-        // Nibbles Anti-Lightning: >= 10 mol AntiNoblium + Helium, Conductivity > 0 -> consume 10% of each, 1 bolt/mol, convert AntiNob -> HyperNoblium
+        // Nibbles Anti-Lightning: >= 10 mol AntiNoblium + Helium, Conductivity > 0 -> consume 10% of each, 1 bolt/mol, convert AntiNob -> HyperNoblium (scaled)
         if (state.Conductivity > 0)
         {
             var antiNob = mix.GetMoles(Gas.AntiNoblium);
             var helium = mix.GetMoles(Gas.Helium);
+            var nibblesConsumeRatio = processing.NibblesConsumeRatio * scale;
             if (antiNob >= processing.NibblesMinMols && helium >= processing.NibblesMinMols)
             {
-                var consumeAntiNob = antiNob * processing.NibblesConsumeRatio;
-                var consumeHelium = helium * processing.NibblesConsumeRatio;
+                var consumeAntiNob = antiNob * nibblesConsumeRatio;
+                var consumeHelium = helium * nibblesConsumeRatio;
                 var molsConsumed = MathF.Min(consumeAntiNob, consumeHelium);
                 mix.AdjustMoles(Gas.AntiNoblium, -consumeAntiNob);
                 mix.AdjustMoles(Gas.Helium, -consumeHelium);
