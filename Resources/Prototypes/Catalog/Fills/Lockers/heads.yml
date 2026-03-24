@@ -402,6 +402,7 @@
     - id: BoxHoSCircuitboards
     - id: WeaponDisabler
     - id: WeaponTaser
+    - id: ClothingHandsGlovesLeadMage
     - id: WantedListCartridge
     - id: DrinkHosFlask
     - id: PlushieLizardJobHeadofsecurity

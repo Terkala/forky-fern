@@ -1,0 +1,13 @@
+- type: skillPoint
+  id: MageGrimoire
+  name: funky-mage-skill-point-grimoire-name
+  icon:
+    sprite: _CE/Interface/Misc/skill_point.rsi
+    state: elf
+
+- type: skillTree
+  id: MageGrimoirePackages
+  name: funky-mage-skill-tree-grimoire-name
+  skillType: MageGrimoire
+  color: "#5a4477"
+  parallax: Default

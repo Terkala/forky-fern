@@ -1,0 +1,37 @@
+# Elementalism L4 — Fire Barrier (toggle aura; server ElementalFireBarrierSystem).
+
+- type: entity
+  id: CEActionSpellElementalFireBarrier
+  parent: CEActionSpellBase
+  name: Fire Barrier
+  description: Wrap yourself in a sheath of flame. Drains mana while active, shields you from heat, and scorches those who get too close.
+  components:
+  - type: CEActionManaCost
+    manaCost: 15
+  - type: CEActionFreeHandsRequired
+  - type: CEActionDoAfterVisuals
+    proto: CERuneElementalFireBarrier
+  - type: Action
+    useDelay: 3
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: fireball
+  - type: DoAfterArgs
+    delay: 0.4
+  - type: InstantAction
+    event: !type:CEInstantModularEffectEvent
+      effects:
+      - !type:CESpellToggleElementalFireBarrier
+
+- type: entity
+  id: CERuneElementalFireBarrier
+  parent: CEBaseMagicRune
+  categories: [ HideSpawnMenu ]
+  save: false
+  components:
+  - type: PointLight
+    color: "#E25822"
+  - type: Sprite
+    layers:
+    - state: medium_line
+      color: "#E25822"

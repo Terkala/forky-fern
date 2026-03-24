@@ -1,0 +1,35 @@
+- type: entity
+  parent: BaseAction
+  id: ActionMageUniversalBlink
+  name: Universal blink
+  description: Short-range line-of-sight teleport. Costs mana; 30 second cooldown between uses.
+  components:
+  - type: Action
+    useDelay: 30
+    itemIconStyle: BigAction
+    sound: !type:SoundPathSpecifier
+      path: /Audio/Magic/blink.ogg
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: blink
+  - type: TargetAction
+    range: 16
+    repeat: false
+    checkCanAccess: false
+  - type: WorldTargetAction
+    event: !type:MageUniversalBlinkEvent
+
+- type: entity
+  parent: BaseAction
+  id: ActionMageCreateGrimoire
+  name: Create grimoire
+  description: Channel 100 mana over 20 seconds to bind a mundane book into your grimoire.
+  components:
+  - type: Action
+    useDelay: 1
+    itemIconStyle: NoItem
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: blink
+  - type: InstantAction
+    event: !type:MageCreateGrimoireActionEvent

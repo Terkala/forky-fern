@@ -1,0 +1,9 @@
+- type: soundCollection
+  id: CELearnSkill
+  files:
+  - /Audio/Magic/rumble.ogg
+
+- type: soundCollection
+  id: CEDigging
+  files:
+  - /Audio/Effects/thudswoosh.ogg

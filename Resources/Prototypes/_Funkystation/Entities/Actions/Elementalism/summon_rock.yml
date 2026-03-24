@@ -1,0 +1,70 @@
+# Elementalism L1 — Summon Rock (CEInstantModularEffectEvent + CESpellSpawnInHandEntity).
+
+- type: entity
+  parent: [BaseItem, BaseMinorContraband]
+  id: CEElementalSummonRock
+  name: elemental rock
+  description: A dense chunk of stone summoned by magic. Hurts when thrown.
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Sprite
+    sprite: Objects/Materials/ore.rsi
+    state: iron
+  - type: Item
+    size: Normal
+  - type: Fixtures
+    fixtures:
+      fix1:
+        shape: !type:PhysShapeCircle
+          radius: 0.2
+        density: 20
+        mask:
+        - ItemMask
+        restitution: 0.3
+        friction: 0.2
+  - type: LandAtCursor
+  - type: DamageOtherOnHit
+    damage:
+      types:
+        Blunt: 15
+  - type: StaminaDamageOnCollide
+    damage: 60
+
+- type: entity
+  id: CEActionSpellElementalSummonRock
+  parent: CEActionSpellBase
+  name: Summon Rock
+  description: Conjures a heavy stone into your hand. Throw it to bruise and stagger foes.
+  components:
+  - type: CEActionManaCost
+    manaCost: 8
+  - type: CEActionFreeHandsRequired
+  - type: CEActionDoAfterVisuals
+    proto: CERuneElementalSummonRock
+  - type: Action
+    useDelay: 6
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+  - type: DoAfterArgs
+    delay: 0.35
+  - type: InstantAction
+    event: !type:CEInstantModularEffectEvent
+      effects:
+      - !type:CESpellSpawnInHandEntity
+        spawns:
+        - CEElementalSummonRock
+        deleteIfCantPickup: true
+
+- type: entity
+  id: CERuneElementalSummonRock
+  parent: CEBaseMagicRune
+  categories: [ HideSpawnMenu ]
+  save: false
+  components:
+  - type: PointLight
+    color: "#8B7355"
+  - type: Sprite
+    layers:
+    - state: medium_line
+      color: "#8B7355"

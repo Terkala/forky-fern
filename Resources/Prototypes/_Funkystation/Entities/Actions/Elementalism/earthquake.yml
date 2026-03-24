@@ -1,0 +1,63 @@
+# Elementalism L5 — Earthquake (CESpellArea + CESpellStun).
+
+- type: entity
+  id: CEActionSpellElementalEarthquake
+  parent: CEActionSpellBase
+  name: Earthquake
+  description: Unleashes a violent tremor, knocking down most creatures near the epicenter.
+  components:
+  - type: CEActionManaCost
+    manaCost: 50
+  - type: CEActionFreeHandsRequired
+  - type: CEActionDoAfterVisuals
+    proto: CERuneElementalEarthquake
+  - type: Action
+    useDelay: 45
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+  - type: DoAfterArgs
+    delay: 0.8
+  - type: TargetAction
+    range: 12
+  - type: WorldTargetAction
+    event: !type:CEWorldTargetModularEffectEvent
+      effects:
+      - !type:CESpellSpawnEntityOnTarget
+        spawns:
+        - CEImpactEffectElementalEarthquake
+      - !type:CESpellArea
+        range: 7
+        affectCaster: false
+        whitelist:
+          components:
+          - MobState
+        effects:
+        - !type:CESpellStun
+          duration: 4
+          dropItems: true
+
+- type: entity
+  id: CERuneElementalEarthquake
+  parent: CEBaseMagicRune
+  categories: [ HideSpawnMenu ]
+  save: false
+  components:
+  - type: PointLight
+    color: "#b8a068"
+  - type: Sprite
+    layers:
+    - state: medium_line
+      color: "#b8a068"
+
+- type: entity
+  id: CEImpactEffectElementalEarthquake
+  parent: CEBaseMagicImpact
+  categories: [ HideSpawnMenu ]
+  save: false
+  components:
+  - type: Sprite
+    layers:
+    - state: particles_up
+      color: "#b8a068"
+      shader: unshaded

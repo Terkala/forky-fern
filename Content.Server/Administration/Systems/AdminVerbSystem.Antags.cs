@@ -13,6 +13,7 @@ using Robust.Shared.Player;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Utility;
 using Content.Shared.Roles.Components;
+using Content.Server._CE.MageAscension;
 
 namespace Content.Server.Administration.Systems;
 
@@ -28,6 +29,7 @@ public sealed partial class AdminVerbSystem
     private static readonly EntProtoId DefaultNukeOpRule = "LoneOpsSpawn";
     private static readonly EntProtoId DefaultRevsRule = "Revolutionary";
     private static readonly EntProtoId DefaultThiefRule = "Thief";
+    private static readonly EntProtoId DefaultMageRule = "Mage";
     private static readonly EntProtoId DefaultChangelingRule = "Changeling";
     private static readonly EntProtoId ParadoxCloneRuleId = "ParadoxCloneSpawn";
     private static readonly EntProtoId DefaultWizardRule = "Wizard";
@@ -156,6 +158,21 @@ public sealed partial class AdminVerbSystem
             Message = string.Join(": ", thiefName, Loc.GetString("admin-verb-make-thief")),
         };
         args.Verbs.Add(thief);
+
+        var mageName = Loc.GetString("admin-verb-text-make-mage");
+        Verb mage = new()
+        {
+            Text = mageName,
+            Category = VerbCategory.Antag,
+            Icon = new SpriteSpecifier.Rsi(new ResPath("/Textures/Objects/Magic/magicactions.rsi"), "blink"),
+            Act = () =>
+            {
+                _antag.ForceMakeAntag<MageAscensionRuleComponent>(targetPlayer, DefaultMageRule);
+            },
+            Impact = LogImpact.High,
+            Message = string.Join(": ", mageName, Loc.GetString("admin-verb-make-mage")),
+        };
+        args.Verbs.Add(mage);
 
         var changelingName = Loc.GetString("admin-verb-text-make-changeling");
         Verb changeling = new()

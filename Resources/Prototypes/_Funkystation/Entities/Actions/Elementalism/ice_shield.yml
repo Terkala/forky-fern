@@ -1,0 +1,52 @@
+# Elementalism L1 — Ice Shield (TimedDespawn 60s on shield item).
+
+- type: entity
+  id: CEElementalIceShield
+  parent: RiotShield
+  name: ice shield
+  description: A barrier of conjured frost. It will melt away after a short time.
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Sprite
+    color: "#a8d8ff"
+  - type: TimedDespawn
+    lifetime: 60
+
+- type: entity
+  id: CEActionSpellElementalIceShield
+  parent: CEActionSpellBase
+  name: Ice Shield
+  description: Summons a temporary shield of ice into your hand.
+  components:
+  - type: CEActionManaCost
+    manaCost: 10
+  - type: CEActionFreeHandsRequired
+  - type: CEActionDoAfterVisuals
+    proto: CERuneElementalIceShield
+  - type: Action
+    useDelay: 8
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+  - type: DoAfterArgs
+    delay: 0.4
+  - type: InstantAction
+    event: !type:CEInstantModularEffectEvent
+      effects:
+      - !type:CESpellSpawnInHandEntity
+        spawns:
+        - CEElementalIceShield
+        deleteIfCantPickup: true
+
+- type: entity
+  id: CERuneElementalIceShield
+  parent: CEBaseMagicRune
+  categories: [ HideSpawnMenu ]
+  save: false
+  components:
+  - type: PointLight
+    color: "#88ccff"
+  - type: Sprite
+    layers:
+    - state: medium_line
+      color: "#88ccff"

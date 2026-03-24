@@ -58,6 +58,9 @@
     rules:
     - id: Thief
       prob: 0.5
+    # Mage of Ascension — addgamerule Mage for testing; uncomment to roll at roundstart:
+    # - id: Mage
+    #   prob: 0.2
     - id: SubWizard
       prob: 0.05
     - id: Xenoborgs
@@ -71,6 +74,8 @@
     rules:
     - id: Thief
       prob: 0.5
+    # - id: Mage
+    #   prob: 0.2
     - id: Xenoborgs
       prob: 0.05
 
@@ -82,6 +87,8 @@
     rules:
     - id: Thief
       prob: 0.5
+    # - id: Mage
+    #   prob: 0.2
     - id: SubWizard
       prob: 0.05
 
@@ -93,6 +100,8 @@
     rules:
     - id: Thief
       prob: 0.5
+    # - id: Mage
+    #   prob: 0.2
 
 - type: entity
   parent: BaseGameRule

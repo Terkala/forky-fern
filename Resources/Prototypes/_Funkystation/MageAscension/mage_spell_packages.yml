@@ -1,0 +1,121 @@
+# Level 1 package — granted when the mage commits to Elementalism in the grimoire.
+- type: skill
+  id: MagePathElementalismSpells
+  name: funky-mage-package-elementalism-l1-name
+  desc: funky-mage-package-elementalism-l1-desc
+  skillUiPosition: 0, 0
+  learnCost: 0
+  tree: MageGrimoirePackages
+  icon:
+    sprite: Objects/Magic/magicactions.rsi
+    state: fireball
+  effects:
+  - !type:AddAction
+    action: CEActionSpellElementalSummonRock
+  - !type:AddAction
+    action: CEActionSpellElementalIceShield
+
+# One spell each — granted when the mage picks from the grimoire after opening a leyline.
+- type: skill
+  id: MagePickElementalEarthenBarricade
+  name: funky-mage-spellpick-earthen-barricade
+  skillUiPosition: 1, 0
+  learnCost: 0
+  tree: MageGrimoirePackages
+  icon:
+    sprite: Objects/Magic/magicactions.rsi
+    state: magicmissile
+  effects:
+  - !type:AddAction
+    action: CEActionSpellElementalEarthenBarricade
+
+- type: skill
+  id: MagePickElementalFireBolt
+  name: funky-mage-spellpick-fire-bolt
+  skillUiPosition: 2, 0
+  learnCost: 0
+  tree: MageGrimoirePackages
+  icon:
+    sprite: Objects/Magic/magicactions.rsi
+    state: fireball
+  effects:
+  - !type:AddAction
+    action: CEActionSpellElementalFireBolt
+
+- type: skill
+  id: MagePickElementalIceShards
+  name: funky-mage-spellpick-ice-shards
+  skillUiPosition: 3, 0
+  learnCost: 0
+  tree: MageGrimoirePackages
+  icon:
+    sprite: Objects/Magic/magicactions.rsi
+    state: repulse
+  effects:
+  - !type:AddAction
+    action: CEActionSpellElementalIceShards
+
+- type: skill
+  id: MagePickElementalDrainElectricity
+  name: funky-mage-spellpick-drain-electricity
+  skillUiPosition: 4, 0
+  learnCost: 0
+  tree: MageGrimoirePackages
+  icon:
+    sprite: Objects/Magic/magicactions.rsi
+    state: knock
+  effects:
+  - !type:AddAction
+    action: CEActionSpellElementalDrainElectricity
+
+- type: skill
+  id: MagePickElementalElectricStrike
+  name: funky-mage-spellpick-electric-strike
+  skillUiPosition: 5, 0
+  learnCost: 0
+  tree: MageGrimoirePackages
+  icon:
+    sprite: Objects/Magic/magicactions.rsi
+    state: knock
+  effects:
+  - !type:AddAction
+    action: CEActionSpellElementalElectricStrike
+
+- type: skill
+  id: MagePickElementalFireBarrier
+  name: funky-mage-spellpick-fire-barrier
+  skillUiPosition: 6, 0
+  learnCost: 0
+  tree: MageGrimoirePackages
+  icon:
+    sprite: Objects/Magic/magicactions.rsi
+    state: fireball
+  effects:
+  - !type:AddAction
+    action: CEActionSpellElementalFireBarrier
+
+- type: skill
+  id: MagePickElementalFireball
+  name: funky-mage-spellpick-fireball
+  skillUiPosition: 7, 0
+  learnCost: 0
+  tree: MageGrimoirePackages
+  icon:
+    sprite: Objects/Magic/magicactions.rsi
+    state: fireball
+  effects:
+  - !type:AddAction
+    action: CEActionSpellElementalFireball
+
+- type: skill
+  id: MagePickElementalEarthquake
+  name: funky-mage-spellpick-earthquake
+  skillUiPosition: 8, 0
+  learnCost: 0
+  tree: MageGrimoirePackages
+  icon:
+    sprite: Objects/Magic/magicactions.rsi
+    state: magicmissile
+  effects:
+  - !type:AddAction
+    action: CEActionSpellElementalEarthquake

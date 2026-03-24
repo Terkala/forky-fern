@@ -1,0 +1,39 @@
+- type: entity
+  parent: BaseGameRule
+  id: Mage
+  components:
+  - type: MageAscensionRule
+  - type: AntagObjectives
+    objectives:
+    - EscapeMageShuttleObjective
+  - type: AntagRandomObjectives
+    sets:
+    - groups: MageObjectiveGroups
+      maxPicks: 3
+      prob: 1
+    maxDifficulty: 2
+  - type: AntagSelection
+    agentName: mage-round-end-agent-name
+    selectionTime: IntraPlayerSpawn
+    definitions:
+    - prefRoles: [ MageOfAscension ]
+      max: 3
+      playerRatio: 20
+      lateJoinAdditional: true
+      allowNonHumans: true
+      multiAntagSetting: NotExclusive
+      startingGear: MageOfAscensionGear
+      components:
+      - type: MageOfAscension
+      - type: CESkillStorage
+      - type: Battery
+        maxCharge: 100
+        startingCharge: 100
+      - type: CEEnergyDeficitDamage
+      - type: CEEnergyAlert
+      mindRoles:
+      - MindRoleMage
+      briefing:
+        sound: /Audio/Magic/blink.ogg
+  - type: DynamicRuleCost
+    cost: 75

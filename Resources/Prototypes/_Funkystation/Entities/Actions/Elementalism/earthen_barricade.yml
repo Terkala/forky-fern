@@ -1,0 +1,63 @@
+# Elementalism L2 — Earthen Barricade (stalagmite at world target).
+
+- type: entity
+  id: CEElementalEarthenBarricade
+  parent: FloraStalagmite
+  name: earthen barricade
+  description: A spike of stone called up from elemental earth.
+  categories: [ HideSpawnMenu ]
+
+- type: entity
+  id: CEActionSpellElementalEarthenBarricade
+  parent: CEActionSpellBase
+  name: Earthen Barricade
+  description: Raises a stone spike at the targeted location.
+  components:
+  - type: CEActionManaCost
+    manaCost: 18
+  - type: CEActionFreeHandsRequired
+  - type: CEActionDoAfterVisuals
+    proto: CERuneElementalEarthenBarricade
+  - type: Action
+    useDelay: 12
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+  - type: DoAfterArgs
+    delay: 0.45
+  - type: TargetAction
+    range: 8
+  - type: WorldTargetAction
+    event: !type:CEWorldTargetModularEffectEvent
+      effects:
+      - !type:CESpellSpawnEntityOnTarget
+        spawns:
+        - CEImpactEffectElementalEarthenBarricade
+      - !type:CESpellSpawnEntityOnTarget
+        spawns:
+        - CEElementalEarthenBarricade
+
+- type: entity
+  id: CERuneElementalEarthenBarricade
+  parent: CEBaseMagicRune
+  categories: [ HideSpawnMenu ]
+  save: false
+  components:
+  - type: PointLight
+    color: "#6b5a4a"
+  - type: Sprite
+    layers:
+    - state: medium_line
+      color: "#6b5a4a"
+
+- type: entity
+  id: CEImpactEffectElementalEarthenBarricade
+  parent: CEBaseMagicImpact
+  categories: [ HideSpawnMenu ]
+  save: false
+  components:
+  - type: Sprite
+    layers:
+    - state: particles_up
+      color: "#6b5a4a"
+      shader: unshaded

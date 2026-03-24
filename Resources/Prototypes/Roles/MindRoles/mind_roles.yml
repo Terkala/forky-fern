@@ -260,6 +260,17 @@
     subtype: role-subtype-thief
   - type: ThiefRole
 
+# Mage of Ascension (Funky / _CE)
+- type: entity
+  parent: BaseMindRoleAntag
+  id: MindRoleMage
+  name: Mage of Ascension Role
+  components:
+  - type: MindRole
+    antagPrototype: MageOfAscension
+    subtype: role-subtype-mage
+  - type: MageRole
+
 # Traitors
 - type: entity
   parent: BaseMindRoleAntag

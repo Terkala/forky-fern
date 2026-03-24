@@ -1,0 +1,26 @@
+funky-grimoire-window-title = Grimoire
+funky-grimoire-pick-school = Choose your school of magic.
+funky-grimoire-committed = You have committed to { $school }.
+funky-grimoire-already-chosen = You have already chosen a school.
+funky-grimoire-no-skill-storage = Your arcane focus cannot bind to this grimoire.
+funky-grimoire-grant-failed = The grimoire refuses to imprint those spells.
+funky-grimoire-school-chosen = The grimoire settles on { $school }.
+funky-grimoire-pick-spell = Choose one tier { $tier } spell to inscribe.
+funky-grimoire-spell-pick-reminder = Your grimoire hungers for a new spell. Open it to inscribe one.
+funky-grimoire-spell-pick-none-pending = You have no pending spell choices.
+funky-grimoire-spell-pick-invalid = That spell is not among your options.
+funky-grimoire-spell-pick-learned = Inscribed: { $spell }.
+funky-mage-package-elementalism-l1-name = Elementalism (novice)
+funky-mage-package-elementalism-l1-desc = Summon Rock and Ice Shield.
+funky-mage-spellpick-earthen-barricade = Earthen Barricade
+funky-mage-spellpick-fire-bolt = Fire Bolt
+funky-mage-spellpick-ice-shards = Ice Shards
+funky-mage-spellpick-drain-electricity = Drain Electricity
+funky-mage-spellpick-electric-strike = Electric Strike
+funky-mage-spellpick-fire-barrier = Fire Barrier
+funky-mage-spellpick-fireball = Fireball
+funky-mage-spellpick-earthquake = Earthquake
+
+funky-mage-skill-point-grimoire-name = grimoire insight
+funky-mage-skill-tree-grimoire-name = Grimoire paths
+funky-mage-school-elementalism-name = Elementalism

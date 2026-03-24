@@ -1,0 +1,88 @@
+# Elementalism — Ice Shards (CEWorldTargetModularEffectEvent + CESpellProjectile ×3 + Spread).
+# Each shard embeds and SolutionInjectOnEmbed transfers Fresium into bloodstream (see Resources/Prototypes/Reagents/fun.yml, arrows.yml pattern).
+
+- type: entity
+  id: CEActionSpellElementalIceShards
+  parent: CEActionSpellBase
+  name: Ice Shards
+  description: Conjures a fan of razor ice that lodge in a target and leave a lingering, blood-deep chill.
+  components:
+  - type: CEActionManaCost
+    manaCost: 22
+  - type: CEActionFreeHandsRequired
+  - type: CEActionDoAfterVisuals
+    proto: CERuneElementalIceShards
+  - type: Action
+    useDelay: 8
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+  - type: DoAfterArgs
+    delay: 0.4
+  - type: TargetAction
+    range: 18
+  - type: WorldTargetAction
+    event: !type:CEWorldTargetModularEffectEvent
+      effects:
+      - !type:CESpellProjectile
+        prototype: CEProjectileElementalIceShard
+        projectileSpeed: 18
+        spread: 0.35
+        projectileCount: 3
+
+- type: entity
+  id: CERuneElementalIceShards
+  parent: CEBaseMagicRune
+  categories: [ HideSpawnMenu ]
+  save: false
+  components:
+  - type: PointLight
+    color: "#7ecbff"
+  - type: Sprite
+    layers:
+    - state: medium_line
+      color: "#b3f1ff"
+      shader: unshaded
+
+- type: entity
+  id: CEProjectileElementalIceShard
+  name: elemental ice shard
+  description: A sliver of conjured frost.
+  parent: BaseBullet
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: PointLight
+    color: "#b3f1ff"
+    radius: 1.4
+    energy: 2.8
+  - type: Sprite
+    sprite: Objects/Weapons/Guns/Projectiles/magic.rsi
+    layers:
+    - state: cryoshot
+      shader: unshaded
+  - type: Projectile
+    deleteOnCollide: false
+    damage:
+      types:
+        Cold: 4
+        Piercing: 6
+    soundHit:
+      collection: WeakHit
+    forceSound: true
+  - type: EmbeddableProjectile
+    embedOnThrow: false
+    sound: /Audio/Weapons/Guns/Hits/bullet_hit.ogg
+    deleteOnRemove: true
+  - type: SolutionContainerManager
+    solutions:
+      shard:
+        maxVol: 2
+        reagents:
+        - ReagentId: Fresium
+          Quantity: 2
+  - type: SolutionInjectOnEmbed
+    solution: shard
+    transferAmount: 2
+    pierceArmor: true
+  - type: TimedDespawn
+    lifetime: 10

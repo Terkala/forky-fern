@@ -1,0 +1,76 @@
+# Elementalism — Fire Bolt (Tier 2: CEWorldTargetModularEffectEvent + CESpellProjectile).
+# ~20 tile max travel: TimedDespawn.lifetime (1 s) × CESpellProjectile.projectileSpeed (20) ≈ 20 tiles.
+
+- type: entity
+  id: CEActionSpellElementalFireBolt
+  parent: CEActionSpellBase
+  name: Fire Bolt
+  description: Hurls a burning bolt toward the clicked location. Ignites on impact; vanishes after a short flight if nothing is hit.
+  components:
+  - type: CEActionManaCost
+    manaCost: 12
+  - type: CEActionFreeHandsRequired
+  - type: CEActionDoAfterVisuals
+    proto: CERuneElementalFireBolt
+  - type: Action
+    useDelay: 4
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: fireball
+  - type: DoAfterArgs
+    delay: 0.35
+  - type: TargetAction
+    range: 20
+  - type: WorldTargetAction
+    event: !type:CEWorldTargetModularEffectEvent
+      effects:
+      - !type:CESpellProjectile
+        prototype: CEProjectileElementalFireBolt
+        projectileSpeed: 20
+
+- type: entity
+  id: CERuneElementalFireBolt
+  parent: CEBaseMagicRune
+  categories: [ HideSpawnMenu ]
+  save: false
+  components:
+  - type: PointLight
+    color: "#E25822"
+  - type: Sprite
+    layers:
+    - state: medium_line
+      color: "#E25822"
+      shader: unshaded
+
+- type: entity
+  id: CEProjectileElementalFireBolt
+  name: elemental fire bolt
+  description: A ribbon of mage-fire.
+  parent: BaseBullet
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: PointLight
+    color: "#E25822"
+    radius: 1.8
+    energy: 3.5
+  - type: Sprite
+    sprite: Objects/Weapons/Guns/Projectiles/magic.rsi
+    layers:
+    - state: fireball
+      shader: unshaded
+  - type: Projectile
+    impactEffect: BulletImpactEffectOrangeDisabler
+    damage:
+      types:
+        Heat: 10
+    soundHit:
+      collection: WeakHit
+    forceSound: true
+  - type: IgnitionSource
+    temperature: 400
+    ignited: true
+  - type: IgniteOnCollide
+    fireStacks: 0.35
+  - type: TimedDespawn
+    # Match projectileSpeed 20 on CEActionSpellElementalFireBolt — travel ≈ lifetime × speed tiles.
+    lifetime: 1

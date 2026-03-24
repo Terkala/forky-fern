@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2025 keronshb <54602815+keronshb@users.noreply.github.com>
 // SPDX-License-Identifier: MIT
 
+using Content.Shared._CE.Actions;
 using Content.Shared.Actions.Events;
 using Content.Shared.DoAfter;
 
@@ -22,6 +23,9 @@ public abstract partial class SharedActionsSystem
         var delay = ent.Comp.Delay;
 
         var netEnt = GetNetEntity(performer);
+
+        var ceStartEv = new CEActionStartDoAfterEvent(netEnt, input);
+        RaiseLocalEvent(ent, ceStartEv);
 
         var actionDoAfterEvent = new ActionDoAfterEvent(netEnt, originalUseDelay, input);
 

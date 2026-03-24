@@ -71,6 +71,7 @@
 - type: latheRecipePack
   id: SecurityEquipment
   recipes:
+  - ClothingHandsGlovesLeadMage
   - ClothingBackpackElectropack
   - HoloprojectorSecurity
   - PortableRecharger

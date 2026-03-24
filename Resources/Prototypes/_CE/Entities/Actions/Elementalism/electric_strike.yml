@@ -1,0 +1,70 @@
+# Elementalism — Electric Strike (CEEntityTargetModularEffectEvent + Electrocute entity effect).
+# Shock + stun via SharedElectrocutionSystem; bypassInsulation maps to Electrocute.bypassInsulation.
+
+- type: entity
+  id: CEActionSpellElementalElectricStrike
+  parent: CEActionSpellBase
+  name: Electric Strike
+  description: Channels a brutal arc of lightning into a target, shocking them senseless. Insulation won't save them.
+  components:
+  - type: CEActionManaCost
+    manaCost: 35
+  - type: CEActionFreeHandsRequired
+  - type: CEActionDoAfterVisuals
+    proto: CERuneElementalElectricStrike
+  - type: Action
+    useDelay: 10
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+  - type: DoAfterArgs
+    delay: 0.45
+  - type: TargetAction
+    range: 10
+    interactOnMiss: false
+  - type: EntityTargetAction
+    whitelist:
+      components:
+      - MobState
+      - Item
+      - Anchorable
+    event: !type:CEEntityTargetModularEffectEvent
+      effects:
+      - !type:CESpellSpawnEntityOnTarget
+        spawns:
+        - CEImpactEffectElementalElectricStrike
+      - !type:CESpellApplyEntityEffect
+        effects:
+        - !type:Electrocute
+          scaling: false
+          shockDamage: 30
+          electrocuteTime: 3
+          bypassInsulation: true
+          siemensCoefficient: 1
+          refresh: true
+
+- type: entity
+  id: CERuneElementalElectricStrike
+  parent: CEBaseMagicRune
+  categories: [ HideSpawnMenu ]
+  save: false
+  components:
+  - type: PointLight
+    color: "#ffe066"
+  - type: Sprite
+    layers:
+    - state: medium_line
+      color: "#fff8dc"
+      shader: unshaded
+
+- type: entity
+  id: CEImpactEffectElementalElectricStrike
+  parent: CEBaseMagicImpact
+  categories: [ HideSpawnMenu ]
+  save: false
+  components:
+  - type: Sprite
+    layers:
+    - state: particles_up
+      color: "#fff8dc"
+      shader: unshaded

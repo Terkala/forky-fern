@@ -1,0 +1,23 @@
+- type: entity
+  abstract: true
+  parent: BaseObjective
+  id: BaseMageObjective
+  components:
+  - type: Objective
+    issuer: objective-issuer-mage
+  - type: RoleRequirement
+    roles:
+    - MageRole
+
+- type: entity
+  parent: [BaseMageObjective, BaseLivingObjective]
+  id: EscapeMageShuttleObjective
+  name: Escape to CentComm alive via the escape shuttle.
+  description: Slip away before Nanotrasen catalogs what you have become.
+  components:
+  - type: Objective
+    difficulty: 1.3
+    icon:
+      sprite: Structures/Furniture/chairs.rsi
+      state: shuttle
+  - type: EscapeShuttleCondition

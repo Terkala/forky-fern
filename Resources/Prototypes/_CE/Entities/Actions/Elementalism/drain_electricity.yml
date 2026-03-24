@@ -1,0 +1,65 @@
+# Drain Electricity — focused EMP: tight radius, grenade-grade energy + disable.
+# Uses CESpellEmpPulse so pulse size and strength are set independently (no rangeModifier * spell scale).
+
+- type: entity
+  id: CEActionSpellElementalDrainElectricity
+  parent: CEActionSpellBase
+  name: Drain Electricity
+  description: Unleashes a tight, brutal electromagnetic pulse on the target—devastating to electronics nearby on their person or tile.
+  components:
+  - type: CEActionManaCost
+    manaCost: 25
+  - type: CEActionFreeHandsRequired
+  - type: CEActionDoAfterVisuals
+    proto: CERuneElementalDrainElectricity
+  - type: Action
+    useDelay: 12
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+  - type: DoAfterArgs
+    delay: 0.4
+  - type: TargetAction
+    range: 12
+    interactOnMiss: false
+  - type: EntityTargetAction
+    whitelist:
+      components:
+      - MobState
+      - Item
+      - Anchorable
+    event: !type:CEEntityTargetModularEffectEvent
+      effects:
+      - !type:CESpellSpawnEntityOnTarget
+        spawns:
+        - CEImpactEffectElementalDrainElectricity
+      - !type:CESpellEmpPulse
+        range: 1.25
+        energyConsumption: 50000
+        duration: 60
+
+- type: entity
+  id: CERuneElementalDrainElectricity
+  parent: CEBaseMagicRune
+  categories: [ HideSpawnMenu ]
+  save: false
+  components:
+  - type: PointLight
+    color: "#7ecbff"
+  - type: Sprite
+    layers:
+    - state: medium_line
+      color: "#7ecbff"
+      shader: unshaded
+
+- type: entity
+  id: CEImpactEffectElementalDrainElectricity
+  parent: CEBaseMagicImpact
+  categories: [ HideSpawnMenu ]
+  save: false
+  components:
+  - type: Sprite
+    layers:
+    - state: particles_up
+      color: "#7ecbff"
+      shader: unshaded

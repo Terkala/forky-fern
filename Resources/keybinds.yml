@@ -284,6 +284,9 @@ binds:
 - function: OpenCraftingMenu
   type: State
   key: G
+- function: OpenSkillMenu
+  type: State
+  key: N
 - function: OpenGuidebook
   type: State
   key: NumpadNum0

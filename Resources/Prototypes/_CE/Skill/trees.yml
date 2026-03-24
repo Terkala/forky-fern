@@ -1,0 +1,7 @@
+- type: skillTree
+  id: ElfMagic
+  name: ce-skill-tree-elf-magic-name
+  desc: ce-skill-tree-elf-magic-desc
+  skillType: ElfMagic
+  color: "#42aaf5"
+  parallax: Default

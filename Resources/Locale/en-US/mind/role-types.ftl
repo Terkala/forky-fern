@@ -21,6 +21,7 @@ role-type-silicon-antagonist-color = #c832e6
 # Ideally, subtype names should be short
 role-subtype-traitor = Traitor
 role-subtype-thief = Thief
+role-subtype-mage = Mage
 role-subtype-ninja = Ninja
 role-subtype-nukie = Nukie
 role-subtype-traitor-reinforcement = Reinforcement

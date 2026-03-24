@@ -1,0 +1,108 @@
+- type: entity
+  abstract: true
+  name: grimoire
+  parent: BookBase
+  id: BaseMageGrimoire
+  description: A bound spellbook. Use in hand to open or close it; an open grimoire can channel ley confluences.
+  categories: [ ForkFiltered ]
+  components:
+  - type: Sprite
+    sprite: Objects/Misc/books.rsi
+    layers:
+    - state: paper
+    - state: cover_base
+      color: "#3a2d55"
+      map: [ "cover" ]
+    - state: decor_wingette
+      color: "#5a4477"
+      map: [ "decor" ]
+    - state: icon_text
+      map: [ "icon" ]
+    - state: overlay_null
+      map: [ "overlay" ]
+  - type: MageGrimoire
+  - type: Tag
+    tags:
+    - Book
+
+- type: entity
+  name: ley confluence
+  description: A knot of ambient mana. Mages sense it long before anyone else notices.
+  parent: BaseItem
+  id: MageLeyConfluence
+  categories: [ ForkFiltered ]
+  components:
+  - type: Transform
+    anchored: true
+  - type: Anchorable
+  - type: Sprite
+    sprite: _CE/Effects/cast_rune.rsi
+    state: medium_line
+    color: "#88aaff"
+    noRot: true
+  - type: Confluence
+  - type: LeyLineSource
+    enabled: false
+  - type: Fixtures
+    fixtures:
+      fix1:
+        shape:
+          !type:PhysShapeAabb
+          bounds: "-0.35,-0.35,0.35,0.35"
+        density: 20
+        mask:
+        - ItemMask
+        layer:
+        - LowImpassable
+  - type: CollisionWake
+  - type: ConfluenceResearchHarvest
+    pointsRemaining: 0
+  - type: Physics
+    bodyType: Static
+
+- type: entity
+  name: mana mote
+  id: MageManaMote
+  categories: [ ForkFiltered ]
+  save: false
+  components:
+  - type: Sprite
+    sprite: _CE/Effects/cast_impact48.rsi
+    state: particles_up
+    shader: unshaded
+    color: "#aaccff"
+    noRot: true
+  - type: MageManaMote
+  - type: TimedDespawn
+    lifetime: 12
+  - type: PointLight
+    radius: 1.2
+    energy: 2
+    color: "#aaccff"
+  - type: Physics
+    bodyType: KinematicController
+    canCollide: false
+
+- type: entity
+  parent: ClothingHandsBase
+  id: ClothingHandsGlovesLeadMage
+  name: lead-lined gauntlets
+  description: Heavy gloves that bleed off arcane charge. A brig access chip is required to remove them from a suspect.
+  categories: [ ForkFiltered ]
+  components:
+  - type: Sprite
+    sprite: Clothing/Hands/Gloves/Color/color.rsi
+    state: icon
+    color: "#555555"
+  - type: Clothing
+    quickEquip: true
+  - type: Fiber
+    fiberMaterial: fibers-insulative
+  - type: FingerprintMask
+  - type: LeadGauntlets
+  - type: AccessReader
+    access: [["Brig"]]
+
+- type: startingGear
+  id: MageOfAscensionGearBase
+  storage: {}
