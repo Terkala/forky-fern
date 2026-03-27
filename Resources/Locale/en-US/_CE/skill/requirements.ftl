@@ -1,4 +1,10 @@
+ce-skill-req-min-skill-points-spent = Need at least { $min } total spent { $pointName } (the first number in "{ $pointName }: …" at the top of this menu).
 ce-skill-req-prerequisite = Skill "{$name}" must be learned
+ce-skill-req-prerequisite-any = At least one of these skills must be learned: { $names }
+ce-skill-req-block-if-any-learned-prefix = You cannot choose this while you have already committed to another incompatible path or ability.
+
+ce-skill-cap-increased = Your arcane study limit widens by {$count}.
+ce-skill-effect-increase-cap-desc = Increases how many spell points you can spend overall by {$amount} (does not grant free points by itself).
 ce-skill-req-species = You must be the race of “{$name}”
 ce-skill-req-notspecies = You must not be the race of “{$name}”
 ce-skill-req-vampire-clan = You must belong to the vampire clan "{$name}"

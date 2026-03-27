@@ -1,0 +1,404 @@
+# Forky — wizard antag spell progression (skill tree + WizCoin-equivalent costs).
+# Path commits cost 1 point and lock the other schools; spells use store listing costs.
+
+- type: skillPoint
+  id: WizardArcane
+  name: forkyloc-wizard-arcane-point-name
+  icon:
+    sprite: _CE/Interface/Misc/skill_point.rsi
+    state: elf
+
+- type: skillTree
+  id: ForkyWizardTreeOffensive
+  name: forkyloc-wizard-tree-offensive-name
+  desc: forkyloc-wizard-tree-offensive-desc
+  skillType: WizardArcane
+  color: "#a32828"
+  parallax: Default
+
+- type: skillTree
+  id: ForkyWizardTreeDefensive
+  name: forkyloc-wizard-tree-defensive-name
+  desc: forkyloc-wizard-tree-defensive-desc
+  skillType: WizardArcane
+  color: "#2878a3"
+  parallax: Default
+
+- type: skillTree
+  id: ForkyWizardTreeUtility
+  name: forkyloc-wizard-tree-utility-name
+  desc: forkyloc-wizard-tree-utility-desc
+  skillType: WizardArcane
+  color: "#6a28a3"
+  parallax: Default
+
+- type: skillTree
+  id: ForkyWizardTreeEvents
+  name: forkyloc-wizard-tree-events-name
+  desc: forkyloc-wizard-tree-events-desc
+  skillType: WizardArcane
+  color: "#cfa028"
+  parallax: Default
+
+# --- Path roots (1 pt each; mutually exclusive) ---
+
+- type: skill
+  id: ForkyWizardCommitOffensive
+  name: forkyloc-wizard-commit-offensive-name
+  desc: forkyloc-wizard-commit-offensive-desc
+  skillUiPosition: 0, 0
+  learnCost: 1
+  tree: ForkyWizardTreeOffensive
+  icon:
+    sprite: Objects/Magic/magicactions.rsi
+    state: fireball
+  restrictions:
+  - !type:BlockIfAnySkillLearned
+    blockedIfAnyLearned:
+    - ForkyWizardCommitDefensive
+    - ForkyWizardCommitUtility
+    - ForkyWizardCommitEvents
+
+- type: skill
+  id: ForkyWizardCommitDefensive
+  name: forkyloc-wizard-commit-defensive-name
+  desc: forkyloc-wizard-commit-defensive-desc
+  skillUiPosition: 0, 0
+  learnCost: 1
+  tree: ForkyWizardTreeDefensive
+  icon:
+    sprite: Objects/Magic/magicactions.rsi
+    state: forcewall
+  restrictions:
+  - !type:BlockIfAnySkillLearned
+    blockedIfAnyLearned:
+    - ForkyWizardCommitOffensive
+    - ForkyWizardCommitUtility
+    - ForkyWizardCommitEvents
+
+- type: skill
+  id: ForkyWizardCommitUtility
+  name: forkyloc-wizard-commit-utility-name
+  desc: forkyloc-wizard-commit-utility-desc
+  skillUiPosition: 0, 0
+  learnCost: 1
+  tree: ForkyWizardTreeUtility
+  icon:
+    sprite: Objects/Magic/magicactions.rsi
+    state: blink
+  restrictions:
+  - !type:BlockIfAnySkillLearned
+    blockedIfAnyLearned:
+    - ForkyWizardCommitOffensive
+    - ForkyWizardCommitDefensive
+    - ForkyWizardCommitEvents
+
+- type: skill
+  id: ForkyWizardCommitEvents
+  name: forkyloc-wizard-commit-events-name
+  desc: forkyloc-wizard-commit-events-desc
+  skillUiPosition: 0, 0
+  learnCost: 1
+  tree: ForkyWizardTreeEvents
+  icon:
+    sprite: Objects/Magic/magicactions.rsi
+    state: magicmissile
+  restrictions:
+  - !type:BlockIfAnySkillLearned
+    blockedIfAnyLearned:
+    - ForkyWizardCommitOffensive
+    - ForkyWizardCommitDefensive
+    - ForkyWizardCommitUtility
+
+# --- Offensive (former SpellbookOffensive listings, productAction only) ---
+
+- type: skill
+  id: ForkyWizardSpellFireball
+  name: spellbook-fireball-name
+  desc: spellbook-fireball-desc
+  skillUiPosition: 2, 0
+  learnCost: 2
+  tree: ForkyWizardTreeOffensive
+  icon: { sprite: Objects/Magic/magicactions.rsi, state: fireball }
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: ForkyWizardCommitOffensive
+  effects:
+  - !type:AddAction
+    action: ActionFireball
+
+- type: skill
+  id: ForkyWizardSpellRodForm
+  name: spellbook-polymorph-rod-name
+  desc: spellbook-polymorph-rod-desc
+  skillUiPosition: 4, 0
+  learnCost: 3
+  tree: ForkyWizardTreeOffensive
+  icon: { sprite: Objects/Magic/magicactions.rsi, state: magicmissile }
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: ForkyWizardCommitOffensive
+  effects:
+  - !type:AddAction
+    action: ActionPolymorphWizardRod
+
+- type: skill
+  id: ForkyWizardSpellSmite
+  name: spellbook-smite-name
+  desc: spellbook-smite-desc
+  skillUiPosition: 6, 0
+  learnCost: 3
+  tree: ForkyWizardTreeOffensive
+  icon: { sprite: Objects/Magic/magicactions.rsi, state: fireball }
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: ForkyWizardCommitOffensive
+  effects:
+  - !type:AddAction
+    action: ActionSmite
+
+- type: skill
+  id: ForkyWizardSpellCluwne
+  name: spellbook-cluwne-name
+  desc: spellbook-cluwne-desc
+  skillUiPosition: 8, 0
+  learnCost: 3
+  tree: ForkyWizardTreeOffensive
+  icon: { sprite: Objects/Magic/magicactions.rsi, state: magicmissile }
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: ForkyWizardCommitOffensive
+  effects:
+  - !type:AddAction
+    action: ActionCluwne
+
+- type: skill
+  id: ForkyWizardSpellSlip
+  name: spellbook-slip-name
+  desc: spellbook-slip-desc
+  skillUiPosition: 10, 0
+  learnCost: 2
+  tree: ForkyWizardTreeOffensive
+  icon: { sprite: Objects/Magic/magicactions.rsi, state: magicmissile }
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: ForkyWizardCommitOffensive
+  effects:
+  - !type:AddAction
+    action: ActionSlippery
+
+# --- Defensive ---
+
+- type: skill
+  id: ForkyWizardSpellForceWall
+  name: spellbook-force-wall-name
+  desc: spellbook-force-wall-desc
+  skillUiPosition: 2, 0
+  learnCost: 3
+  tree: ForkyWizardTreeDefensive
+  icon: { sprite: Objects/Magic/magicactions.rsi, state: shield }
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: ForkyWizardCommitDefensive
+  effects:
+  - !type:AddAction
+    action: ActionForceWall
+
+- type: skill
+  id: ForkyWizardSpellRepulse
+  name: spellbook-repulse-name
+  desc: spellbook-repulse-desc
+  skillUiPosition: 4, 0
+  learnCost: 2
+  tree: ForkyWizardTreeDefensive
+  icon: { sprite: Objects/Magic/magicactions.rsi, state: repulse }
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: ForkyWizardCommitDefensive
+  effects:
+  - !type:AddAction
+    action: ActionRepulse
+
+- type: skill
+  id: ForkyWizardSpellSmoke
+  name: spellbook-smoke-name
+  desc: spellbook-smoke-desc
+  skillUiPosition: 6, 0
+  learnCost: 1
+  tree: ForkyWizardTreeDefensive
+  icon: { sprite: Objects/Magic/magicactions.rsi, state: spell_default }
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: ForkyWizardCommitDefensive
+  effects:
+  - !type:AddAction
+    action: ActionSmoke
+
+# --- Utility ---
+
+- type: skill
+  id: ForkyWizardSpellPolymorphSpider
+  name: spellbook-polymorph-spider-name
+  desc: spellbook-polymorph-spider-desc
+  skillUiPosition: 2, 0
+  learnCost: 2
+  tree: ForkyWizardTreeUtility
+  icon: { sprite: Objects/Magic/magicactions.rsi, state: magicmissile }
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: ForkyWizardCommitUtility
+  effects:
+  - !type:AddAction
+    action: ActionPolymorphWizardSpider
+
+- type: skill
+  id: ForkyWizardSpellBlink
+  name: spellbook-blink-name
+  desc: spellbook-blink-desc
+  skillUiPosition: 4, 0
+  learnCost: 1
+  tree: ForkyWizardTreeUtility
+  icon: { sprite: Objects/Magic/magicactions.rsi, state: blink }
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: ForkyWizardCommitUtility
+  effects:
+  - !type:AddAction
+    action: ActionBlink
+
+- type: skill
+  id: ForkyWizardSpellVoidApplause
+  name: spellbook-void-applause-name
+  desc: spellbook-void-applause-desc
+  skillUiPosition: 6, 0
+  learnCost: 1
+  tree: ForkyWizardTreeUtility
+  icon: { sprite: Objects/Magic/magicactions.rsi, state: magicmissile }
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: ForkyWizardCommitUtility
+  effects:
+  - !type:AddAction
+    action: ActionVoidApplause
+
+- type: skill
+  id: ForkyWizardSpellKnock
+  name: spellbook-knock-name
+  desc: spellbook-knock-desc
+  skillUiPosition: 8, 0
+  learnCost: 1
+  tree: ForkyWizardTreeUtility
+  icon: { sprite: Objects/Magic/magicactions.rsi, state: knock }
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: ForkyWizardCommitUtility
+  effects:
+  - !type:AddAction
+    action: ActionKnock
+
+- type: skill
+  id: ForkyWizardSpellCharge
+  name: spellbook-charge-name
+  desc: spellbook-charge-desc
+  skillUiPosition: 10, 0
+  learnCost: 1
+  tree: ForkyWizardTreeUtility
+  icon: { sprite: Objects/Magic/magicactions.rsi, state: spell_default }
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: ForkyWizardCommitUtility
+  effects:
+  - !type:AddAction
+    action: ActionChargeSpell
+
+- type: skill
+  id: ForkyWizardSpellJaunt
+  name: spellbook-ethereal-jaunt-name
+  desc: spellbook-ethereal-jaunt-description
+  skillUiPosition: 12, 0
+  learnCost: 2
+  tree: ForkyWizardTreeUtility
+  icon: { sprite: Objects/Magic/magicactions.rsi, state: jaunt }
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: ForkyWizardCommitUtility
+  effects:
+  - !type:AddAction
+    action: ActionPolymorphJaunt
+
+- type: skill
+  id: ForkyWizardSpellMindSwap
+  name: spellbook-mind-swap-name
+  desc: spellbook-mind-swap-description
+  skillUiPosition: 14, 0
+  learnCost: 2
+  tree: ForkyWizardTreeUtility
+  icon: { sprite: Objects/Magic/magicactions.rsi, state: magicmissile }
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: ForkyWizardCommitUtility
+  effects:
+  - !type:AddAction
+    action: ActionMindSwap
+
+- type: skill
+  id: ForkyWizardSpellItemRecall
+  name: spellbook-item-recall-name
+  desc: spellbook-item-recall-description
+  skillUiPosition: 16, 0
+  learnCost: 1
+  tree: ForkyWizardTreeUtility
+  icon: { sprite: Objects/Magic/magicactions.rsi, state: item_recall }
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: ForkyWizardCommitUtility
+  effects:
+  - !type:AddAction
+    action: ActionItemRecall
+
+# --- Event ---
+
+- type: skill
+  id: ForkyWizardSpellSummonGhosts
+  name: spellbook-event-summon-ghosts-name
+  desc: spellbook-event-summon-ghosts-description
+  skillUiPosition: 2, 0
+  learnCost: 0
+  tree: ForkyWizardTreeEvents
+  icon: { sprite: Objects/Magic/magicactions.rsi, state: magicmissile }
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: ForkyWizardCommitEvents
+  effects:
+  - !type:AddAction
+    action: ActionSummonGhosts
+
+- type: skill
+  id: ForkyWizardSpellSummonGuns
+  name: spellbook-event-summon-guns-name
+  desc: spellbook-event-summon-guns-description
+  skillUiPosition: 4, 0
+  learnCost: 2
+  tree: ForkyWizardTreeEvents
+  icon: { sprite: Objects/Magic/magicactions.rsi, state: magicmissile }
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: ForkyWizardCommitEvents
+  effects:
+  - !type:AddAction
+    action: ActionSummonGuns
+
+- type: skill
+  id: ForkyWizardSpellSummonMagic
+  name: spellbook-event-summon-magic-name
+  desc: spellbook-event-summon-magic-description
+  skillUiPosition: 6, 0
+  learnCost: 2
+  tree: ForkyWizardTreeEvents
+  icon: { sprite: Objects/Magic/magicactions.rsi, state: magicmissile }
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: ForkyWizardCommitEvents
+  effects:
+  - !type:AddAction
+    action: ActionSummonMagic

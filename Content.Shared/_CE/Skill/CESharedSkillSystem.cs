@@ -227,6 +227,10 @@ public abstract partial class CESharedSkillSystem : EntitySystem
         }
 
         Dirty(target, component);
+
+        var removedEv = new CESkillRemovedEvent(skill, target);
+        RaiseLocalEvent(target, ref removedEv);
+
         return true;
     }
 
@@ -378,24 +382,41 @@ public abstract partial class CESharedSkillSystem : EntitySystem
     /// </summary>
     public HashSet<ProtoId<CESkillPrototype>> GetFrontierSkills(Entity<CESkillStorageComponent?> ent)
     {
-        var skills = new HashSet<ProtoId<CESkillPrototype>>();
+        var frontier = new HashSet<ProtoId<CESkillPrototype>>();
         if (!Resolve(ent, ref ent.Comp, false))
-            return skills;
+            return frontier;
 
-        var frontier = ent.Comp.LearnedSkills.ToHashSet();
-        foreach (var skill in ent.Comp.LearnedSkills)
+        var learned = ent.Comp.LearnedSkills.ToHashSet();
+
+        foreach (var candidate in learned)
         {
-            if (!_proto.Resolve(skill, out var indexedSkill))
+            if (HaveFreeSkill(ent, candidate, ent.Comp))
                 continue;
 
-            if (HaveFreeSkill(ent, skill))
-                continue;
+            var reduced = new HashSet<ProtoId<CESkillPrototype>>(learned);
+            reduced.Remove(candidate);
 
-            foreach (var req in indexedSkill.Restrictions)
+            var removable = true;
+            foreach (var remaining in reduced)
             {
-                if (req is NeedPrerequisite prerequisite && frontier.Contains(prerequisite.Prerequisite))
-                    frontier.Remove(prerequisite.Prerequisite);
+                if (!_proto.Resolve(remaining, out var indexedSkill))
+                    continue;
+
+                foreach (var req in indexedSkill.Restrictions)
+                {
+                    if (!req.CheckGivenLearnedSkills(EntityManager, ent.Owner, reduced))
+                    {
+                        removable = false;
+                        break;
+                    }
+                }
+
+                if (!removable)
+                    break;
             }
+
+            if (removable)
+                frontier.Add(candidate);
         }
 
         return frontier;
@@ -485,6 +506,38 @@ public abstract partial class CESharedSkillSystem : EntitySystem
     }
 
     /// <summary>
+    /// Raises the skill point budget (Max) without granting spendable points—used when a leyline or milestone only expands the cap.
+    /// </summary>
+    public bool TryIncreaseSkillPointCapOnly(Entity<CESkillStorageComponent?> ent,
+        ProtoId<CESkillPointPrototype> type,
+        FixedPoint2 delta,
+        bool silent = true)
+    {
+        if (delta <= 0)
+            return true;
+
+        if (!Resolve(ent, ref ent.Comp, false))
+            return false;
+
+        if (!_proto.Resolve(type, out _))
+            return false;
+
+        if (!ent.Comp.SkillPoints.TryGetValue(type, out var skillContainer))
+        {
+            skillContainer = new CESkillPointContainerEntry();
+            ent.Comp.SkillPoints[type] = skillContainer;
+        }
+
+        skillContainer.Max += delta;
+        DirtyField(ent, ent.Comp, nameof(CESkillStorageComponent.SkillPoints));
+
+        if (!silent && _timing.IsFirstTimePredicted)
+            _popup.PopupClient(Loc.GetString("ce-skill-cap-increased", ("count", delta)), ent, ent);
+
+        return true;
+    }
+
+    /// <summary>
     /// Removes skill points. If a character has accumulated skills exceeding the new memory limit, random skills will be removed.
     /// </summary>
     public bool TryRemoveSkillPoints(Entity<CESkillStorageComponent?> ent,
@@ -527,3 +580,6 @@ public abstract partial class CESharedSkillSystem : EntitySystem
 
 [ByRefEvent]
 public record struct CESkillLearnedEvent(ProtoId<CESkillPrototype> Skill, EntityUid User);
+
+[ByRefEvent]
+public record struct CESkillRemovedEvent(ProtoId<CESkillPrototype> Skill, EntityUid User);

@@ -1,47 +1,74 @@
+using System.Numerics;
 using Content.Shared._CE.MageAscension.Components;
+using Robust.Client.Player;
+using Robust.Shared.GameObjects;
 using Robust.Shared.Map;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Random;
 using Robust.Shared.Timing;
 
-namespace Content.Server._CE.MageAscension;
+namespace Content.Client._CE.MageAscension;
 
+/// <summary>
+/// Mana mote visuals: pulse scheduling and motion run only for the local player when they are a mage.
+/// </summary>
 public sealed class MageManaMoteSystem : EntitySystem
 {
     [Dependency] private readonly IGameTiming _timing = default!;
+    [Dependency] private readonly IPlayerManager _playerManager = default!;
     [Dependency] private readonly IRobustRandom _random = default!;
     [Dependency] private readonly SharedTransformSystem _transform = default!;
+
     private static readonly EntProtoId MoteProto = "MageManaMote";
+
+    private readonly Dictionary<EntityUid, TimeSpan> _nextLocalPulseAt = new();
+
+    public override void Initialize()
+    {
+        base.Initialize();
+
+        SubscribeLocalEvent<ConfluenceMotePulseComponent, ComponentShutdown>(OnPulseShutdown);
+    }
+
+    private void OnPulseShutdown(EntityUid uid, ConfluenceMotePulseComponent _, ComponentShutdown args)
+    {
+        _nextLocalPulseAt.Remove(uid);
+    }
 
     public override void Update(float frameTime)
     {
         base.Update(frameTime);
 
-        ProcessSchedulers();
+        if (_playerManager.LocalSession?.AttachedEntity is not { } player ||
+            !HasComp<MageOfAscensionComponent>(player))
+        {
+            return;
+        }
+
+        var now = _timing.CurTime;
+        ProcessSchedulers(now);
         ProcessMoteMovement(frameTime);
     }
 
-    /// <summary>
-    /// Only <strong>unopened</strong> ley confluences carry <see cref="ConfluenceMotePulseComponent"/>.
-    /// Each fires on <see cref="ConfluenceMotePulseComponent.PulsePeriod"/> toward a random mage or another leyline on the same map.
-    /// </summary>
-    private void ProcessSchedulers()
+    private void ProcessSchedulers(TimeSpan now)
     {
-        var now = _timing.CurTime;
         var pulseQuery = EntityQueryEnumerator<ConfluenceMotePulseComponent, ConfluenceComponent, TransformComponent>();
         while (pulseQuery.MoveNext(out var uid, out var pulse, out var conf, out var xform))
         {
             if (conf.Opened)
-            {
-                RemComp<ConfluenceMotePulseComponent>(uid);
                 continue;
+
+            if (!_nextLocalPulseAt.TryGetValue(uid, out var nextAt))
+            {
+                nextAt = pulse.NextPulseAt;
+                _nextLocalPulseAt[uid] = nextAt;
             }
 
-            if (now < pulse.NextPulseAt)
+            if (now < nextAt)
                 continue;
 
             var period = pulse.PulsePeriod <= TimeSpan.Zero ? TimeSpan.FromSeconds(30) : pulse.PulsePeriod;
-            pulse.NextPulseAt = now + period;
+            _nextLocalPulseAt[uid] = now + period;
 
             if (xform.MapID == MapId.Nullspace)
                 continue;
@@ -54,12 +81,13 @@ public sealed class MageManaMoteSystem : EntitySystem
             if (!TryComp<MageManaMoteComponent>(mote, out var moteComp))
                 continue;
             moteComp.Target = target;
+            if (HasComp<MageOfAscensionComponent>(target))
+                moteComp.StaticHomingWorld = null;
+            else
+                moteComp.StaticHomingWorld = _transform.GetWorldPosition(target);
         }
     }
 
-    /// <summary>
-    /// Uniform random among all mages and all other confluences on <paramref name="sourceMap"/>.
-    /// </summary>
     private bool TryPickMoteTarget(EntityUid source, MapId sourceMap, out EntityUid target)
     {
         target = default;
@@ -132,7 +160,12 @@ public sealed class MageManaMoteSystem : EntitySystem
                 continue;
             }
 
-            var targetPos = _transform.GetWorldPosition(mote.Target);
+            Vector2 targetPos;
+            if (mote.StaticHomingWorld is { } fixedGoal)
+                targetPos = fixedGoal;
+            else
+                targetPos = _transform.GetWorldPosition(mote.Target);
+
             var selfPos = _transform.GetWorldPosition(moteUid);
             var delta = targetPos - selfPos;
             var len = delta.Length();

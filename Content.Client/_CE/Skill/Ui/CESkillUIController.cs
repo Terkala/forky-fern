@@ -38,6 +38,8 @@ public sealed class CESkillUIController : UIController, IOnStateEntered<Gameplay
     private CESkillPrototype? _selectedSkill;
     private CESkillTreePrototype? _selectedSkillTree;
 
+    private bool _skillTreeOpenedFromGrimoire;
+
     private MenuButton? SkillButton => UIManager
         .GetActiveUIWidgetOrNull<Client.UserInterface.Systems.MenuBar.Widgets.GameTopMenuBar>()
         ?.CESkillButton;
@@ -270,13 +272,17 @@ public sealed class CESkillUIController : UIController, IOnStateEntered<Gameplay
                 switch (req)
                 {
                     case NeedPrerequisite prerequisite:
-                        if (!_proto.Resolve(prerequisite.Prerequisite, out var prerequisiteSkill))
-                            continue;
+                        foreach (var prereqId in prerequisite.EnumeratePrerequisiteIds())
+                        {
+                            if (!_proto.Resolve(prereqId, out var prerequisiteSkill))
+                                continue;
 
-                        if (prerequisiteSkill.Tree != _selectedSkillTree)
-                            continue;
+                            if (prerequisiteSkill.Tree != _selectedSkillTree)
+                                continue;
 
-                        nodeTreeEdges.Add((skill.ID, prerequisiteSkill.ID));
+                            nodeTreeEdges.Add((skill.ID, prerequisiteSkill.ID));
+                        }
+
                         break;
                 }
             }
@@ -411,8 +417,41 @@ public sealed class CESkillUIController : UIController, IOnStateEntered<Gameplay
         }
         else
         {
+            _skillTreeOpenedFromGrimoire = false;
             _skill.RequestSkillData();
             _window.Open();
         }
+    }
+
+    /// <summary>
+    /// Opens the skill tree while reading a grimoire (see <see cref="GrimoireSkillTreeBoundUserInterface"/>).
+    /// </summary>
+    public void OpenSkillTreeFromGrimoire()
+    {
+        if (_window == null)
+            return;
+
+        _skillTreeOpenedFromGrimoire = true;
+        _skill.RequestSkillData();
+
+        if (!_window.IsOpen)
+            _window.Open();
+    }
+
+    /// <summary>
+    /// Called when the grimoire UI session ends; closes the tree if it was opened from the book.
+    /// </summary>
+    public void CloseSkillTreeFromGrimoire()
+    {
+        if (!_skillTreeOpenedFromGrimoire)
+            return;
+
+        _skillTreeOpenedFromGrimoire = false;
+
+        if (_window?.IsOpen == true)
+            _window.Close();
+
+        if (SkillButton != null)
+            SkillButton.SetClickPressed(false);
     }
 }

@@ -8,7 +8,7 @@ mage-ascension-role-greeting-generic = You are a Mage of Ascension. Seek ley con
 
 # Confluence
 mage-confluence-fail-not-mage = You cannot sense this place of power.
-mage-confluence-fail-grimoire = You need your grimoire open in hand.
+mage-confluence-fail-grimoire = You need your grimoire in hand.
 mage-confluence-opened = The ley line unravels into the station.
 mage-confluence-research-no-server = No research server is linked to this station grid.
 mage-confluence-research-drain = The confluence yields {$amount} research points.

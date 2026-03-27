@@ -16,8 +16,6 @@
   - type: CEActionManaCost
     manaCost: 18
   - type: CEActionFreeHandsRequired
-  - type: CEActionDoAfterVisuals
-    proto: CERuneElementalEarthenBarricade
   - type: Action
     useDelay: 12
     icon:
@@ -36,19 +34,6 @@
       - !type:CESpellSpawnEntityOnTarget
         spawns:
         - CEElementalEarthenBarricade
-
-- type: entity
-  id: CERuneElementalEarthenBarricade
-  parent: CEBaseMagicRune
-  categories: [ HideSpawnMenu ]
-  save: false
-  components:
-  - type: PointLight
-    color: "#6b5a4a"
-  - type: Sprite
-    layers:
-    - state: medium_line
-      color: "#6b5a4a"
 
 - type: entity
   id: CEImpactEffectElementalEarthenBarricade

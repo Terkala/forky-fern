@@ -17,8 +17,6 @@
   - type: CEActionManaCost
     manaCost: 45
   - type: CEActionFreeHandsRequired
-  - type: CEActionDoAfterVisuals
-    proto: CERuneElementalFireball
   - type: Action
     useDelay: 15
     icon:
@@ -34,16 +32,3 @@
       - !type:CESpellProjectile
         prototype: CEProjectileElementalMageFireball
         projectileSpeed: 12
-
-- type: entity
-  id: CERuneElementalFireball
-  parent: CEBaseMagicRune
-  categories: [ HideSpawnMenu ]
-  save: false
-  components:
-  - type: PointLight
-    color: "#E25822"
-  - type: Sprite
-    layers:
-    - state: medium_line
-      color: "#E25822"

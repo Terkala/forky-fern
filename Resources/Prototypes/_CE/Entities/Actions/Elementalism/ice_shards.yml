@@ -10,8 +10,6 @@
   - type: CEActionManaCost
     manaCost: 22
   - type: CEActionFreeHandsRequired
-  - type: CEActionDoAfterVisuals
-    proto: CERuneElementalIceShards
   - type: Action
     useDelay: 8
     icon:
@@ -29,20 +27,6 @@
         projectileSpeed: 18
         spread: 0.35
         projectileCount: 3
-
-- type: entity
-  id: CERuneElementalIceShards
-  parent: CEBaseMagicRune
-  categories: [ HideSpawnMenu ]
-  save: false
-  components:
-  - type: PointLight
-    color: "#7ecbff"
-  - type: Sprite
-    layers:
-    - state: medium_line
-      color: "#b3f1ff"
-      shader: unshaded
 
 - type: entity
   id: CEProjectileElementalIceShard

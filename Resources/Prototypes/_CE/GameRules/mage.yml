@@ -26,6 +26,11 @@
       components:
       - type: MageOfAscension
       - type: CESkillStorage
+        availableSkillTrees:
+        - MageElementalism
+        skillPoints:
+          MageGrimoire:
+            max: 3
       - type: Battery
         maxCharge: 100
         startingCharge: 100

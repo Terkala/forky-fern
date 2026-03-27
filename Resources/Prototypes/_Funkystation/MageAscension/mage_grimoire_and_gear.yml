@@ -1,4 +1,4 @@
-# Funky Station — school-picker UI + starting grimoire (extends CE BaseMageGrimoire / MageOfAscensionGearBase).
+# Funky Station — CE skill tree UI + starting grimoire (extends CE BaseMageGrimoire / MageOfAscensionGearBase).
 
 - type: entity
   parent: BaseMageGrimoire
@@ -6,10 +6,10 @@
   components:
   - type: UserInterface
     interfaces:
-      enum.GrimoireSchoolPickerUiKey.Key:
-        type: GrimoireSchoolPickerBoundUserInterface
+      enum.GrimoireSkillTreeUiKey.Key:
+        type: GrimoireSkillTreeBoundUserInterface
   - type: ActivatableUI
-    key: enum.GrimoireSchoolPickerUiKey.Key
+    key: enum.GrimoireSkillTreeUiKey.Key
     inHandsOnly: true
 
 - type: startingGear

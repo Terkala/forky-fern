@@ -1,0 +1,118 @@
+# Forky — elf cantrip paths (same ElfMagic skill point pool as CE). Three mutually exclusive path commits.
+
+- type: skillTree
+  id: ForkyElfTreeCantrip
+  name: forkyloc-elf-tree-cantrip-name
+  desc: forkyloc-elf-tree-cantrip-desc
+  skillType: ElfMagic
+  color: "#f0e050"
+  parallax: Default
+
+- type: skillTree
+  id: ForkyElfTreeVitality
+  name: forkyloc-elf-tree-vitality-name
+  desc: forkyloc-elf-tree-vitality-desc
+  skillType: ElfMagic
+  color: "#50c878"
+  parallax: Default
+
+- type: skillTree
+  id: ForkyElfTreeTide
+  name: forkyloc-elf-tree-tide-name
+  desc: forkyloc-elf-tree-tide-desc
+  skillType: ElfMagic
+  color: "#5090e8"
+  parallax: Default
+
+- type: skill
+  id: ForkyElfCommitCantrip
+  name: forkyloc-elf-commit-cantrip-name
+  desc: forkyloc-elf-commit-cantrip-desc
+  skillUiPosition: 0, 0
+  learnCost: 1
+  tree: ForkyElfTreeCantrip
+  icon:
+    sprite: _CE/Actions/elf_magic.rsi
+    state: sphere_of_light
+  restrictions:
+  - !type:BlockIfAnySkillLearned
+    blockedIfAnyLearned:
+    - ForkyElfCommitVitality
+    - ForkyElfCommitTide
+
+- type: skill
+  id: ForkyElfCommitVitality
+  name: forkyloc-elf-commit-vitality-name
+  desc: forkyloc-elf-commit-vitality-desc
+  skillUiPosition: 0, 0
+  learnCost: 1
+  tree: ForkyElfTreeVitality
+  icon:
+    sprite: _CE/Actions/elf_magic.rsi
+    state: cure_wounds
+  restrictions:
+  - !type:BlockIfAnySkillLearned
+    blockedIfAnyLearned:
+    - ForkyElfCommitCantrip
+    - ForkyElfCommitTide
+
+- type: skill
+  id: ForkyElfCommitTide
+  name: forkyloc-elf-commit-tide-name
+  desc: forkyloc-elf-commit-tide-desc
+  skillUiPosition: 0, 0
+  learnCost: 1
+  tree: ForkyElfTreeTide
+  icon:
+    sprite: _CE/Actions/elf_magic.rsi
+    state: water_creation
+  restrictions:
+  - !type:BlockIfAnySkillLearned
+    blockedIfAnyLearned:
+    - ForkyElfCommitCantrip
+    - ForkyElfCommitVitality
+
+- type: skill
+  id: SphereOfLight
+  skillUiPosition: 3, 0
+  learnCost: 1
+  tree: ForkyElfTreeCantrip
+  icon:
+    sprite: _CE/Actions/elf_magic.rsi
+    state: sphere_of_light
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: ForkyElfCommitCantrip
+  effects:
+  - !type:AddAction
+    action: CEActionSpellSphereOfLight
+
+- type: skill
+  id: CureWounds
+  skillUiPosition: 3, 0
+  learnCost: 1
+  tree: ForkyElfTreeVitality
+  icon:
+    sprite: _CE/Actions/elf_magic.rsi
+    state: cure_wounds
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: ForkyElfCommitVitality
+  effects:
+  - !type:AddAction
+    action: CEActionSpellCureWounds
+
+- type: skill
+  id: WaterCreation
+  skillUiPosition: 3, 0
+  learnCost: 1
+  tree: ForkyElfTreeTide
+  icon:
+    sprite: _CE/Actions/elf_magic.rsi
+    state: water_creation
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: ForkyElfCommitTide
+  effects:
+  - !type:AddAction
+    action: CEActionSpellWaterCreation

@@ -25,6 +25,7 @@ public abstract partial class CESharedActionSystem : EntitySystem
     [Dependency] private readonly CESharedSkillSystem _skill = default!;
     //[Dependency] private readonly CESharedMagicVisionSystem _magicVision = default!;
     [Dependency] private readonly MovementSpeedModifierSystem _movement = default!;
+    [Dependency] private readonly SharedTransformSystem _xform = default!;
 
     private EntityQuery<ActionComponent> _actionQuery;
 

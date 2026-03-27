@@ -11,7 +11,11 @@ funky-grimoire-spell-pick-none-pending = You have no pending spell choices.
 funky-grimoire-spell-pick-invalid = That spell is not among your options.
 funky-grimoire-spell-pick-learned = Inscribed: { $spell }.
 funky-mage-package-elementalism-l1-name = Elementalism (novice)
-funky-mage-package-elementalism-l1-desc = Summon Rock and Ice Shield.
+funky-mage-package-elementalism-l1-desc = Walk the elemental path; deeper insights come from ley confluences.
+funky-mage-spell-summon-rock-name = Summon Rock
+funky-mage-spell-summon-rock-desc = Conjure a mass of stone to throw or shape.
+funky-mage-spell-ice-shield-name = Ice Shield
+funky-mage-spell-ice-shield-desc = Wrap yourself in a brittle shell of frost.
 funky-mage-spellpick-earthen-barricade = Earthen Barricade
 funky-mage-spellpick-fire-bolt = Fire Bolt
 funky-mage-spellpick-ice-shards = Ice Shards
@@ -21,6 +25,10 @@ funky-mage-spellpick-fire-barrier = Fire Barrier
 funky-mage-spellpick-fireball = Fireball
 funky-mage-spellpick-earthquake = Earthquake
 
-funky-mage-skill-point-grimoire-name = grimoire insight
+funky-mage-skill-point-grimoire-name = Elementalism
 funky-mage-skill-tree-grimoire-name = Grimoire paths
 funky-mage-school-elementalism-name = Elementalism
+
+funky-grimoire-skill-tree-not-mage = The grimoire hums faintly; you have no focus to read it.
+funky-grimoire-skill-tree-not-wizard = The grimoire slams shut. You are not marked as its wizard.
+funky-grimoire-skill-tree-wrong-owner = The pages refuse to turn; this grimoire has already chosen its reader.

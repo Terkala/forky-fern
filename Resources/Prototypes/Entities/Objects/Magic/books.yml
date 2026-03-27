@@ -35,14 +35,13 @@
       tags:
       - Spellbook
 
-# For the Wizard antagonist
-# Do not add discounts or price inflation
+# For the Wizard antagonist — spells learned via CE skill tree (Forky wizard_magic); no store.
 - type: entity
-  parent: [ BaseItem, StorePresetSpellbook, BaseMagicalContraband ]
+  parent: [ BaseItem, BaseMagicalContraband ]
   id: WizardsGrimoire
   name: wizard's grimoire
   suffix: Wizard
-  description: A heavy tome containing complicated arcane formulae for preparing magic spells and conjuring supernatural equipment. Decades of study went into researching this collection of mystical secrets; now go use them to ruin someone's day.
+  description: A heavy tome containing complicated arcane formulae for preparing magic spells. Decades of study went into researching this collection of mystical secrets; now go use them to ruin someone's day.
   components:
     - type: Sprite
       sprite: Objects/Misc/books.rsi
@@ -54,39 +53,30 @@
         color: "#4d0303"
       - state: icon_pentagramm
         color: "#f7e19f"
+    - type: Tag
+      tags:
+      - Spellbook
+    - type: WizardSkillGrimoire
     - type: UserInterface
       interfaces:
-        enum.StoreUiKey.Key:
-          type: StoreBoundUserInterface
+        enum.GrimoireSkillTreeUiKey.Key:
+          type: GrimoireSkillTreeBoundUserInterface
     - type: ActivatableUI
-      key: enum.StoreUiKey.Key
-    - type: Store
-      refundAllowed: true
-      ownerOnly: true # Lesser minds cannot comprehend the arcane secrets within
-      balance:
-        WizCoin: 10 # prices are balanced around this 10 point maximum and how strong the spells are
+      key: enum.GrimoireSkillTreeUiKey.Key
+      inHandsOnly: true
 
-# No-refund version meant for manual spawning, so people can't abuse refund if they were given a tome. Not meant for wizard antag proper!
+# Variant for manual spawning — same as standard grimoire (no store).
 - type: entity
   parent: WizardsGrimoire
   id: WizardsGrimoireNoRefund
-  suffix: Wizard, no refunding
-  components:
-    - type: Store
-      refundAllowed: false
+  suffix: Wizard, legacy suffix
 
-# For debugging purposes only! Or spawn this for an admeme so a wizard can have every spell at once, I can't stop you.
+# Debug — identical to standard; infinite spells come from admin-spawned skill points if desired.
 - type: entity
   parent: WizardsGrimoire
   id: WizardsGrimoireDebug
   suffix: Wizard, DEBUG
-  description: A heavy tome containing complicated arcane formulae for preparing magic spells and conjuring supernatural equipment. Someone wrote "FOR EXPERIMENTAL USE ONLY" on the inside cover.
-  components:
-    - type: Store
-      ownerOnly: false # For ease of debugging.
-      balance:
-        WizCoin: 99999
-      expectedFaction: #nulls out the expected faction
+  description: A heavy tome containing complicated arcane formulae for preparing magic spells. Someone wrote "FOR EXPERIMENTAL USE ONLY" on the inside cover.
 
 - type: entity
   parent: BaseSpellbook

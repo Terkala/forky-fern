@@ -1,20 +1,23 @@
 using System;
+using Robust.Shared.GameStates;
 using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom;
 
 namespace Content.Shared._CE.MageAscension.Components;
 
 /// <summary>
-/// Server-only: an <strong>unopened</strong> ley confluence fires one mana mote each <see cref="PulsePeriod"/>
-/// toward a random mage or another ley confluence on the same map. Removed when opened.
+/// An <strong>unopened</strong> ley confluence cues periodic mana motes. Scheduling runs on
+/// mage clients; the server sets <see cref="NextPulseAt"/> once when spawned.
 /// </summary>
-[RegisterComponent]
+[RegisterComponent, NetworkedComponent, AutoGenerateComponentState]
 public sealed partial class ConfluenceMotePulseComponent : Component
 {
+    /// <summary>Initial first-pulse time from the server (stagger). Clients advance locally after that.</summary>
+    [DataField(customTypeSerializer: typeof(TimeOffsetSerializer)), AutoNetworkedField]
     public TimeSpan NextPulseAt;
 
     /// <summary>
     /// Interval between mote emissions from this leyline.
     /// </summary>
-    [DataField(customTypeSerializer: typeof(TimeOffsetSerializer))]
+    [DataField(customTypeSerializer: typeof(TimeOffsetSerializer)), AutoNetworkedField]
     public TimeSpan PulsePeriod = TimeSpan.FromSeconds(30);
 }

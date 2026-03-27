@@ -46,7 +46,7 @@ public sealed class MageConfluenceSystem : EntitySystem
             return;
         }
 
-        if (!TryComp<MageGrimoireComponent>(args.Used, out var grim) || !grim.IsOpen)
+        if (!HasComp<MageGrimoireComponent>(args.Used))
         {
             _popup.PopupEntity(Loc.GetString("mage-confluence-fail-grimoire"), args.User, args.User);
             args.Handled = true;

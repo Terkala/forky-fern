@@ -8,10 +8,11 @@
   categories: [ HideSpawnMenu ]
   components:
   - type: Sprite
-    sprite: Objects/Materials/ore.rsi
-    state: iron
+    sprite: _CE/Objects/Materials/stone.rsi
+    state: stone
   - type: Item
     size: Normal
+    heldPrefix: iron
   - type: Fixtures
     fixtures:
       fix1:

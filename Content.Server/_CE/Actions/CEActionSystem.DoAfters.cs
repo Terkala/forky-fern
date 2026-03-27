@@ -15,9 +15,6 @@ public sealed partial class CEActionSystem
 
         SubscribeLocalEvent<CEActionEmotingComponent, CEActionStartDoAfterEvent>(OnEmoteActionStarted);
         SubscribeLocalEvent<CEActionEmotingComponent, ActionDoAfterEvent>(OnEmoteActionPerformed);
-
-        SubscribeLocalEvent<CEActionDoAfterVisualsComponent, CEActionStartDoAfterEvent>(OnSpawnMagicVisualEffect);
-        SubscribeLocalEvent<CEActionDoAfterVisualsComponent, ActionDoAfterEvent>(OnDespawnMagicVisualEffect);
     }
 
     private void OnVerbalActionStarted(Entity<CEActionSpeakingComponent> ent, ref CEActionStartDoAfterEvent args)
@@ -54,24 +51,5 @@ public sealed partial class CEActionSystem
 
         var performer = GetEntity(args.Performer);
         _chat.TrySendInGameICMessage(performer, Loc.GetString(ent.Comp.EndEmote), InGameICChatType.Emote, true);
-    }
-
-    private void OnSpawnMagicVisualEffect(Entity<CEActionDoAfterVisualsComponent> ent, ref CEActionStartDoAfterEvent args)
-    {
-        QueueDel(ent.Comp.SpawnedEntity);
-
-        var performer = GetEntity(args.Performer);
-        var vfx = SpawnAttachedTo(ent.Comp.Proto, Transform(performer).Coordinates);
-        _transform.SetParent(vfx, performer);
-        ent.Comp.SpawnedEntity = vfx;
-    }
-
-    private void OnDespawnMagicVisualEffect(Entity<CEActionDoAfterVisualsComponent> ent, ref ActionDoAfterEvent args)
-    {
-        if (args.Repeat)
-            return;
-
-        QueueDel(ent.Comp.SpawnedEntity);
-        ent.Comp.SpawnedEntity = null;
     }
 }

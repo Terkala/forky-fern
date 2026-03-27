@@ -6,8 +6,9 @@
     state: elf
 
 - type: skillTree
-  id: MageGrimoirePackages
-  name: funky-mage-skill-tree-grimoire-name
+  id: MageElementalism
+  name: funky-mage-school-elementalism-name
+  desc: funky-mage-package-elementalism-l1-desc
   skillType: MageGrimoire
   color: "#5a4477"
   parallax: Default

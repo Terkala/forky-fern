@@ -1,21 +1,21 @@
 - type: mageSchool
   id: Elementalism
   name: funky-mage-school-elementalism-name
-  packageSkill: MagePathElementalismSpells
+  packageSkill: MagePathElementalCommit
   tierSpellPicks:
   - tier: 2
     options:
-    - MagePickElementalEarthenBarricade
-    - MagePickElementalFireBolt
-    - MagePickElementalIceShards
+    - MageSpellElementalEarthenBarricade
+    - MageSpellElementalFireBolt
+    - MageSpellElementalIceShards
   - tier: 3
     options:
-    - MagePickElementalDrainElectricity
-    - MagePickElementalElectricStrike
+    - MageSpellElementalDrainElectricity
+    - MageSpellElementalElectricStrike
   - tier: 4
     options:
-    - MagePickElementalFireBarrier
+    - MageSpellElementalFireBarrier
   - tier: 5
     options:
-    - MagePickElementalFireball
-    - MagePickElementalEarthquake
+    - MageSpellElementalFireball
+    - MageSpellElementalEarthquake

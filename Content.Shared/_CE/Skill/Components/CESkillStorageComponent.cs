@@ -1,4 +1,6 @@
 using Content.Shared._CE.Skill.Prototypes;
+using Content.Shared._CE.Skill.Restrictions;
+using Content.Shared._Funkystation.MageAscension;
 using Content.Shared.FixedPoint;
 using Robust.Shared.GameStates;
 using Robust.Shared.Prototypes;
@@ -10,7 +12,7 @@ namespace Content.Shared._CE.Skill.Components;
 /// Component that stores the skills learned by a player and their progress in the skill trees.
 /// </summary>
 [RegisterComponent, NetworkedComponent, AutoGenerateComponentState(true, fieldDeltas: true)]
-[Access(typeof(CESharedSkillSystem))]
+[Access(typeof(CESharedSkillSystem), typeof(SharedMageElementalismDepthSystem), typeof(NeedMinimumSkillPointsSpent))]
 public sealed partial class CESkillStorageComponent : Component
 {
     /// <summary>

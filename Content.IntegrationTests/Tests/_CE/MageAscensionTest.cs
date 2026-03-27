@@ -90,7 +90,6 @@ public sealed class MageAscensionTest
             var conf = ent.SpawnEntity("MageLeyConfluence", confCoords);
             var grim = ent.SpawnEntity("MageGrimoire", map.MapCoords);
             Assert.That(hands.TryForcePickupAnyHand(mage, grim, checkActionBlocker: false), Is.True);
-            ent.GetComponent<MageGrimoireComponent>(grim).IsOpen = true;
 
             interact.InteractUsing(mage, grim, conf, confCoords, checkCanInteract: false, checkCanUse: false);
         });

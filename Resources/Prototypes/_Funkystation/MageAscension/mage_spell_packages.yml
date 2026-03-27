@@ -1,121 +1,190 @@
-# Level 1 package — granted when the mage commits to Elementalism in the grimoire.
+# Elementalism — tier 1 uses prerequisite lines only; tiers 2–5 gate on spent grimoire points (header X in "grimoire insight: X/Y").
+
 - type: skill
-  id: MagePathElementalismSpells
-  name: funky-mage-package-elementalism-l1-name
+  id: MagePathElementalCommit
+  name: funky-mage-school-elementalism-name
   desc: funky-mage-package-elementalism-l1-desc
   skillUiPosition: 0, 0
-  learnCost: 0
-  tree: MageGrimoirePackages
+  learnCost: 1
+  tree: MageElementalism
   icon:
     sprite: Objects/Magic/magicactions.rsi
-    state: fireball
+    state: spell_default
+
+- type: skill
+  id: MageSpellElementalSummonRock
+  name: funky-mage-spell-summon-rock-name
+  desc: funky-mage-spell-summon-rock-desc
+  skillUiPosition: 4, 0
+  learnCost: 1
+  tree: MageElementalism
+  icon:
+    sprite: _CE/Objects/Materials/stone.rsi
+    state: stone
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: MagePathElementalCommit
   effects:
   - !type:AddAction
     action: CEActionSpellElementalSummonRock
+
+- type: skill
+  id: MageSpellElementalIceShield
+  name: funky-mage-spell-ice-shield-name
+  desc: funky-mage-spell-ice-shield-desc
+  skillUiPosition: 4, 2
+  learnCost: 1
+  tree: MageElementalism
+  icon:
+    sprite: Objects/Magic/magicactions.rsi
+    state: shield
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: MagePathElementalCommit
+  effects:
   - !type:AddAction
     action: CEActionSpellElementalIceShield
 
-# One spell each — granted when the mage picks from the grimoire after opening a leyline.
+# Tier 2 (school) — need 3 spent (foundation complete). Layout: one row right of tier 1.
+
 - type: skill
-  id: MagePickElementalEarthenBarricade
+  id: MageSpellElementalEarthenBarricade
   name: funky-mage-spellpick-earthen-barricade
-  skillUiPosition: 1, 0
-  learnCost: 0
-  tree: MageGrimoirePackages
+  skillUiPosition: 6, 0
+  learnCost: 1
+  tree: MageElementalism
   icon:
-    sprite: Objects/Magic/magicactions.rsi
-    state: magicmissile
+    sprite: _CE/Objects/Materials/stone.rsi
+    state: stone_2
+  restrictions:
+  - !type:NeedMinimumSkillPointsSpent
+    skillPointType: MageGrimoire
+    minimum: 3
   effects:
   - !type:AddAction
     action: CEActionSpellElementalEarthenBarricade
 
 - type: skill
-  id: MagePickElementalFireBolt
+  id: MageSpellElementalFireBolt
   name: funky-mage-spellpick-fire-bolt
-  skillUiPosition: 2, 0
-  learnCost: 0
-  tree: MageGrimoirePackages
+  skillUiPosition: 6, 2
+  learnCost: 1
+  tree: MageElementalism
   icon:
     sprite: Objects/Magic/magicactions.rsi
-    state: fireball
+    state: magicmissile
+  restrictions:
+  - !type:NeedMinimumSkillPointsSpent
+    skillPointType: MageGrimoire
+    minimum: 3
   effects:
   - !type:AddAction
     action: CEActionSpellElementalFireBolt
 
 - type: skill
-  id: MagePickElementalIceShards
+  id: MageSpellElementalIceShards
   name: funky-mage-spellpick-ice-shards
-  skillUiPosition: 3, 0
-  learnCost: 0
-  tree: MageGrimoirePackages
+  skillUiPosition: 8, 0
+  learnCost: 1
+  tree: MageElementalism
   icon:
-    sprite: Objects/Magic/magicactions.rsi
-    state: repulse
+    sprite: _CE/Actions/elf_magic.rsi
+    state: ice_dagger
+  restrictions:
+  - !type:NeedMinimumSkillPointsSpent
+    skillPointType: MageGrimoire
+    minimum: 4
   effects:
   - !type:AddAction
     action: CEActionSpellElementalIceShards
 
+# Tier 3 — minimum 4 spent.
+
 - type: skill
-  id: MagePickElementalDrainElectricity
+  id: MageSpellElementalDrainElectricity
   name: funky-mage-spellpick-drain-electricity
-  skillUiPosition: 4, 0
-  learnCost: 0
-  tree: MageGrimoirePackages
+  skillUiPosition: 8, 2
+  learnCost: 1
+  tree: MageElementalism
   icon:
-    sprite: Objects/Magic/magicactions.rsi
-    state: knock
+    sprite: Objects/Misc/stock_parts.rsi
+    state: electrolite
+  restrictions:
+  - !type:NeedMinimumSkillPointsSpent
+    skillPointType: MageGrimoire
+    minimum: 4
   effects:
   - !type:AddAction
     action: CEActionSpellElementalDrainElectricity
 
 - type: skill
-  id: MagePickElementalElectricStrike
+  id: MageSpellElementalElectricStrike
   name: funky-mage-spellpick-electric-strike
-  skillUiPosition: 5, 0
-  learnCost: 0
-  tree: MageGrimoirePackages
+  skillUiPosition: 10, 0
+  learnCost: 1
+  tree: MageElementalism
   icon:
-    sprite: Objects/Magic/magicactions.rsi
-    state: knock
+    sprite: _CE/Effects/energy_overcharge.rsi
+    state: electrified
+  restrictions:
+  - !type:NeedMinimumSkillPointsSpent
+    skillPointType: MageGrimoire
+    minimum: 5
   effects:
   - !type:AddAction
     action: CEActionSpellElementalElectricStrike
 
+# Tier 4 — minimum 5 spent.
+
 - type: skill
-  id: MagePickElementalFireBarrier
+  id: MageSpellElementalFireBarrier
   name: funky-mage-spellpick-fire-barrier
-  skillUiPosition: 6, 0
-  learnCost: 0
-  tree: MageGrimoirePackages
+  skillUiPosition: 10, 2
+  learnCost: 1
+  tree: MageElementalism
   icon:
     sprite: Objects/Magic/magicactions.rsi
-    state: fireball
+    state: repulse
+  restrictions:
+  - !type:NeedMinimumSkillPointsSpent
+    skillPointType: MageGrimoire
+    minimum: 5
   effects:
   - !type:AddAction
     action: CEActionSpellElementalFireBarrier
 
+# Tier 5 — minimum 6 spent.
+
 - type: skill
-  id: MagePickElementalFireball
+  id: MageSpellElementalFireball
   name: funky-mage-spellpick-fireball
-  skillUiPosition: 7, 0
-  learnCost: 0
-  tree: MageGrimoirePackages
+  skillUiPosition: 12, 0
+  learnCost: 1
+  tree: MageElementalism
   icon:
     sprite: Objects/Magic/magicactions.rsi
     state: fireball
+  restrictions:
+  - !type:NeedMinimumSkillPointsSpent
+    skillPointType: MageGrimoire
+    minimum: 6
   effects:
   - !type:AddAction
     action: CEActionSpellElementalFireball
 
 - type: skill
-  id: MagePickElementalEarthquake
+  id: MageSpellElementalEarthquake
   name: funky-mage-spellpick-earthquake
-  skillUiPosition: 8, 0
-  learnCost: 0
-  tree: MageGrimoirePackages
+  skillUiPosition: 12, 2
+  learnCost: 1
+  tree: MageElementalism
   icon:
-    sprite: Objects/Magic/magicactions.rsi
-    state: magicmissile
+    sprite: _CE/Structures/Nature/rocks_small.rsi
+    state: rock4
+  restrictions:
+  - !type:NeedMinimumSkillPointsSpent
+    skillPointType: MageGrimoire
+    minimum: 6
   effects:
   - !type:AddAction
     action: CEActionSpellElementalEarthquake

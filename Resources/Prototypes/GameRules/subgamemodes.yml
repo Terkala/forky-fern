@@ -75,6 +75,15 @@
       - type: NpcFactionMember
         factions:
         - Wizard
+      - type: CESkillStorage
+        availableSkillTrees:
+        - ForkyWizardTreeOffensive
+        - ForkyWizardTreeDefensive
+        - ForkyWizardTreeUtility
+        - ForkyWizardTreeEvents
+        skillPoints:
+          WizardArcane:
+            max: 3
       - type: RandomMetadata
         nameSegments:
         - NamesWizardFirst

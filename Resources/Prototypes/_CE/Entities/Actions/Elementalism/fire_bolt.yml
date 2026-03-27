@@ -10,8 +10,6 @@
   - type: CEActionManaCost
     manaCost: 12
   - type: CEActionFreeHandsRequired
-  - type: CEActionDoAfterVisuals
-    proto: CERuneElementalFireBolt
   - type: Action
     useDelay: 4
     icon:
@@ -27,20 +25,6 @@
       - !type:CESpellProjectile
         prototype: CEProjectileElementalFireBolt
         projectileSpeed: 20
-
-- type: entity
-  id: CERuneElementalFireBolt
-  parent: CEBaseMagicRune
-  categories: [ HideSpawnMenu ]
-  save: false
-  components:
-  - type: PointLight
-    color: "#E25822"
-  - type: Sprite
-    layers:
-    - state: medium_line
-      color: "#E25822"
-      shader: unshaded
 
 - type: entity
   id: CEProjectileElementalFireBolt

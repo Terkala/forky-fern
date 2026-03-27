@@ -10,6 +10,8 @@ public abstract partial class CESharedActionSystem
     {
         SubscribeLocalEvent<CEActionDoAfterSlowdownComponent, CEActionStartDoAfterEvent>(OnStartDoAfter);
         SubscribeLocalEvent<CEActionDoAfterSlowdownComponent, ActionDoAfterEvent>(OnEndDoAfter);
+        SubscribeLocalEvent<CEActionDoAfterVisualsComponent, CEActionStartDoAfterEvent>(OnSpawnMagicVisualEffect);
+        SubscribeLocalEvent<CEActionDoAfterVisualsComponent, ActionDoAfterEvent>(OnDespawnMagicVisualEffect);
         SubscribeLocalEvent<CESlowdownFromActionsComponent, RefreshMovementSpeedModifiersEvent>(OnRefreshMovespeed);
     }
 
@@ -39,6 +41,28 @@ public abstract partial class CESharedActionSystem
 
         if (slowdown.SpeedAffectors.Count == 0)
             RemCompDeferred<CESlowdownFromActionsComponent>(performer);
+    }
+
+    private void OnSpawnMagicVisualEffect(Entity<CEActionDoAfterVisualsComponent> ent, ref CEActionStartDoAfterEvent args)
+    {
+        if (!_timing.IsFirstTimePredicted)
+            return;
+
+        PredictedQueueDel(ent.Comp.SpawnedEntity);
+
+        var performer = GetEntity(args.Performer);
+        var vfx = PredictedSpawnAttachedTo(ent.Comp.Proto, Transform(performer).Coordinates);
+        _xform.SetParent(vfx, performer);
+        ent.Comp.SpawnedEntity = vfx;
+    }
+
+    private void OnDespawnMagicVisualEffect(Entity<CEActionDoAfterVisualsComponent> ent, ref ActionDoAfterEvent args)
+    {
+        if (args.Repeat)
+            return;
+
+        PredictedQueueDel(ent.Comp.SpawnedEntity);
+        ent.Comp.SpawnedEntity = null;
     }
 
     private void OnRefreshMovespeed(Entity<CESlowdownFromActionsComponent> ent, ref RefreshMovementSpeedModifiersEvent args)
