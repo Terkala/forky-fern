@@ -12,3 +12,11 @@
   skillType: MageGrimoire
   color: "#5a4477"
   parallax: Default
+
+- type: skillTree
+  id: MageHonkamancy
+  name: funky-mage-school-honkamancy-name
+  desc: funky-mage-package-honkamancy-l1-desc
+  skillType: MageGrimoire
+  color: "#b347a8"
+  parallax: Default

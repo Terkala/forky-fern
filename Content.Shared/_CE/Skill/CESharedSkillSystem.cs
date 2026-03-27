@@ -62,6 +62,21 @@ public abstract partial class CESharedSkillSystem : EntitySystem
         return false;
     }
 
+    /// <summary>
+    /// Non-free <see cref="CESkillPrototype.LearnCost"/> accumulated for skills in <paramref name="tree"/> (UI + restrictions).
+    /// </summary>
+    public FixedPoint2 GetNonFreeSkillPointsSpentInTree(Entity<CESkillStorageComponent> storage, ProtoId<CESkillTreePrototype> tree)
+    {
+        return storage.Comp.SkillPointsSpentByTree.TryGetValue(tree, out var v) ? v : FixedPoint2.Zero;
+    }
+
+    public FixedPoint2 GetNonFreeSkillPointsSpentInTree(EntityUid actor, ProtoId<CESkillTreePrototype> tree)
+    {
+        return TryGetSkillStorage(actor, out var storage)
+            ? GetNonFreeSkillPointsSpentInTree(storage, tree)
+            : FixedPoint2.Zero;
+    }
+
     public override void Initialize()
     {
         base.Initialize();
@@ -115,6 +130,7 @@ public abstract partial class CESharedSkillSystem : EntitySystem
 
         ent.Comp.FreeLearnedSkills.Clear();
         ent.Comp.LearnedSkills.Clear();
+        ent.Comp.SkillPointsSpentByTree.Clear();
 
         foreach (var skill in free)
         {
@@ -185,6 +201,9 @@ public abstract partial class CESharedSkillSystem : EntitySystem
             {
                 skillContainer.Sum += indexedSkill.LearnCost;
             }
+
+            component.SkillPointsSpentByTree.TryGetValue(indexedSkill.Tree, out var byTree);
+            component.SkillPointsSpentByTree[indexedSkill.Tree] = byTree + indexedSkill.LearnCost;
         }
 
         component.LearnedSkills.Add(skill);
@@ -224,6 +243,14 @@ public abstract partial class CESharedSkillSystem : EntitySystem
             component.SkillPoints.TryGetValue(indexedTree.SkillType, out var skillContainer))
         {
             skillContainer.Sum -= indexedSkill.LearnCost;
+            if (component.SkillPointsSpentByTree.TryGetValue(indexedSkill.Tree, out var byTree))
+            {
+                byTree -= indexedSkill.LearnCost;
+                if (byTree <= 0)
+                    component.SkillPointsSpentByTree.Remove(indexedSkill.Tree);
+                else
+                    component.SkillPointsSpentByTree[indexedSkill.Tree] = byTree;
+            }
         }
 
         Dirty(target, component);

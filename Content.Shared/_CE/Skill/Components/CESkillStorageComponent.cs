@@ -12,7 +12,8 @@ namespace Content.Shared._CE.Skill.Components;
 /// Component that stores the skills learned by a player and their progress in the skill trees.
 /// </summary>
 [RegisterComponent, NetworkedComponent, AutoGenerateComponentState(true, fieldDeltas: true)]
-[Access(typeof(CESharedSkillSystem), typeof(SharedMageElementalismDepthSystem), typeof(NeedMinimumSkillPointsSpent))]
+[Access(typeof(CESharedSkillSystem), typeof(SharedMageSchoolDepthSystem), typeof(NeedMinimumSkillPointsSpent),
+    typeof(NeedMinimumSkillPointsSpentInTree))]
 public sealed partial class CESkillStorageComponent : Component
 {
     /// <summary>
@@ -33,6 +34,12 @@ public sealed partial class CESkillStorageComponent : Component
 
     [DataField, AutoNetworkedField]
     public Dictionary<ProtoId<CESkillPointPrototype>, CESkillPointContainerEntry> SkillPoints = new();
+
+    /// <summary>
+    /// Non-free <see cref="CESkillPrototype.LearnCost"/> spent per skill tree (for path-specific gates and UI).
+    /// </summary>
+    [DataField, AutoNetworkedField]
+    public Dictionary<ProtoId<CESkillTreePrototype>, FixedPoint2> SkillPointsSpentByTree = new();
 }
 
 [DataDefinition, Serializable, NetSerializable]

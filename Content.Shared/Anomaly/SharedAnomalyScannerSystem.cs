@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2025 Quantum-cross <7065792+Quantum-cross@users.noreply.github.com>
 // SPDX-License-Identifier: MIT
 
+using Content.Shared._CE.MageAscension.Components; // Funky
 using Content.Shared.Anomaly.Components;
 using Content.Shared.DoAfter;
 using Content.Shared.Interaction;
@@ -52,7 +53,10 @@ public abstract class SharedAnomalyScannerSystem : EntitySystem
         if (args.Target is not { } target)
             return;
 
-        if (!HasComp<AnomalyComponent>(target))
+        // Funky
+        var canScanAnomaly = HasComp<AnomalyComponent>(target);
+        var canScanConfluence = TryComp<ConfluenceComponent>(target, out var confluence) && confluence.Opened;
+        if (!canScanAnomaly && !canScanConfluence)
             return;
 
         if (!args.CanReach)

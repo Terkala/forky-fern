@@ -8,6 +8,8 @@ ce-skill-menu-learn-button = Learn skill
 ce-skill-menu-learncost = [color=yellow]{$type} required:[/color]
 ce-skill-menu-free = [color=green]This skill is innate to your character, and does not cost skill points![/color]
 
+ce-skill-menu-insight-per-tree = [color=yellow]{$point} — {$tree}:[/color] spent in this path { $inTree } · pool { $sum } / { $max }
+
 ce-skill-desc-add-mana = Increases your character's mana amount by {$mana}.
 ce-skill-desc-add-stamina = Increases your character's stamina amount by {$stamina}.
 ce-skill-desc-unlock-recipes = Opens up the possibility of crafting:

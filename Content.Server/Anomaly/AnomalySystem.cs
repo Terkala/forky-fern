@@ -20,6 +20,8 @@ using Content.Server.Materials;
 using Content.Server.Radiation.Systems;
 using Content.Server.Radio.EntitySystems;
 using Content.Server.Station.Systems;
+// Funky
+using Content.Shared._CE.MageAscension.Components;
 using Content.Shared.Anomaly;
 using Content.Shared.Anomaly.Components;
 using Content.Shared.Anomaly.Prototypes;
@@ -241,6 +243,14 @@ public sealed partial class AnomalySystem : SharedAnomalySystem
     public FormattedMessage GetScannerMessage(AnomalyScannerComponent component)
     {
         var msg = new FormattedMessage();
+        // Funky
+        if (component.ScannedConfluence is { } confluenceUid
+            && TryComp<ConfluenceComponent>(confluenceUid, out var confluenceComp)
+            && confluenceComp.Opened)
+        {
+            return GetConfluenceScannerErrorMessage();
+        }
+
         if (component.ScannedAnomaly is not { } anomaly || !TryComp<AnomalyComponent>(anomaly, out var anomalyComp))
         {
             msg.AddMarkupOrThrow(Loc.GetString("anomaly-scanner-no-anomaly"));
@@ -375,6 +385,34 @@ public sealed partial class AnomalySystem : SharedAnomalySystem
         }
 
         //The timer at the end here is actually added in the ui itself.
+        return msg;
+    }
+
+    // Funky
+    private FormattedMessage GetConfluenceScannerErrorMessage()
+    {
+        var msg = new FormattedMessage();
+        msg.AddMarkupOrThrow(Loc.GetString("mage-confluence-scanner-severity-error"));
+        msg.PushNewline();
+        msg.AddMarkupOrThrow(Loc.GetString("mage-confluence-scanner-stability-error"));
+        msg.PushNewline();
+        msg.AddMarkupOrThrow(Loc.GetString("mage-confluence-scanner-points-error"));
+        msg.PushNewline();
+        msg.PushNewline();
+        msg.AddMarkupOrThrow(Loc.GetString("anomaly-scanner-particle-readout"));
+        msg.PushNewline();
+        msg.AddMarkupOrThrow(Loc.GetString("mage-confluence-scanner-particle-danger-error"));
+        msg.PushNewline();
+        msg.AddMarkupOrThrow(Loc.GetString("mage-confluence-scanner-particle-unstable-error"));
+        msg.PushNewline();
+        msg.AddMarkupOrThrow(Loc.GetString("mage-confluence-scanner-particle-containment-error"));
+        msg.PushNewline();
+        msg.AddMarkupOrThrow(Loc.GetString("mage-confluence-scanner-particle-transformation-error"));
+        msg.PushNewline();
+        msg.PushNewline();
+        msg.AddMarkupOrThrow(Loc.GetString("anomaly-behavior-title"));
+        msg.PushNewline();
+        msg.AddMarkupOrThrow(Loc.GetString("mage-confluence-scanner-behavior-error"));
         return msg;
     }
     #endregion

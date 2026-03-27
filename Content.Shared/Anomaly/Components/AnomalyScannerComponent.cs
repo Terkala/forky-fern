@@ -6,6 +6,7 @@
 // SPDX-License-Identifier: MIT
 
 using Content.Shared.Anomaly;
+using Robust.Shared.Analyzers;
 using Robust.Shared.Audio;
 using Robust.Shared.GameStates;
 
@@ -15,7 +16,7 @@ namespace Content.Shared.Anomaly.Components;
 /// This is used for scanning anomalies and
 /// displaying information about them in the ui
 /// </summary>
-[RegisterComponent, Access(typeof(SharedAnomalyScannerSystem))]
+[RegisterComponent, Access(typeof(SharedAnomalyScannerSystem), Other = AccessPermissions.ReadWriteExecute)]
 [NetworkedComponent]
 public sealed partial class AnomalyScannerComponent : Component
 {
@@ -24,6 +25,13 @@ public sealed partial class AnomalyScannerComponent : Component
     /// </summary>
     [ViewVariables]
     public EntityUid? ScannedAnomaly;
+
+    // Funky
+    /// <summary>
+    /// Opened ley confluence last scanned (mutually exclusive with <see cref="ScannedAnomaly"/> Funky workflow).
+    /// </summary>
+    [ViewVariables]
+    public EntityUid? ScannedConfluence;
 
     /// <summary>
     /// How long the scan takes

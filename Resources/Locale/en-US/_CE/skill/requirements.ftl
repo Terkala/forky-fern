@@ -1,4 +1,6 @@
 ce-skill-req-min-skill-points-spent = Need at least { $min } total spent { $pointName } (the first number in "{ $pointName }: …" at the top of this menu).
+
+ce-skill-req-min-skill-points-spent-in-tree = Need at least { $min } { $pointName } spent in { $treeName } (see this path's spend in the insight line below the tree).
 ce-skill-req-prerequisite = Skill "{$name}" must be learned
 ce-skill-req-prerequisite-any = At least one of these skills must be learned: { $names }
 ce-skill-req-block-if-any-learned-prefix = You cannot choose this while you have already committed to another incompatible path or ability.

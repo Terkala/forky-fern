@@ -4,6 +4,8 @@
 
 using Content.Server.Anomaly.Components;
 using Content.Server.Anomaly.Effects;
+// Funky
+using Content.Shared._CE.MageAscension.Components;
 using Content.Shared.Anomaly;
 using Content.Shared.Anomaly.Components;
 using Content.Shared.DoAfter;
@@ -38,6 +40,8 @@ public sealed class AnomalyScannerSystem : SharedAnomalyScannerSystem
             return;
 
         scannerComp.ScannedAnomaly = anomaly;
+        // Funky
+        scannerComp.ScannedConfluence = null;
         UpdateScannerUi(scanner, scannerComp);
 
         TryComp<AppearanceComponent>(scanner, out var appearanceComp);
@@ -54,6 +58,29 @@ public sealed class AnomalyScannerSystem : SharedAnomalyScannerSystem
             ? 0
             : anomalyComp.Severity;
         Appearance.SetData(scanner, AnomalyScannerVisuals.AnomalySeverity, severity, appearanceComp);
+    }
+
+    // Funky
+    /// <summary>Updates device after scanning an opened ley confluence (Funky).</summary>
+    public void UpdateScannerWithNewConfluence(EntityUid scanner, EntityUid confluence, AnomalyScannerComponent? scannerComp = null)
+    {
+        if (!Resolve(scanner, ref scannerComp))
+            return;
+
+        if (!TryComp<ConfluenceComponent>(confluence, out var confluenceComp) || !confluenceComp.Opened)
+            return;
+
+        scannerComp.ScannedConfluence = confluence;
+        scannerComp.ScannedAnomaly = null;
+        UpdateScannerUi(scanner, scannerComp);
+
+        TryComp<AppearanceComponent>(scanner, out var appearanceComp);
+
+        Appearance.SetData(scanner, AnomalyScannerVisuals.HasAnomaly, true, appearanceComp);
+        Appearance.SetData(scanner, AnomalyScannerVisuals.AnomalyStability, AnomalyStabilityVisuals.Stable, appearanceComp);
+        Appearance.SetData(scanner, AnomalyScannerVisuals.AnomalySeverity, 0, appearanceComp);
+        Appearance.SetData(scanner, AnomalyScannerVisuals.AnomalyNextPulse, 0, appearanceComp);
+        Appearance.SetData(scanner, AnomalyScannerVisuals.AnomalyIsSupercritical, false, appearanceComp);
     }
 
     /// <summary> Update scanner interface. </summary>
@@ -91,7 +118,12 @@ public sealed class AnomalyScannerSystem : SharedAnomalyScannerSystem
 
         base.OnDoAfter(uid, component, args);
 
-        UpdateScannerWithNewAnomaly(uid, args.Args.Target.Value, component);
+        var target = args.Args.Target.Value;
+        if (HasComp<AnomalyComponent>(target))
+            UpdateScannerWithNewAnomaly(uid, target, component);
+        // Funky
+        else if (TryComp<ConfluenceComponent>(target, out var conf) && conf.Opened)
+            UpdateScannerWithNewConfluence(uid, target, component);
     }
 
     private void OnScannerAnomalyHealthChanged(ref AnomalyHealthChangedEvent args)

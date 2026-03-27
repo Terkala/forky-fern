@@ -1,24 +1,20 @@
 using System.Linq;
 using Content.Shared._CE.Skill.Prototypes;
-using Content.Shared._Funkystation.MageAscension;
 using Robust.Shared.Prototypes;
 
 namespace Content.Shared._Funkystation.MageAscension;
 
 /// <summary>
-/// Elementalism progression spells: tier pick options from school tiers 2–5 (see mage_schools.yml).
+/// Tier 2–5 progression spell IDs per <see cref="MageSchoolPrototype"/> (see mage_schools.yml).
 /// </summary>
-public static class MageElementalismProgressStatics
+public static class MageSchoolProgressStatics
 {
-    public const string ElementalismSchoolId = "Elementalism";
-
-    /// <summary>
-    /// Skills that increment Elementalism depth when learned (tiers 2–5 options).
-    /// </summary>
-    public static HashSet<ProtoId<CESkillPrototype>> GetProgressionSkillIds(IPrototypeManager proto)
+    public static HashSet<ProtoId<CESkillPrototype>> GetProgressionSkillIds(
+        string schoolProtoId,
+        IPrototypeManager proto)
     {
         var set = new HashSet<ProtoId<CESkillPrototype>>();
-        if (!proto.TryIndex(ElementalismSchoolId, out MageSchoolPrototype? school))
+        if (!proto.TryIndex(schoolProtoId, out MageSchoolPrototype? school))
             return set;
 
         foreach (var entry in school.TierSpellPicks)
@@ -35,9 +31,10 @@ public static class MageElementalismProgressStatics
 
     public static int CountProgressionLearned(
         IEnumerable<ProtoId<CESkillPrototype>> learned,
+        string schoolProtoId,
         IPrototypeManager proto)
     {
-        var ids = GetProgressionSkillIds(proto);
+        var ids = GetProgressionSkillIds(schoolProtoId, proto);
         return learned.Count(ids.Contains);
     }
 }

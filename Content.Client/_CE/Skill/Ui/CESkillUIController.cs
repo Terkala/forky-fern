@@ -236,17 +236,33 @@ public sealed class CESkillUIController : UIController, IOnStateEntered<Gameplay
         if (_selectedSkillTree == null)
             return;
 
-        if (!EntityManager.TryGetComponent<CESkillStorageComponent>(_targetPlayer, out var storage))
+        if (_targetPlayer == null)
             return;
+
+        if (!_skill.TryGetSkillStorage(_targetPlayer.Value, out var skillStorage))
+            return;
+
+        var storage = skillStorage.Comp;
 
         if (!_proto.Resolve(_selectedSkillTree.SkillType, out var indexedSkillType))
             return;
 
         var skillPointsMap = storage.SkillPoints;
+        var inTreeSpent = _skill.GetNonFreeSkillPointsSpentInTree(skillStorage, _selectedSkillTree.ID);
 
         _window.LevelLabel.Text = skillPointsMap.TryGetValue(_selectedSkillTree.SkillType, out var skillContainer)
-            ? $"{Loc.GetString(indexedSkillType.Name)}: {skillContainer.Sum}/{skillContainer.Max}"
-            : $"{Loc.GetString(indexedSkillType.Name)}: 0/0";
+            ? Loc.GetString("ce-skill-menu-insight-per-tree",
+                ("point", Loc.GetString(indexedSkillType.Name)),
+                ("tree", Loc.GetString(_selectedSkillTree.Name)),
+                ("inTree", inTreeSpent),
+                ("sum", skillContainer.Sum),
+                ("max", skillContainer.Max))
+            : Loc.GetString("ce-skill-menu-insight-per-tree",
+                ("point", Loc.GetString(indexedSkillType.Name)),
+                ("tree", Loc.GetString(_selectedSkillTree.Name)),
+                ("inTree", inTreeSpent),
+                ("sum", 0),
+                ("max", 0));
 
         _window.LevelTexture.Texture = indexedSkillType.Icon?.Frame0();
 
@@ -318,8 +334,10 @@ public sealed class CESkillUIController : UIController, IOnStateEntered<Gameplay
         if (_window is null)
             return;
 
-        if (!EntityManager.TryGetComponent<CESkillStorageComponent>(_targetPlayer, out var storage))
+        if (!_skill.TryGetSkillStorage(_targetPlayer.Value, out var skEnt))
             return;
+
+        var storage = skEnt.Comp;
 
         //If tree not selected, select the first one
         if (_selectedSkillTree == null && storage.AvailableSkillTrees.Count > 0)

@@ -30,7 +30,8 @@ public sealed class OutfitSystem : EntitySystem
     [Dependency] private readonly InventorySystem _invSystem = default!;
     [Dependency] private readonly SharedStationSpawningSystem _spawningSystem = default!;
 
-    public bool SetOutfit(EntityUid target, string gear, Action<EntityUid, EntityUid>? onEquipped = null, bool unremovable = false)
+    public bool SetOutfit(EntityUid target, string gear, Action<EntityUid, EntityUid>? onEquipped = null, bool unremovable = false,
+        bool unremovableDeleteOnDrop = false)
     {
         if (!EntityManager.TryGetComponent(target, out InventoryComponent? inventoryComponent))
             return false;
@@ -68,7 +69,14 @@ public sealed class OutfitSystem : EntitySystem
 
                 _invSystem.TryEquip(target, equipmentEntity, slot.Name, silent: true, force: true, inventory: inventoryComponent);
                 if (unremovable)
-                    EnsureComp<UnremoveableComponent>(equipmentEntity);
+                {
+                    var unrem = EnsureComp<UnremoveableComponent>(equipmentEntity);
+                    if (unremovableDeleteOnDrop)
+                    {
+                        unrem.DeleteOnDrop = true;
+                        Dirty(equipmentEntity, unrem);
+                    }
+                }
 
                 onEquipped?.Invoke(target, equipmentEntity);
             }

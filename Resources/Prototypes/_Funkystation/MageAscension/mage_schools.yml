@@ -19,3 +19,24 @@
     options:
     - MageSpellElementalFireball
     - MageSpellElementalEarthquake
+
+- type: mageSchool
+  id: Honkamancy
+  name: funky-mage-school-honkamancy-name
+  packageSkill: MagePathHonkamancyCommit
+  tierSpellPicks:
+  - tier: 2
+    options:
+    - MageSpellHonkT2A
+    - MageSpellHonkT2B
+  - tier: 3
+    options:
+    - MageSpellHonkT3A
+    - MageSpellHonkT3B
+  - tier: 4
+    options:
+    - MageSpellHonkT4A
+  - tier: 5
+    options:
+    - MageSpellHonkT5A
+    - MageSpellHonkT5B

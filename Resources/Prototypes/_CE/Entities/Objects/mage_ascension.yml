@@ -7,19 +7,22 @@
   categories: [ ForkFiltered ]
   components:
   - type: Sprite
-    sprite: Objects/Misc/books.rsi
+    sprite: _Funkystation/Structures/Mage/book.rsi
     layers:
-    - state: paper
-    - state: cover_base
-      color: "#3a2d55"
-      map: [ "cover" ]
-    - state: decor_wingette
-      color: "#5a4477"
-      map: [ "decor" ]
-    - state: icon_text
-      map: [ "icon" ]
-    - state: overlay_null
-      map: [ "overlay" ]
+    - state: icon
+      map: [ "book" ]
+  - type: Item
+    size: Small
+    sprite: _Funkystation/Structures/Mage/book.rsi
+  - type: Appearance
+  - type: GenericVisualizer
+    visuals:
+      enum.GrimoireBookVisuals.State:
+        book:
+          Closed: { state: icon }
+          Opening: { state: icon_opening }
+          Open: { state: icon-on }
+          Closing: { state: icon_closing }
   - type: MageGrimoire
   - type: Tag
     tags:
@@ -36,10 +39,18 @@
     anchored: true
   - type: Anchorable
   - type: Sprite
-    sprite: _CE/Effects/cast_rune.rsi
-    state: medium_line
-    color: "#88aaff"
+    sprite: _Funkystation/Structures/Mage/reality_fracture.rsi
+    layers:
+    - state: icon
+      map: [ "ley" ]
     noRot: true
+  - type: Appearance
+  - type: GenericVisualizer
+    visuals:
+      enum.ConfluenceVisuals.LeyLine:
+        ley:
+          Dormant: { state: icon }
+          Harvested: { state: icon_harvested }
   - type: Confluence
   - type: LeyLineSource
     enabled: false
@@ -59,6 +70,7 @@
     pointsRemaining: 0
   - type: Physics
     bodyType: Static
+    canCollide: false
 
 - type: entity
   name: mana mote

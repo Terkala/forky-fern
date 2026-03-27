@@ -7,6 +7,10 @@
   skillUiPosition: 0, 0
   learnCost: 1
   tree: MageElementalism
+  restrictions:
+  - !type:BlockIfAnySkillLearned
+    blockedIfAnyLearned:
+    - MagePathHonkamancyCommit
   icon:
     sprite: Objects/Magic/magicactions.rsi
     state: spell_default
@@ -57,7 +61,8 @@
     sprite: _CE/Objects/Materials/stone.rsi
     state: stone_2
   restrictions:
-  - !type:NeedMinimumSkillPointsSpent
+  - !type:NeedMinimumSkillPointsSpentInTree
+    tree: MageElementalism
     skillPointType: MageGrimoire
     minimum: 3
   effects:
@@ -74,7 +79,8 @@
     sprite: Objects/Magic/magicactions.rsi
     state: magicmissile
   restrictions:
-  - !type:NeedMinimumSkillPointsSpent
+  - !type:NeedMinimumSkillPointsSpentInTree
+    tree: MageElementalism
     skillPointType: MageGrimoire
     minimum: 3
   effects:
@@ -91,7 +97,8 @@
     sprite: _CE/Actions/elf_magic.rsi
     state: ice_dagger
   restrictions:
-  - !type:NeedMinimumSkillPointsSpent
+  - !type:NeedMinimumSkillPointsSpentInTree
+    tree: MageElementalism
     skillPointType: MageGrimoire
     minimum: 4
   effects:
@@ -110,7 +117,8 @@
     sprite: Objects/Misc/stock_parts.rsi
     state: electrolite
   restrictions:
-  - !type:NeedMinimumSkillPointsSpent
+  - !type:NeedMinimumSkillPointsSpentInTree
+    tree: MageElementalism
     skillPointType: MageGrimoire
     minimum: 4
   effects:
@@ -127,7 +135,8 @@
     sprite: _CE/Effects/energy_overcharge.rsi
     state: electrified
   restrictions:
-  - !type:NeedMinimumSkillPointsSpent
+  - !type:NeedMinimumSkillPointsSpentInTree
+    tree: MageElementalism
     skillPointType: MageGrimoire
     minimum: 5
   effects:
@@ -146,7 +155,8 @@
     sprite: Objects/Magic/magicactions.rsi
     state: repulse
   restrictions:
-  - !type:NeedMinimumSkillPointsSpent
+  - !type:NeedMinimumSkillPointsSpentInTree
+    tree: MageElementalism
     skillPointType: MageGrimoire
     minimum: 5
   effects:
@@ -165,7 +175,8 @@
     sprite: Objects/Magic/magicactions.rsi
     state: fireball
   restrictions:
-  - !type:NeedMinimumSkillPointsSpent
+  - !type:NeedMinimumSkillPointsSpentInTree
+    tree: MageElementalism
     skillPointType: MageGrimoire
     minimum: 6
   effects:
@@ -182,9 +193,188 @@
     sprite: _CE/Structures/Nature/rocks_small.rsi
     state: rock4
   restrictions:
-  - !type:NeedMinimumSkillPointsSpent
+  - !type:NeedMinimumSkillPointsSpentInTree
+    tree: MageElementalism
     skillPointType: MageGrimoire
     minimum: 6
   effects:
   - !type:AddAction
     action: CEActionSpellElementalEarthquake
+
+# --- Honkamancy (layout shifted down; tier gates use points spent in MageHonkamancy only) ---
+
+- type: skill
+  id: MagePathHonkamancyCommit
+  name: funky-mage-school-honkamancy-name
+  desc: funky-mage-package-honkamancy-l1-desc
+  skillUiPosition: 0, 4
+  learnCost: 1
+  tree: MageHonkamancy
+  restrictions:
+  - !type:BlockIfAnySkillLearned
+    blockedIfAnyLearned:
+    - MagePathElementalCommit
+  icon:
+    sprite: Objects/Magic/magicactions.rsi
+    state: spell_default
+
+- type: skill
+  id: MageSpellHonkEvilPie
+  name: funky-mage-spell-evil-pie-name
+  desc: funky-mage-spell-evil-pie-desc
+  skillUiPosition: 4, 4
+  learnCost: 1
+  tree: MageHonkamancy
+  icon:
+    sprite: Objects/Consumable/Food/Baked/pie.rsi
+    state: plain
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: MagePathHonkamancyCommit
+  effects:
+  - !type:AddAction
+    action: CEActionSpellHonkEvilPie
+
+- type: skill
+  id: MageSpellHonkClownTransform
+  name: funky-mage-spell-clown-transform-name
+  desc: funky-mage-spell-clown-transform-desc
+  skillUiPosition: 4, 6
+  learnCost: 1
+  tree: MageHonkamancy
+  icon:
+    sprite: Clothing/Uniforms/Jumpsuit/clown.rsi
+    state: icon
+  restrictions:
+  - !type:NeedPrerequisite
+    prerequisite: MagePathHonkamancyCommit
+  effects:
+  - !type:AddAction
+    action: CEActionSpellHonkClownTransform
+
+- type: skill
+  id: MageSpellHonkT2A
+  name: funky-mage-spellpick-honk-stub-t2a
+  skillUiPosition: 6, 4
+  learnCost: 1
+  tree: MageHonkamancy
+  icon:
+    sprite: Objects/Magic/magicactions.rsi
+    state: spell_default
+  restrictions:
+  - !type:NeedMinimumSkillPointsSpentInTree
+    tree: MageHonkamancy
+    skillPointType: MageGrimoire
+    minimum: 3
+  effects:
+  - !type:AddAction
+    action: CEActionSpellHonkStubT2A
+
+- type: skill
+  id: MageSpellHonkT2B
+  name: funky-mage-spell-honk-banana-snack-name
+  desc: funky-mage-spell-honk-banana-snack-desc
+  skillUiPosition: 6, 6
+  learnCost: 1
+  tree: MageHonkamancy
+  icon:
+    sprite: Objects/Specific/Hydroponics/banana.rsi
+    state: produce
+  restrictions:
+  - !type:NeedMinimumSkillPointsSpentInTree
+    tree: MageHonkamancy
+    skillPointType: MageGrimoire
+    minimum: 3
+  effects:
+  - !type:AddAction
+    action: CEActionSpellHonkBananaSnack
+
+- type: skill
+  id: MageSpellHonkT3A
+  name: funky-mage-spellpick-honk-stub-t3a
+  skillUiPosition: 8, 4
+  learnCost: 1
+  tree: MageHonkamancy
+  icon:
+    sprite: Objects/Magic/magicactions.rsi
+    state: spell_default
+  restrictions:
+  - !type:NeedMinimumSkillPointsSpentInTree
+    tree: MageHonkamancy
+    skillPointType: MageGrimoire
+    minimum: 4
+  effects:
+  - !type:AddAction
+    action: CEActionSpellHonkStubT3A
+
+- type: skill
+  id: MageSpellHonkT3B
+  name: funky-mage-spellpick-honk-stub-t3b
+  skillUiPosition: 8, 6
+  learnCost: 1
+  tree: MageHonkamancy
+  icon:
+    sprite: Objects/Magic/magicactions.rsi
+    state: spell_default
+  restrictions:
+  - !type:NeedMinimumSkillPointsSpentInTree
+    tree: MageHonkamancy
+    skillPointType: MageGrimoire
+    minimum: 4
+  effects:
+  - !type:AddAction
+    action: CEActionSpellHonkStubT3B
+
+- type: skill
+  id: MageSpellHonkT4A
+  name: funky-mage-spellpick-honk-stub-t4a
+  skillUiPosition: 10, 4
+  learnCost: 1
+  tree: MageHonkamancy
+  icon:
+    sprite: Objects/Magic/magicactions.rsi
+    state: spell_default
+  restrictions:
+  - !type:NeedMinimumSkillPointsSpentInTree
+    tree: MageHonkamancy
+    skillPointType: MageGrimoire
+    minimum: 5
+  effects:
+  - !type:AddAction
+    action: CEActionSpellHonkStubT4A
+
+- type: skill
+  id: MageSpellHonkT5A
+  name: funky-mage-spellpick-honk-stub-t5a
+  skillUiPosition: 12, 4
+  learnCost: 1
+  tree: MageHonkamancy
+  icon:
+    sprite: Objects/Magic/magicactions.rsi
+    state: spell_default
+  restrictions:
+  - !type:NeedMinimumSkillPointsSpentInTree
+    tree: MageHonkamancy
+    skillPointType: MageGrimoire
+    minimum: 6
+  effects:
+  - !type:AddAction
+    action: CEActionSpellHonkStubT5A
+
+- type: skill
+  id: MageSpellHonkT5B
+  name: funky-mage-spellpick-honk-stub-t5b
+  skillUiPosition: 12, 6
+  learnCost: 1
+  tree: MageHonkamancy
+  icon:
+    sprite: Objects/Magic/magicactions.rsi
+    state: spell_default
+  restrictions:
+  - !type:NeedMinimumSkillPointsSpentInTree
+    tree: MageHonkamancy
+    skillPointType: MageGrimoire
+    minimum: 6
+  effects:
+  - !type:AddAction
+    action: CEActionSpellHonkStubT5B

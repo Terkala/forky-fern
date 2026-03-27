@@ -3,6 +3,8 @@
 // SPDX-FileCopyrightText: 2024 Pieter-Jan Briers <pieterjan.briers+git@gmail.com>
 // SPDX-License-Identifier: MIT
 
+// Funky
+using Content.Server._Funkystation.MageAscension;
 using Content.Shared.Anomaly;
 using Robust.Shared.Audio;
 using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom;
@@ -15,7 +17,7 @@ namespace Content.Server.Anomaly.Components;
 /// they generate points for the selected server based on
 /// the anomaly's stability and severity.
 /// </summary>
-[RegisterComponent, Access(typeof(SharedAnomalySystem)), AutoGenerateComponentPause]
+[RegisterComponent, Access(typeof(SharedAnomalySystem), typeof(ConfluenceVesselResearchSystem), typeof(ConfluenceVesselLinkSystem)), AutoGenerateComponentPause]
 public sealed partial class AnomalyVesselComponent : Component
 {
     /// <summary>
@@ -24,6 +26,19 @@ public sealed partial class AnomalyVesselComponent : Component
     /// </summary>
     [ViewVariables]
     public EntityUid? Anomaly;
+
+    // Funky
+    /// <summary>
+    /// Opened ley confluence linked for passive research (Funky); mutually exclusive with <see cref="Anomaly"/>.
+    /// </summary>
+    [ViewVariables]
+    public EntityUid? Confluence;
+
+    /// <summary>
+    /// Fractional research points accrual for confluence harvesting (Funky).
+    /// </summary>
+    [ViewVariables]
+    public float ConfluenceResearchAccumulator;
 
     /// <summary>
     /// A multiplier applied to the amount of points generated.

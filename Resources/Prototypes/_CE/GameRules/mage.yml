@@ -28,6 +28,7 @@
       - type: CESkillStorage
         availableSkillTrees:
         - MageElementalism
+        - MageHonkamancy
         skillPoints:
           MageGrimoire:
             max: 3

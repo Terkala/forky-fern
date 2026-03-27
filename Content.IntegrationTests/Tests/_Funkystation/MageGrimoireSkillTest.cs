@@ -93,7 +93,8 @@ public sealed class MageGrimoireSkillTest
             Assert.That(storage.SkillPoints[MageSkillPoint].Sum, Is.EqualTo(FixedPoint2.New(6)));
             Assert.That(skills.CanLearnSkill(mage, "MageSpellElementalFireball"), Is.True);
 
-            Assert.That(ent.GetComponent<MageElementalismProgressComponent>(mage).ElementalismDepth, Is.EqualTo(3));
+            var depths = ent.System<SharedMageSchoolDepthSystem>();
+            Assert.That(depths.TryGetSchoolDepth(mage, "Elementalism", out var d) && d == 3, Is.True);
         });
 
         await pair.CleanReturnAsync();
@@ -132,10 +133,12 @@ public sealed class MageGrimoireSkillTest
             skills.TryRemoveSkillPoints((mage, storage), MageSkillPoint, 1, silent: true);
             Assert.That(storage.SkillPoints[MageSkillPoint].Sum, Is.EqualTo(FixedPoint2.New(3)));
             Assert.That(storage.SkillPoints[MageSkillPoint].Max, Is.EqualTo(FixedPoint2.New(3)));
+            var lostRock = !skills.HaveSkill(mage, "MageSpellElementalSummonRock");
             var lostIce = !skills.HaveSkill(mage, "MageSpellElementalIceShield");
             var lostEarthen = !skills.HaveSkill(mage, "MageSpellElementalEarthenBarricade");
-            // Spent-only tier gates make both Ice and Earthen frontier-removable; cap shrink removes one at random.
-            Assert.That(lostIce ^ lostEarthen, Is.True);
+            // Cap shrink drops exactly one pay-cost frontier skill; tier-1 picks can also be removable alongside tier 2.
+            Assert.That((lostRock ? 1 : 0) + (lostIce ? 1 : 0) + (lostEarthen ? 1 : 0), Is.EqualTo(1));
+            Assert.That(skills.HaveSkill(mage, "MagePathElementalCommit"), Is.True);
         });
 
         await pair.CleanReturnAsync();
@@ -197,6 +200,93 @@ public sealed class MageGrimoireSkillTest
             AssertSpawn(ent, proto, coords, "CEActionSpellElementalFireBarrier");
             AssertSpawn(ent, proto, coords, "CEActionSpellElementalFireball");
             AssertSpawn(ent, proto, coords, "CEActionSpellElementalEarthquake");
+            AssertSpawn(ent, proto, coords, "CEHonkEvilPie");
+            AssertSpawn(ent, proto, coords, "CEHonkBlessedBanana");
+            AssertSpawn(ent, proto, coords, "CEActionSpellHonkEvilPie");
+            AssertSpawn(ent, proto, coords, "CEActionSpellHonkBananaSnack");
+            AssertSpawn(ent, proto, coords, "CEActionSpellHonkClownTransform");
+            AssertSpawn(ent, proto, coords, "ClothingUniformJumpsuitHonkBlessed");
+        });
+
+        await pair.CleanReturnAsync();
+    }
+
+    [Test]
+    public async Task MagePathCommitsAreMutuallyExclusive()
+    {
+        await using var pair = await PoolManager.GetServerClient();
+        var server = pair.Server;
+        await server.WaitIdleAsync();
+        var map = await pair.CreateTestMap();
+        var ent = server.EntMan;
+        var skills = ent.System<CESkillSystem>();
+
+        await server.WaitPost(() =>
+        {
+            var mage = ent.SpawnEntity("InteractionTestMob", map.MapCoords);
+            ent.AddComponent<MageOfAscensionComponent>(mage);
+            ent.EnsureComponent<CESkillStorageComponent>(mage);
+            var storage = ent.GetComponent<CESkillStorageComponent>(mage);
+
+            skills.AddSkillTree(mage, "MageElementalism");
+            skills.AddSkillTree(mage, "MageHonkamancy");
+            Assert.That(skills.TryAddSkillPoints((mage, storage), MageSkillPoint, 10), Is.True);
+
+            Assert.That(skills.TryLearnSkill(mage, "MagePathElementalCommit"), Is.True);
+            Assert.That(skills.CanLearnSkill(mage, "MagePathHonkamancyCommit"), Is.False);
+            Assert.That(skills.TryLearnSkill(mage, "MagePathHonkamancyCommit"), Is.False);
+        });
+
+        await server.WaitPost(() =>
+        {
+            var mage = ent.SpawnEntity("InteractionTestMob", map.MapCoords);
+            ent.AddComponent<MageOfAscensionComponent>(mage);
+            ent.EnsureComponent<CESkillStorageComponent>(mage);
+            var storage = ent.GetComponent<CESkillStorageComponent>(mage);
+
+            skills.AddSkillTree(mage, "MageElementalism");
+            skills.AddSkillTree(mage, "MageHonkamancy");
+            Assert.That(skills.TryAddSkillPoints((mage, storage), MageSkillPoint, 10), Is.True);
+
+            Assert.That(skills.TryLearnSkill(mage, "MagePathHonkamancyCommit"), Is.True);
+            Assert.That(skills.CanLearnSkill(mage, "MagePathElementalCommit"), Is.False);
+            Assert.That(skills.TryLearnSkill(mage, "MagePathElementalCommit"), Is.False);
+        });
+
+        await pair.CleanReturnAsync();
+    }
+
+    [Test]
+    public async Task HonkTierGatesIgnoreElementalSpend()
+    {
+        await using var pair = await PoolManager.GetServerClient();
+        var server = pair.Server;
+        await server.WaitIdleAsync();
+        var map = await pair.CreateTestMap();
+        var ent = server.EntMan;
+        var skills = ent.System<CESkillSystem>();
+
+        await server.WaitPost(() =>
+        {
+            var mage = ent.SpawnEntity("InteractionTestMob", map.MapCoords);
+            ent.AddComponent<MageOfAscensionComponent>(mage);
+            ent.EnsureComponent<CESkillStorageComponent>(mage);
+            var storage = ent.GetComponent<CESkillStorageComponent>(mage);
+
+            skills.AddSkillTree(mage, "MageElementalism");
+            skills.AddSkillTree(mage, "MageHonkamancy");
+            Assert.That(skills.TryAddSkillPoints((mage, storage), MageSkillPoint, 10), Is.True);
+
+            Assert.That(skills.TryLearnSkill(mage, "MagePathElementalCommit"), Is.True);
+            Assert.That(skills.TryLearnSkill(mage, "MageSpellElementalSummonRock"), Is.True);
+            Assert.That(skills.TryLearnSkill(mage, "MageSpellElementalIceShield"), Is.True);
+            Assert.That(skills.TryLearnSkill(mage, "MageSpellElementalEarthenBarricade"), Is.True);
+            Assert.That(skills.TryLearnSkill(mage, "MageSpellElementalDrainElectricity"), Is.True);
+            Assert.That(skills.TryLearnSkill(mage, "MageSpellElementalFireBarrier"), Is.True);
+
+            Assert.That(skills.GetNonFreeSkillPointsSpentInTree(mage, "MageHonkamancy"), Is.EqualTo(FixedPoint2.Zero));
+
+            Assert.That(skills.CanLearnSkill(mage, "MageSpellHonkT2A"), Is.False);
         });
 
         await pair.CleanReturnAsync();

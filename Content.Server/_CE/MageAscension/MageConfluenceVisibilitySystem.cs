@@ -5,7 +5,8 @@ using Content.Shared.Interaction.Events;
 namespace Content.Server._CE.MageAscension;
 
 /// <summary>
-/// Unopened confluences are interaction/examine blocked for non-mages (full mage-only visibility needs engine support).
+/// Unopened confluences are interaction/examine blocked for non-mages.
+/// Dormant sprites are hidden on non-mage clients via <c>ClientConfluenceSpriteHideSystem</c>.
 /// </summary>
 public sealed class MageConfluenceVisibilitySystem : EntitySystem
 {

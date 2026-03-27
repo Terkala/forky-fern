@@ -5,8 +5,11 @@
 // SPDX-FileCopyrightText: 2025 Quantum-cross <7065792+Quantum-cross@users.noreply.github.com>
 // SPDX-License-Identifier: MIT
 
+// Funky
+using Content.Server._Funkystation.MageAscension;
 using Content.Server.Anomaly.Components;
 using Content.Server.Power.EntitySystems;
+using Content.Shared._CE.MageAscension.Components;
 using Content.Shared.Anomaly;
 using Content.Shared.Anomaly.Components;
 using Content.Shared.Examine;
@@ -37,6 +40,13 @@ public sealed partial class AnomalySystem
         if (!args.IsInDetailsRange)
             return;
 
+        // Funky
+        if (component.Confluence != null)
+        {
+            args.PushText(Loc.GetString("mage-confluence-vessel-assigned"));
+            return;
+        }
+
         args.PushText(component.Anomaly == null
             ? Loc.GetString("anomaly-vessel-component-not-assigned")
             : Loc.GetString("anomaly-vessel-component-assigned"));
@@ -44,13 +54,12 @@ public sealed partial class AnomalySystem
 
     private void OnVesselShutdown(EntityUid uid, AnomalyVesselComponent component, ComponentShutdown args)
     {
-        if (component.Anomaly is not { } anomaly)
-            return;
+        if (component.Anomaly is { } anomaly && TryComp<AnomalyComponent>(anomaly, out var anomalyComp))
+            anomalyComp.ConnectedVessel = null;
 
-        if (!TryComp<AnomalyComponent>(anomaly, out var anomalyComp))
-            return;
-
-        anomalyComp.ConnectedVessel = null;
+        // Funky
+        if (component.Confluence is { } confluence && TryComp<ConfluenceVesselLinkComponent>(confluence, out var link))
+            link.ConnectedVessel = null;
     }
 
     private void OnVesselMapInit(EntityUid uid, AnomalyVesselComponent component, MapInitEvent args)
@@ -60,26 +69,79 @@ public sealed partial class AnomalySystem
 
     private void OnVesselInteractUsing(EntityUid uid, AnomalyVesselComponent component, InteractUsingEvent args)
     {
-        if (component.Anomaly != null ||
-            !TryComp<AnomalyScannerComponent>(args.Used, out var scanner) ||
-            scanner.ScannedAnomaly is not { } anomaly)
+        // Funky: mutual exclusion with ley confluence link
+        if (component.Anomaly != null || component.Confluence != null)
+            return;
+
+        if (!TryComp<AnomalyScannerComponent>(args.Used, out var scanner))
+            return;
+
+        if (scanner.ScannedAnomaly is { } anomaly
+            && TryComp<AnomalyComponent>(anomaly, out var anomalyComponent)
+            && anomalyComponent.ConnectedVessel == null)
+        {
+            component.Anomaly = scanner.ScannedAnomaly;
+            anomalyComponent.ConnectedVessel = uid;
+            _radiation.SetSourceEnabled(uid, true);
+            UpdateVesselAppearance(uid, component);
+            Popup.PopupEntity(Loc.GetString("anomaly-vessel-component-anomaly-assigned"), uid);
+            return;
+        }
+
+        // Funky
+        if (scanner.ScannedConfluence is not { } confluence
+            || !TryComp<ConfluenceComponent>(confluence, out var confluenceComp)
+            || !confluenceComp.Opened
+            || !TryComp<ConfluenceVesselLinkComponent>(confluence, out var link)
+            || link.ConnectedVessel != null)
         {
             return;
         }
 
-        if (!TryComp<AnomalyComponent>(anomaly, out var anomalyComponent) || anomalyComponent.ConnectedVessel != null)
-            return;
+        LinkConfluenceToVessel(uid, component, confluence, link);
+        scanner.ScannedConfluence = null;
+        Popup.PopupEntity(Loc.GetString("mage-confluence-vessel-linked"), uid);
+    }
 
-        component.Anomaly = scanner.ScannedAnomaly;
-        anomalyComponent.ConnectedVessel = uid;
-        _radiation.SetSourceEnabled(uid, true);
-        UpdateVesselAppearance(uid,  component);
-        Popup.PopupEntity(Loc.GetString("anomaly-vessel-component-anomaly-assigned"), uid);
+    // Funky
+    /// <summary>
+    /// Links an opened confluence to an empty vessel (integration tests; gameplay uses scanner interaction).
+    /// </summary>
+    public void SetVesselConfluenceForTesting(EntityUid vessel, EntityUid confluence)
+    {
+        if (!TryComp(vessel, out AnomalyVesselComponent? vesselComp)
+            || vesselComp.Anomaly != null
+            || vesselComp.Confluence != null)
+        {
+            return;
+        }
+
+        if (!TryComp<ConfluenceComponent>(confluence, out var conf) || !conf.Opened
+            || !TryComp<ConfluenceVesselLinkComponent>(confluence, out var link)
+            || link.ConnectedVessel != null)
+        {
+            return;
+        }
+
+        LinkConfluenceToVessel(vessel, vesselComp, confluence, link);
+    }
+
+    // Funky
+    private void LinkConfluenceToVessel(EntityUid vessel, AnomalyVesselComponent vesselComp, EntityUid confluence,
+        ConfluenceVesselLinkComponent link)
+    {
+        vesselComp.Confluence = confluence;
+        link.ConnectedVessel = vessel;
+        UpdateVesselAppearance(vessel, vesselComp);
     }
 
     private void OnVesselGetPointsPerSecond(EntityUid uid, AnomalyVesselComponent component, ref ResearchServerGetPointsPerSecondEvent args)
     {
-        if (!this.IsPowered(uid, EntityManager) || component.Anomaly is not {} anomaly)
+        // Funky: ley confluence grants via ConfluenceVesselResearchSystem instead
+        if (!this.IsPowered(uid, EntityManager) || component.Confluence != null)
+            return;
+
+        if (component.Anomaly is not { } anomaly)
             return;
 
         args.Points += (int) (GetAnomalyPointValue(anomaly) * component.PointMultiplier);
@@ -126,7 +188,8 @@ public sealed partial class AnomalySystem
         if (!Resolve(uid, ref component))
             return;
 
-        var on = component.Anomaly != null;
+        // Funky
+        var on = component.Anomaly != null || component.Confluence != null;
 
         if (!TryComp<AppearanceComponent>(uid, out var appearanceComponent))
             return;

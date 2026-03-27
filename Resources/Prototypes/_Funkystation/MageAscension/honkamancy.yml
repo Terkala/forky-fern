@@ -1,0 +1,292 @@
+# Honkamancy — Evil Pie entity, blessed gear, outfit, spell actions (and tier stubs).
+
+- type: entity
+  parent: [FoodInjectableBase, BaseMinorContraband]
+  id: CEHonkEvilPie
+  name: funky-mage-evil-pie-entity-name
+  description: funky-mage-evil-pie-entity-desc
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Item
+    size: Small
+    shape:
+    - 0,0,1,0
+  - type: Sprite
+    sprite: Objects/Consumable/Food/Baked/pie.rsi
+    layers:
+    - state: tin
+    - state: plain
+      color: "#5c2a4f"
+  - type: FlavorProfile
+    flavors:
+    - sweet
+    - funny
+  - type: SolutionContainerManager
+    solutions:
+      food:
+        maxVol: 20
+        reagents:
+        - ReagentId: Nutriment
+          Quantity: 8
+        - ReagentId: Sugar
+          Quantity: 4
+  - type: CreamPie
+  - type: SolutionInjectOnHit
+    reagents:
+    - ReagentId: Honk
+      Quantity: 4
+    - ReagentId: Razorium
+      Quantity: 4
+  - type: ThrowingAngle
+    angle: 180
+  - type: LandAtCursor
+  - type: Tag
+    tags:
+    - Pie
+
+- type: startingGear
+  id: MageHonkBlessedOutfit
+  equipment:
+    jumpsuit: ClothingUniformJumpsuitHonkBlessed
+    mask: ClothingMaskHonkBlessed
+    shoes: ClothingShoesHonkBlessed
+    id: ClownPDA
+    ears: ClothingHeadsetService
+
+- type: entity
+  parent: ClothingUniformJumpsuitClown
+  id: ClothingUniformJumpsuitHonkBlessed
+  name: blessed clown suit
+  description: A joke so good the fabric refutes concussions.
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: StaminaResistance
+    damageCoefficient: 0.5
+    worn: true
+
+- type: entity
+  parent: ClothingMaskClown
+  id: ClothingMaskHonkBlessed
+  name: blessed clown mask
+  description: Neither flash nor squint shall break your bit.
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: FlashImmunity
+  - type: EyeProtection
+
+- type: entity
+  parent: ClothingShoesClown
+  id: ClothingShoesHonkBlessed
+  name: blessed clown shoes
+  description: The station tilts; you do not.
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: NoSlip
+
+- type: entity
+  id: CEActionSpellHonkEvilPie
+  parent: CEActionSpellBase
+  name: funky-mage-spell-evil-pie-name
+  description: funky-mage-spell-evil-pie-desc
+  components:
+  - type: CEActionManaCost
+    manaCost: 12
+  - type: CEActionFreeHandsRequired
+  - type: Action
+    useDelay: 5
+    icon:
+      sprite: Objects/Consumable/Food/Baked/pie.rsi
+      state: plain
+  - type: DoAfterArgs
+    delay: 0.35
+  - type: InstantAction
+    event: !type:CEInstantModularEffectEvent
+      effects:
+      - !type:CESpellSpawnInHandEntity
+        spawns:
+        - CEHonkEvilPie
+        deleteIfCantPickup: true
+
+- type: entity
+  parent: FoodBanana
+  id: CEHonkBlessedBanana
+  name: funky-mage-honk-blessed-banana-name
+  description: funky-mage-honk-blessed-banana-desc
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: SolutionContainerManager
+    solutions:
+      food:
+        maxVol: 30
+        reagents:
+        - ReagentId: Nutriment
+          Quantity: 15
+        - ReagentId: Omnizine
+          Quantity: 10
+        - ReagentId: Saline
+          Quantity: 5
+  - type: TimedDespawn
+    lifetime: 60
+
+- type: entity
+  id: CEActionSpellHonkClownTransform
+  parent: CEActionSpellBase
+  name: funky-mage-spell-clown-transform-name
+  description: funky-mage-spell-clown-transform-desc
+  components:
+  - type: CEActionFreeHandsRequired
+  - type: Action
+    useDelay: 45
+    icon:
+      sprite: Clothing/Uniforms/Jumpsuit/clown.rsi
+      state: icon
+  - type: DoAfterArgs
+    delay: 0.4
+  - type: InstantAction
+    event: !type:CEInstantModularEffectEvent
+      effects:
+      - !type:CESpellBeginHonkClownTransform
+
+- type: entity
+  id: CEActionSpellHonkStubT2A
+  parent: CEActionSpellBase
+  name: funky-mage-spellpick-honk-stub-t2a
+  description: Placeholder spell.
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: CEActionManaCost
+    manaCost: 5
+  - type: Action
+    useDelay: 1
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+  - type: DoAfterArgs
+    delay: 0.2
+  - type: InstantAction
+    event: !type:CEInstantModularEffectEvent
+      effects: []
+
+- type: entity
+  id: CEActionSpellHonkBananaSnack
+  parent: CEActionSpellBase
+  name: funky-mage-spell-honk-banana-snack-name
+  description: funky-mage-spell-honk-banana-snack-desc
+  components:
+  - type: CEActionManaCost
+    manaCost: 30
+  - type: CEActionFreeHandsRequired
+  - type: Action
+    useDelay: 8
+    icon:
+      sprite: Objects/Specific/Hydroponics/banana.rsi
+      state: produce
+  - type: DoAfterArgs
+    delay: 0.35
+  - type: InstantAction
+    event: !type:CEInstantModularEffectEvent
+      effects:
+      - !type:CESpellSpawnInHandEntity
+        spawns:
+        - CEHonkBlessedBanana
+        deleteIfCantPickup: true
+
+- type: entity
+  id: CEActionSpellHonkStubT3A
+  parent: CEActionSpellBase
+  name: funky-mage-spellpick-honk-stub-t3a
+  description: Placeholder spell.
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: CEActionManaCost
+    manaCost: 5
+  - type: Action
+    useDelay: 1
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+  - type: DoAfterArgs
+    delay: 0.2
+  - type: InstantAction
+    event: !type:CEInstantModularEffectEvent
+      effects: []
+
+- type: entity
+  id: CEActionSpellHonkStubT3B
+  parent: CEActionSpellBase
+  name: funky-mage-spellpick-honk-stub-t3b
+  description: Placeholder spell.
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: CEActionManaCost
+    manaCost: 5
+  - type: Action
+    useDelay: 1
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+  - type: DoAfterArgs
+    delay: 0.2
+  - type: InstantAction
+    event: !type:CEInstantModularEffectEvent
+      effects: []
+
+- type: entity
+  id: CEActionSpellHonkStubT4A
+  parent: CEActionSpellBase
+  name: funky-mage-spellpick-honk-stub-t4a
+  description: Placeholder spell.
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: CEActionManaCost
+    manaCost: 5
+  - type: Action
+    useDelay: 1
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+  - type: DoAfterArgs
+    delay: 0.2
+  - type: InstantAction
+    event: !type:CEInstantModularEffectEvent
+      effects: []
+
+- type: entity
+  id: CEActionSpellHonkStubT5A
+  parent: CEActionSpellBase
+  name: funky-mage-spellpick-honk-stub-t5a
+  description: Placeholder spell.
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: CEActionManaCost
+    manaCost: 5
+  - type: Action
+    useDelay: 1
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+  - type: DoAfterArgs
+    delay: 0.2
+  - type: InstantAction
+    event: !type:CEInstantModularEffectEvent
+      effects: []
+
+- type: entity
+  id: CEActionSpellHonkStubT5B
+  parent: CEActionSpellBase
+  name: funky-mage-spellpick-honk-stub-t5b
+  description: Placeholder spell.
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: CEActionManaCost
+    manaCost: 5
+  - type: Action
+    useDelay: 1
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+  - type: DoAfterArgs
+    delay: 0.2
+  - type: InstantAction
+    event: !type:CEInstantModularEffectEvent
+      effects: []
