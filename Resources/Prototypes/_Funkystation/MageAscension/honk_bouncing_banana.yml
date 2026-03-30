@@ -1,0 +1,52 @@
+# Honkamancy — Bouncing Banana Bullet (tier 3A)
+
+- type: entity
+  id: CEProjectileHonkBouncingBanana
+  name: funky-mage-bouncing-banana-projectile-name
+  description: funky-mage-bouncing-banana-projectile-desc
+  parent: BaseBullet
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Sprite
+    sprite: Objects/Specific/Hydroponics/banana.rsi
+    state: produce
+  - type: Projectile
+    damage:
+      types:
+        Blunt: 8
+    soundHit:
+      collection: WeakHit
+    forceSound: true
+  - type: TimedDespawn
+    lifetime: 5
+
+- type: entity
+  id: CEActionSpellHonkBouncingBanana
+  parent: CEActionSpellBase
+  name: funky-mage-spell-bouncing-banana-name
+  description: funky-mage-spell-bouncing-banana-desc
+  components:
+  - type: CEActionManaCost
+    manaCost: 18
+  - type: CEActionFreeHandsRequired
+  - type: Action
+    useDelay: 6
+    icon:
+      sprite: Objects/Specific/Hydroponics/banana.rsi
+      state: produce
+  - type: DoAfterArgs
+    delay: 0.35
+  - type: TargetAction
+    range: 20
+  - type: WorldTargetAction
+    event: !type:CEWorldTargetModularEffectEvent
+      effects:
+      - !type:CESpellProjectileBouncing
+        prototype: CEProjectileHonkBouncingBanana
+        projectileSpeed: 20
+        maxBounces: 10
+        maxDurationSeconds: 3
+        bounceMode: NearbyTarget
+        targetSearchRadius: 10
+        damageFalloffPerBounce: 1
+        useLosFilter: false

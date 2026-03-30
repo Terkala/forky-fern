@@ -36,6 +36,7 @@ using Content.Shared.Damage.Systems;
 using Content.Shared.Database;
 using Content.Shared.FixedPoint;
 using Content.Shared.Projectiles;
+using Content.Shared._Funkystation.Projectile; // Funky
 using Robust.Shared.Physics.Events;
 using Robust.Shared.Player;
 
@@ -49,6 +50,7 @@ public sealed class ProjectileSystem : SharedProjectileSystem
     [Dependency] private readonly DestructibleSystem _destructibleSystem = default!;
     [Dependency] private readonly GunSystem _guns = default!;
     [Dependency] private readonly SharedCameraRecoilSystem _sharedCameraRecoil = default!;
+    [Dependency] private readonly SharedBouncingSpellProjectileSystem _bouncingSpell = default!; // Funky
 
     public override void Initialize()
     {
@@ -73,7 +75,17 @@ public sealed class ProjectileSystem : SharedProjectileSystem
             return;
         }
 
-        var ev = new ProjectileHitEvent(component.Damage * _damageableSystem.UniversalProjectileDamageModifier, target, component.Shooter);
+        // Funky Start
+        // This allows projectiles to bounce off of surfaces and continue their path
+        var hasBounce = TryComp<BouncingSpellProjectileComponent>(uid, out var bounceComp);
+        var canContinueBounce = hasBounce && _bouncingSpell.CanStillBounce(bounceComp!);
+
+        var damageSpec = component.Damage * _damageableSystem.UniversalProjectileDamageModifier;
+        if (hasBounce && bounceComp!.DamageFalloffPerBounce > 0f && bounceComp.DamageFalloffPerBounce < 1f)
+            damageSpec *= MathF.Pow(bounceComp.DamageFalloffPerBounce, bounceComp.BounceCount);
+
+        var ev = new ProjectileHitEvent(damageSpec, target, component.Shooter);
+        // Funky End
         RaiseLocalEvent(uid, ref ev);
 
         var otherName = ToPrettyString(target);
@@ -85,8 +97,13 @@ public sealed class ProjectileSystem : SharedProjectileSystem
         }
         var deleted = Deleted(target);
 
-        if (_damageableSystem.TryChangeDamage((target, damageableComponent), ev.Damage, out var damage, component.IgnoreResistances, origin: component.Shooter) && Exists(component.Shooter))
+        // Funky Start
+        // This allows projectiles to deal damage to entities and continue their path
+        DamageSpecifier? appliedDamage = null;
+        var spentFromHit = true;
+        if (_damageableSystem.TryChangeDamage((target, damageableComponent), ev.Damage, out var newDamage, component.IgnoreResistances, origin: component.Shooter) && Exists(component.Shooter))
         {
+            appliedDamage = newDamage;
             if (!deleted)
             {
                 _color.RaiseEffect(Color.Red, new List<EntityUid> { target }, Filter.Pvs(target, entityManager: EntityManager));
@@ -94,19 +111,27 @@ public sealed class ProjectileSystem : SharedProjectileSystem
 
             _adminLogger.Add(LogType.BulletHit,
                 LogImpact.Medium,
-                $"Projectile {ToPrettyString(uid):projectile} shot by {ToPrettyString(component.Shooter!.Value):user} hit {otherName:target} and dealt {damage:damage} damage");
+                $"Projectile {ToPrettyString(uid):projectile} shot by {ToPrettyString(component.Shooter!.Value):user} hit {otherName:target} and dealt {newDamage} damage");
 
-            component.ProjectileSpent = !TryPenetrate((uid, component), damage, damageRequired);
+            spentFromHit = !TryPenetrate((uid, component), newDamage, damageRequired);
+        }
+
+        if (canContinueBounce)
+        {
+            _bouncingSpell.ApplyBounce(uid, target, args.OurBody.LinearVelocity, bounceComp!, component);
+            bounceComp!.BounceCount++;
+            Dirty(uid, bounceComp);
+            component.ProjectileSpent = false;
         }
         else
         {
-            component.ProjectileSpent = true;
+            component.ProjectileSpent = spentFromHit;
         }
 
         if (!deleted)
         {
-            _guns.PlayImpactSound(target, damage, component.SoundHit, component.ForceSound);
-
+            _guns.PlayImpactSound(target, appliedDamage, component.SoundHit, component.ForceSound);
+            // Funky End
             if (!args.OurBody.LinearVelocity.IsLengthZero())
                 _sharedCameraRecoil.KickCamera(target, args.OurBody.LinearVelocity.Normalized());
         }

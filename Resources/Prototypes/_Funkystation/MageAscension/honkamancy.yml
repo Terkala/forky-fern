@@ -192,26 +192,6 @@
         deleteIfCantPickup: true
 
 - type: entity
-  id: CEActionSpellHonkStubT3A
-  parent: CEActionSpellBase
-  name: funky-mage-spellpick-honk-stub-t3a
-  description: Placeholder spell.
-  categories: [ HideSpawnMenu ]
-  components:
-  - type: CEActionManaCost
-    manaCost: 5
-  - type: Action
-    useDelay: 1
-    icon:
-      sprite: Objects/Magic/magicactions.rsi
-      state: spell_default
-  - type: DoAfterArgs
-    delay: 0.2
-  - type: InstantAction
-    event: !type:CEInstantModularEffectEvent
-      effects: []
-
-- type: entity
   id: CEActionSpellHonkStubT3B
   parent: CEActionSpellBase
   name: funky-mage-spellpick-honk-stub-t3b
