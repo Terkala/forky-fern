@@ -15,6 +15,7 @@ using Content.Shared.Mobs.Components;
 using Content.Shared.Tag;
 using Content.Shared.Verbs;
 using Robust.Server.GameObjects;
+using Robust.Shared.Player;
 using Robust.Shared.Map;
 using Robust.Shared.Map.Components;
 using System.Diagnostics.CodeAnalysis;
@@ -65,17 +66,8 @@ public sealed class BlobSystem : EntitySystem
         "ActionBlobConsume",
         "ActionBlobAbsorb",
         "ActionBlobPromoteNucleus",
-        "ActionBlobBuildRibosome",
-        "ActionBlobBuildLipid",
-        "ActionBlobBuildMitochondria",
-        "ActionBlobBuildMembrane",
-        "ActionBlobBuildFirewall",
         "ActionBlobDevourItem",
         "ActionBlobBuildBridge",
-        "ActionBlobBuildLauncher",
-        "ActionBlobBuildPlasmaphyll",
-        "ActionBlobBuildEctothermid",
-        "ActionBlobBuildReflective",
         "ActionBlobEvoGenRate",
         "ActionBlobEvoQuickSpread",
         "ActionBlobEvoSpreadChance",
@@ -91,6 +83,8 @@ public sealed class BlobSystem : EntitySystem
     ];
 
     private const int StarterSpreadTileThreshold = 25;
+
+    private static readonly EntProtoId BlobDeployActionProto = "ActionBlobDeploy";
 
     /// <summary>Chebyshev tile distance from target: a blob anchor must exist within this range on the same grid.</summary>
     private const int BlobAttackMaxChebyshev = 5;
@@ -110,17 +104,11 @@ public sealed class BlobSystem : EntitySystem
         SubscribeLocalEvent<BlobPromoteNucleusActionEvent>(OnPromote);
         SubscribeLocalEvent<BlobChangeColorActionEvent>(OnChangeColor);
 
-        SubscribeLocalEvent<BlobBuildRibosomeActionEvent>(OnBuildRibosome);
-        SubscribeLocalEvent<BlobBuildLipidActionEvent>(OnBuildLipid);
-        SubscribeLocalEvent<BlobBuildMitochondriaActionEvent>(OnBuildMitochondria);
-        SubscribeLocalEvent<BlobBuildMembraneActionEvent>(OnBuildMembrane);
-        SubscribeLocalEvent<BlobBuildFirewallActionEvent>(OnBuildFirewall);
         SubscribeLocalEvent<BlobDevourItemActionEvent>(OnDevour);
         SubscribeLocalEvent<BlobBuildBridgeActionEvent>(OnBuildBridge);
-        SubscribeLocalEvent<BlobBuildLauncherActionEvent>(OnBuildLauncher);
-        SubscribeLocalEvent<BlobBuildPlasmaphyllActionEvent>(OnBuildPlasmaphyll);
-        SubscribeLocalEvent<BlobBuildEctothermidActionEvent>(OnBuildEctothermid);
-        SubscribeLocalEvent<BlobBuildReflectiveActionEvent>(OnBuildReflective);
+
+        SubscribeLocalEvent<BlobTileComponent, BlobTileSwapChoiceMessage>(OnBlobTileSwapChoice);
+        SubscribeLocalEvent<BlobTileComponent, GetVerbsEvent<AlternativeVerb>>(OnBlobTileAltVerb);
     }
 
     public override void Update(float frameTime)
@@ -288,6 +276,28 @@ public sealed class BlobSystem : EntitySystem
         return false;
     }
 
+    /// <summary>
+    /// One-time deploy: strip the action so the core cannot be placed again.
+    /// </summary>
+    private void RemoveDeployAction(EntityUid overmind)
+    {
+        if (!TryComp<ActionsContainerComponent>(overmind, out var containerComp))
+            return;
+
+        foreach (var actionId in containerComp.Container.ContainedEntities.ToArray())
+        {
+            if (MetaData(actionId).EntityPrototype?.ID != BlobDeployActionProto.Id)
+                continue;
+
+            if (!TryComp<ActionComponent>(actionId, out var actionComp))
+                return;
+
+            // Detaches from the action container and strips from the action bar; deletes if Temporary.
+            _actions.RemoveAction((actionId, actionComp));
+            return;
+        }
+    }
+
     private void GrantPostDeployActions(EntityUid overmind)
     {
         foreach (var id in PostDeployActions)
@@ -344,6 +354,7 @@ public sealed class BlobSystem : EntitySystem
 
         RecountTiles(hiveUid, hive);
 
+        RemoveDeployAction(ev.Performer);
         GrantPostDeployActions(ev.Performer);
         _combatMode.SetInCombatMode(ev.Performer, true);
         _popup.PopupEntity(Loc.GetString("blob-deploy-success"), ev.Performer, ev.Performer);
@@ -528,10 +539,7 @@ public sealed class BlobSystem : EntitySystem
 
         var hiveNet = GetNetEntity(hiveUid);
         if (!CanBlobStrikeTile(hiveNet, gridUid, grid, indices, performer))
-        {
-            _popup.PopupEntity(Loc.GetString("blob-attack-blocked"), performer, performer);
             return;
-        }
 
         if (!TrySpendBio(hiveUid, hive, 1))
             return;
@@ -549,34 +557,44 @@ public sealed class BlobSystem : EntitySystem
         var originMap = _xform.ToMapCoordinates(_map.GridTileToLocal(gridUid, grid, indices));
         var lash = new DamageSpecifier();
         lash.DamageDict["Blunt"] = 6;
-        var normals = new List<EntityUid>();
+        var lashRadius = 1.5f * grid.TileSize;
+        var lashRadiusSq = lashRadius * lashRadius;
+
+        EntityUid? nearestLashTile = null;
+        var nearestSq = float.MaxValue;
         var q = EntityQueryEnumerator<BlobTileComponent, TransformComponent>();
         while (q.MoveNext(out var uid, out var bt, out var xform))
         {
             if (bt.Hive != hiveNet || bt.Kind != BlobTileKind.Normal)
                 continue;
             var pos = _xform.GetMapCoordinates(uid, xform);
-            if ((pos.Position - originMap.Position).LengthSquared() > 36f)
+            var d2 = (pos.Position - originMap.Position).LengthSquared();
+            if (d2 > lashRadiusSq)
                 continue;
-            normals.Add(uid);
+            if (d2 < nearestSq)
+            {
+                nearestSq = d2;
+                nearestLashTile = uid;
+            }
         }
 
-        _random.Shuffle(normals);
-        var max = int.Min(8, normals.Count);
-        for (var i = 0; i < max; i++)
+        if (nearestLashTile is { } tileUid)
         {
-            var tileUid = normals[i];
             var tx = Transform(tileUid);
-            if (tx.GridUid == null)
-                continue;
-            var tIdx = _map.TileIndicesFor(tx.GridUid.Value, Comp<MapGridComponent>(tx.GridUid.Value), tx.Coordinates);
-            var tGrid = Comp<MapGridComponent>(tx.GridUid.Value);
-            foreach (var e in EntitiesOnTile(tx.GridUid.Value, tGrid, tIdx, LookupFlags.Uncontained))
+            if (tx.GridUid != null)
             {
-                if (HasComp<BlobTileComponent>(e))
-                    continue;
-                _damageable.TryChangeDamage(e, lash, origin: performer);
+                var tIdx = _map.TileIndicesFor(tx.GridUid.Value, Comp<MapGridComponent>(tx.GridUid.Value), tx.Coordinates);
+                var tGrid = Comp<MapGridComponent>(tx.GridUid.Value);
+                foreach (var e in EntitiesOnTile(tx.GridUid.Value, tGrid, tIdx, LookupFlags.Uncontained))
+                {
+                    if (HasComp<BlobTileComponent>(e))
+                        continue;
+                    _damageable.TryChangeDamage(e, lash, origin: performer);
+                }
             }
+
+            RaiseNetworkEvent(new PlayBlobLashWiggleEvent(GetNetEntity(tileUid)),
+                Filter.Pvs(tileUid, entityManager: EntityManager));
         }
 
         Dirty(hiveUid, hive);
@@ -697,39 +715,93 @@ public sealed class BlobSystem : EntitySystem
         Dirty(ev.Performer, hive);
     }
 
-    private bool TryConvertTile(EntityUid performer, BlobHiveComponent hive, EntityUid hiveUid, WorldTargetActionEvent ev,
-        BlobTileKind kind, EntProtoId newProto, int bioCost, bool needsUnlock, Func<BlobHiveComponent, bool>? unlockCheck = null)
+    private void OnBlobTileSwapChoice(Entity<BlobTileComponent> ent, ref BlobTileSwapChoiceMessage args)
     {
-        if (needsUnlock && unlockCheck != null && !unlockCheck(hive))
+        TryApplySpecialistConversion(args.Actor, ent.Owner, args.Kind);
+    }
+
+    private void OnBlobTileAltVerb(EntityUid uid, BlobTileComponent tile, GetVerbsEvent<AlternativeVerb> args)
+    {
+        if (!args.CanAccess || !args.CanInteract)
+            return;
+
+        if (!HasComp<BlobOvermindComponent>(args.User))
+            return;
+
+        if (!TryComp<BlobHiveComponent>(args.User, out var hive) || !hive.Deployed)
+            return;
+
+        if (tile.Kind != BlobTileKind.Normal)
+            return;
+
+        if (tile.Hive != GetNetEntity(args.User))
+            return;
+
+        args.Verbs.Add(new AlternativeVerb
         {
-            _popup.PopupEntity(Loc.GetString("blob-locked"), performer, performer);
+            Text = Loc.GetString("blob-verb-specialist-menu"),
+            Icon = new SpriteSpecifier.Texture(new ResPath("/Textures/Interface/VerbIcons/settings.svg.192dpi.png")),
+            Act = () => _uiSystem.OpenUi(uid, BlobTileSwapUiKey.Key, args.User),
+            Priority = 1,
+        });
+    }
+
+    /// <summary>
+    /// Converts a normal blob tile to a specialist type (radial menu / tests).
+    /// </summary>
+    public bool TryApplySpecialistConversion(EntityUid overmind, EntityUid normalBlobTile, BlobTileKind targetKind)
+    {
+        if (!TryGetHive(overmind, out var hiveUid, out var hive))
+            return false;
+
+        if (!TryComp<BlobTileComponent>(normalBlobTile, out var bt))
+            return false;
+
+        if (bt.Hive != GetNetEntity(hiveUid) || bt.Kind != BlobTileKind.Normal)
+            return false;
+
+        if (!BlobSpecialistRecipes.TryGetRecipe(targetKind, out var recipe))
+            return false;
+
+        if (BlobSpecialistRecipes.IsMenuOptionLocked(hive, targetKind))
+        {
+            _popup.PopupEntity(Loc.GetString("blob-locked"), overmind, overmind);
             return false;
         }
 
+        return TryConvertNormalBlobTile(overmind, hiveUid, hive, normalBlobTile, targetKind, recipe.EntityPrototype, recipe.BioCost);
+    }
+
+    private bool TryConvertNormalBlobTile(EntityUid performer, EntityUid hiveUid, BlobHiveComponent hive,
+        EntityUid normalTileUid, BlobTileKind kind, EntProtoId newProto, int bioCost)
+    {
         if (!TrySpendBio(hiveUid, hive, bioCost))
         {
             _popup.PopupEntity(Loc.GetString("blob-not-enough-bio"), performer, performer);
             return false;
         }
 
-        if (!TryResolveTile(ev.Target, out var gridUid, out var grid, out var indices))
-            return false;
-
-        var hiveNet = GetNetEntity(hiveUid);
-        var existing = GetBlobOnTile(gridUid, grid, indices, hiveNet);
-        if (existing == null || Comp<BlobTileComponent>(existing.Value).Kind != BlobTileKind.Normal)
+        var coords = Transform(normalTileUid).Coordinates;
+        if (!TryResolveTile(coords, out var gridUid, out var grid, out var indices))
         {
             _hiveRefundBio(hiveUid, hive, bioCost);
             return false;
         }
 
-        var coords = Transform(existing.Value).Coordinates;
-        QueueDel(existing.Value);
+        var hiveNet = GetNetEntity(hiveUid);
+        var existing = GetBlobOnTile(gridUid, grid, indices, hiveNet);
+        if (existing != normalTileUid || Comp<BlobTileComponent>(normalTileUid).Kind != BlobTileKind.Normal)
+        {
+            _hiveRefundBio(hiveUid, hive, bioCost);
+            return false;
+        }
+
+        QueueDel(normalTileUid);
         var ent = Spawn(newProto, coords);
-        var bt = Comp<BlobTileComponent>(ent);
-        bt.Hive = hiveNet;
-        bt.Kind = kind;
-        Dirty(ent, bt);
+        var newBt = Comp<BlobTileComponent>(ent);
+        newBt.Hive = hiveNet;
+        newBt.Kind = kind;
+        Dirty(ent, newBt);
 
         if (kind == BlobTileKind.Ribosome)
         {
@@ -739,46 +811,6 @@ public sealed class BlobSystem : EntitySystem
 
         RecountTiles(hiveUid, hive);
         return true;
-    }
-
-    private void OnBuildRibosome(BlobBuildRibosomeActionEvent ev)
-    {
-        if (ev.Handled || !TryGetHive(ev.Performer, out var hiveUid, out var hive))
-            return;
-        if (TryConvertTile(ev.Performer, hive, hiveUid, ev, BlobTileKind.Ribosome, "MobBlobTileRibosome", 15, false))
-            ev.Handled = true;
-    }
-
-    private void OnBuildLipid(BlobBuildLipidActionEvent ev)
-    {
-        if (ev.Handled || !TryGetHive(ev.Performer, out var hiveUid, out var hive))
-            return;
-        if (TryConvertTile(ev.Performer, hive, hiveUid, ev, BlobTileKind.Lipid, "MobBlobTileLipid", 5, false))
-            ev.Handled = true;
-    }
-
-    private void OnBuildMitochondria(BlobBuildMitochondriaActionEvent ev)
-    {
-        if (ev.Handled || !TryGetHive(ev.Performer, out var hiveUid, out var hive))
-            return;
-        if (TryConvertTile(ev.Performer, hive, hiveUid, ev, BlobTileKind.Mitochondria, "MobBlobTileMitochondria", 5, false))
-            ev.Handled = true;
-    }
-
-    private void OnBuildMembrane(BlobBuildMembraneActionEvent ev)
-    {
-        if (ev.Handled || !TryGetHive(ev.Performer, out var hiveUid, out var hive))
-            return;
-        if (TryConvertTile(ev.Performer, hive, hiveUid, ev, BlobTileKind.ThickMembrane, "MobBlobTileMembrane", 5, false))
-            ev.Handled = true;
-    }
-
-    private void OnBuildFirewall(BlobBuildFirewallActionEvent ev)
-    {
-        if (ev.Handled || !TryGetHive(ev.Performer, out var hiveUid, out var hive))
-            return;
-        if (TryConvertTile(ev.Performer, hive, hiveUid, ev, BlobTileKind.Firewall, "MobBlobTileFirewall", 10, false))
-            ev.Handled = true;
     }
 
     private void OnDevour(BlobDevourItemActionEvent ev)
@@ -858,37 +890,5 @@ public sealed class BlobSystem : EntitySystem
         ev.Handled = true;
         _map.SetTile(gridUid, grid, indices, new Tile(floorDef.TileId));
         Dirty(hiveUid, hive);
-    }
-
-    private void OnBuildLauncher(BlobBuildLauncherActionEvent ev)
-    {
-        if (ev.Handled || !TryGetHive(ev.Performer, out var hiveUid, out var hive))
-            return;
-        if (TryConvertTile(ev.Performer, hive, hiveUid, ev, BlobTileKind.SlimeLauncher, "MobBlobTileLauncher", 15, true, h => h.UnlockLauncher))
-            ev.Handled = true;
-    }
-
-    private void OnBuildPlasmaphyll(BlobBuildPlasmaphyllActionEvent ev)
-    {
-        if (ev.Handled || !TryGetHive(ev.Performer, out var hiveUid, out var hive))
-            return;
-        if (TryConvertTile(ev.Performer, hive, hiveUid, ev, BlobTileKind.Plasmaphyll, "MobBlobTilePlasmaphyll", 30, true, h => h.UnlockPlasmaphyll))
-            ev.Handled = true;
-    }
-
-    private void OnBuildEctothermid(BlobBuildEctothermidActionEvent ev)
-    {
-        if (ev.Handled || !TryGetHive(ev.Performer, out var hiveUid, out var hive))
-            return;
-        if (TryConvertTile(ev.Performer, hive, hiveUid, ev, BlobTileKind.Ectothermid, "MobBlobTileEctothermid", 30, true, h => h.UnlockEctothermid))
-            ev.Handled = true;
-    }
-
-    private void OnBuildReflective(BlobBuildReflectiveActionEvent ev)
-    {
-        if (ev.Handled || !TryGetHive(ev.Performer, out var hiveUid, out var hive))
-            return;
-        if (TryConvertTile(ev.Performer, hive, hiveUid, ev, BlobTileKind.Reflective, "MobBlobTileReflective", 15, true, h => h.UnlockReflective))
-            ev.Handled = true;
     }
 }

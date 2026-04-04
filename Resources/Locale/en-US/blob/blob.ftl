@@ -31,6 +31,9 @@ blob-spread-cooldown = The blob needs a moment before spreading again.
 blob-locked = That evolution isn't unlocked yet.
 blob-nucleus-cap = Maximum nuclei for now.
 
+blob-verb-specialist-menu = Reshape blob tile
+blob-specialist-radial-option = { $name } ({ $cost } bio)
+
 blob-round-end-blob-major = The blob has consumed the station!
 blob-round-end-crew-major = The blob has been eradicated.
 blob-round-end-stats = Blob: {$tiles} tiles, {$bio} bio, {$evo} evo, {$nuclei} nuclei alive.

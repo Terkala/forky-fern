@@ -71,8 +71,8 @@ public sealed class BlobLiquidOverlay : Overlay
     protected override void Draw(in OverlayDrawArgs args)
     {
         var handle = args.WorldHandle;
-        const float baseFeather = 0.42f;
-        const float baseCore = 0.28f;
+        const float baseFeather = 0.58f;
+        const float baseCore = 0.38f;
         const float scaleDivisor = 22f;
         const float maxScale = 2.35f;
 
