@@ -380,3 +380,30 @@
   coefficients:
     Heat: 1.15
     Cold: 0.85
+
+- type: damageModifierSet
+  id: Blob
+  coefficients:
+    Blunt: 0.9
+    Slash: 0.95
+    Heat: 1.15
+    Shock: 1.05
+
+- type: damageModifierSet
+  id: BlobFirewall
+  coefficients:
+    Blunt: 1.0
+    Heat: 0.4
+
+- type: damageModifierSet
+  id: BlobNucleus
+  coefficients:
+    Blunt: 0.75
+    Heat: 0.85
+
+- type: damageModifierSet
+  id: BlobThick
+  coefficients:
+    Blunt: 0.7
+    Slash: 0.75
+    Piercing: 0.8

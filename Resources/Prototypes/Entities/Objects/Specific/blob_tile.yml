@@ -1,0 +1,161 @@
+- type: entity
+  id: BaseBlobTile
+  abstract: true
+  placement:
+    mode: SnapgridCenter
+  components:
+  - type: Transform
+    anchored: true
+  - type: Sprite
+    sprite: Objects/Misc/kudzu.rsi
+    drawdepth: FloorObjects
+    layers:
+    - state: kudzu_11
+  - type: BlobTile
+  - type: EmitSoundOnSpawn
+    sound:
+      path: /Audio/Effects/Footsteps/slime2.ogg
+  - type: Damageable
+    damageModifierSet: Blob
+  - type: Clickable
+  - type: Temperature
+  - type: TemperatureDamage
+    heatDamage:
+      types:
+        Heat: 3
+  - type: UserInterface
+    interfaces:
+      enum.BlobTileSwapUiKey.Key:
+        type: BlobTileSwapBoundUserInterface
+
+- type: entity
+  parent: BaseBlobTile
+  id: MobBlobTile
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: BlobTile
+    kind: Normal
+  - type: Destructible
+    thresholds:
+    - trigger: !type:DamageTrigger
+        damage: 50
+      behaviors:
+      - !type:DoActsBehavior
+        acts: [ "Destruction" ]
+
+- type: entity
+  parent: BaseBlobTile
+  id: MobBlobTileNucleus
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: BlobTile
+    kind: Nucleus
+  - type: Damageable
+    damageModifierSet: BlobNucleus
+  - type: Destructible
+    thresholds:
+    - trigger: !type:DamageTrigger
+        damage: 180
+      behaviors:
+      - !type:DoActsBehavior
+        acts: [ "Destruction" ]
+
+- type: entity
+  parent: MobBlobTile
+  id: MobBlobTileRibosome
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: BlobTile
+    kind: Ribosome
+
+- type: entity
+  parent: MobBlobTile
+  id: MobBlobTileLipid
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: BlobTile
+    kind: Lipid
+
+- type: entity
+  parent: MobBlobTile
+  id: MobBlobTileMitochondria
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: BlobTile
+    kind: Mitochondria
+
+- type: entity
+  parent: BaseBlobTile
+  id: MobBlobTileMembrane
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: BlobTile
+    kind: ThickMembrane
+  - type: Damageable
+    damageModifierSet: BlobThick
+  - type: Destructible
+    thresholds:
+    - trigger: !type:DamageTrigger
+        damage: 80
+      behaviors:
+      - !type:DoActsBehavior
+        acts: [ "Destruction" ]
+
+- type: entity
+  parent: BaseBlobTile
+  id: MobBlobTileFirewall
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: BlobTile
+    kind: Firewall
+  - type: Damageable
+    damageModifierSet: BlobFirewall
+  - type: Destructible
+    thresholds:
+    - trigger: !type:DamageTrigger
+        damage: 40
+      behaviors:
+      - !type:DoActsBehavior
+        acts: [ "Destruction" ]
+  - type: TemperatureDamage
+    heatDamage:
+      types:
+        Heat: 1
+
+- type: entity
+  parent: MobBlobTileMembrane
+  id: MobBlobTileReflective
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: BlobTile
+    kind: Reflective
+  - type: Reflect
+    reflects: Energy
+    reflectingInHands: false
+    reflectProb: 0.45
+  - type: ItemToggle
+    activated: true
+
+- type: entity
+  parent: MobBlobTile
+  id: MobBlobTileLauncher
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: BlobTile
+    kind: SlimeLauncher
+
+- type: entity
+  parent: MobBlobTile
+  id: MobBlobTilePlasmaphyll
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: BlobTile
+    kind: Plasmaphyll
+
+- type: entity
+  parent: MobBlobTile
+  id: MobBlobTileEctothermid
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: BlobTile
+    kind: Ectothermid

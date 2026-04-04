@@ -33,6 +33,7 @@ public sealed partial class AdminVerbSystem
     private static readonly EntProtoId DefaultWizardRule = "Wizard";
     private static readonly EntProtoId DefaultNinjaRule = "NinjaSpawn";
     private static readonly EntProtoId DefaultBloodCultRule = "BloodCult"; // funkystation
+    private static readonly EntProtoId DefaultBlobRule = "Blob";
     private static readonly ProtoId<StartingGearPrototype> PirateGearId = "PirateGear";
 
     // All antag verbs have names so invokeverb works.
@@ -243,5 +244,20 @@ public sealed partial class AdminVerbSystem
         };
         args.Verbs.Add(bloodCult);
         // end funkystation
+
+        var blobName = Loc.GetString("admin-verb-text-make-blob");
+        Verb blob = new()
+        {
+            Text = blobName,
+            Category = VerbCategory.Antag,
+            Icon = new SpriteSpecifier.Rsi(new("/Textures/Objects/Misc/kudzu.rsi"), "kudzu_11"),
+            Act = () =>
+            {
+                _antag.ForceMakeAntag<BlobRuleComponent>(targetPlayer, DefaultBlobRule, clearGameRuleDelay: true);
+            },
+            Impact = LogImpact.High,
+            Message = string.Join(": ", blobName, Loc.GetString("admin-verb-make-blob")),
+        };
+        args.Verbs.Add(blob);
     }
 }

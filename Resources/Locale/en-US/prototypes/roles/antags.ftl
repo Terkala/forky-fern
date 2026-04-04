@@ -1,4 +1,4 @@
-﻿roles-antag-generic-solo-antagonist-name = Solo Antagonist
+roles-antag-generic-solo-antagonist-name = Solo Antagonist
 
 roles-antag-generic-free-agent-name = Free Agent
 
@@ -35,6 +35,9 @@ roles-antag-space-ninja-objective = Use your stealth to sabotage the station, no
 
 roles-antag-paradox-clone-name = Paradox Clone
 roles-antag-paradox-clone-objective = A freak space-time anomaly has teleported you into another reality! Now you have to find your counterpart and kill and replace them.
+
+roles-antag-blob-overmind-name = Blob overmind
+roles-antag-blob-overmind-objective = Spread across the station until nothing remains but the blob.
 
 roles-antag-pirate-name = Pirate
 

@@ -1,0 +1,50 @@
+- type: entity
+  parent:
+  - Incorporeal
+  - BaseMob
+  id: MobBlobOvermind
+  name: Blob Overlord
+  description: An incorporeal mass looking for a place to root.
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Sprite
+    sprite: Objects/Misc/kudzu.rsi
+    color: "#9fdf9fbb"
+    layers:
+    - state: kudzu_11
+  - type: MovementSpeedModifier
+    baseSprintSpeed: 14
+    baseWalkSpeed: 10
+  - type: MovementIgnoreGravity
+  - type: Eye
+    drawFov: false
+  - type: ContentEye
+    maxZoom: 1.44,1.44
+  - type: Examiner
+    skipChecks: true
+  - type: CombatMode
+  - type: MeleeWeapon
+    hidden: true
+    altDisarm: false
+    range: 64
+    attackRate: 4
+    soundHit:
+      collection: MetalThud
+    damage:
+      groups:
+        Brute: 1
+  - type: Input
+    context: ghost
+  - type: Tag
+    tags:
+    - BypassInteractionRangeChecks
+  - type: BlobOvermind
+  - type: BlobHive
+    bioPoints: 60
+    bioMax: 60
+    generationPerSecond: 1
+    livingNuclei: 0
+    maxBlobTilesPerNucleus: 200
+  - type: NpcFactionMember
+    factions:
+    - Blob

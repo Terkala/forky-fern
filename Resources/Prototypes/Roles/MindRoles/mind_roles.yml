@@ -365,3 +365,15 @@
   - type: ChangelingRole
   - type: RoleBriefing
     briefing: changeling-briefing
+
+- type: entity
+  parent: BaseMindRoleAntag
+  id: MindRoleBlobOvermind
+  name: Blob Overmind Role
+  components:
+  - type: MindRole
+    antagPrototype: BlobOvermind
+    exclusiveAntag: true
+    roleType: SoloAntagonist
+    subtype: role-subtype-blob
+  - type: BlobRole

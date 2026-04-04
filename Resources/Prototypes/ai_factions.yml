@@ -39,6 +39,7 @@
   - AllHostile
   - Wizard
   - Xenoborg
+  - Blob
 
 - type: npcFaction
   id: Mouse
@@ -182,3 +183,17 @@
   # cause they are hostile to them
   - SimpleHostile
   - AllHostile
+
+- type: npcFaction
+  id: Blob
+  hostile:
+  - NanoTrasen
+  - Syndicate
+  - SimpleHostile
+  - PetsNT
+  - Zombie
+  - Revolutionary
+  - Xeno
+  - AllHostile
+  - Wizard
+  - Xenoborg

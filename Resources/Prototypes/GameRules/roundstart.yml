@@ -608,3 +608,30 @@
       - type: BloodCultist
       mindRoles:
       - MindRoleCultist
+
+- type: entity
+  id: Blob
+  parent: BaseGameRule
+  components:
+  - type: GameRule
+    minPlayers: 5
+    delay:
+      min: 300
+      max: 600
+  - type: BlobRule
+  - type: AntagSelection
+    selectionTime: IntraPlayerSpawn
+    definitions:
+    - prefRoles: [ BlobOvermind ]
+      max: 1
+      playerRatio: 20
+      blacklist:
+        components:
+        - AntagImmune
+      briefing:
+        text: blob-role-briefing
+        color: PaleGreen
+      mindRoles:
+      - MindRoleBlobOvermind
+  - type: DynamicRuleCost
+    cost: 150

@@ -344,9 +344,13 @@ public sealed partial class AntagSelectionSystem
     /// This technically is a gamerule-ent-less way to make an entity an antag.
     /// You should almost never be using this.
     /// </summary>
-    public void ForceMakeAntag<T>(ICommonSession? player, string defaultRule) where T : Component
+    /// <param name="clearGameRuleDelay">
+    /// If true, clears <see cref="GameRuleComponent.Delay"/> before starting the rule so it activates immediately
+    /// (for mid-round admin antag assignment). Roundstart rules like Blob may otherwise stay pending for minutes.
+    /// </param>
+    public void ForceMakeAntag<T>(ICommonSession? player, string defaultRule, bool clearGameRuleDelay = false) where T : Component
     {
-        var rule = ForceGetGameRuleEnt<T>(defaultRule);
+        var rule = ForceGetGameRuleEnt<T>(defaultRule, clearGameRuleDelay);
 
         if (!TryGetNextAvailableDefinition(rule, out var def))
             def = rule.Comp.Definitions.Last();
@@ -357,7 +361,7 @@ public sealed partial class AntagSelectionSystem
     /// Tries to grab one of the weird specific antag gamerule ents or starts a new one.
     /// This is gross code but also most of this is pretty gross to begin with.
     /// </summary>
-    public Entity<AntagSelectionComponent> ForceGetGameRuleEnt<T>(string id) where T : Component
+    public Entity<AntagSelectionComponent> ForceGetGameRuleEnt<T>(string id, bool clearGameRuleDelay = false) where T : Component
     {
         var query = EntityQueryEnumerator<T, AntagSelectionComponent>();
         while (query.MoveNext(out var uid, out _, out var comp))
@@ -366,6 +370,8 @@ public sealed partial class AntagSelectionSystem
         }
         var ruleEnt = GameTicker.AddGameRule(id);
         RemComp<LoadMapRuleComponent>(ruleEnt);
+        if (clearGameRuleDelay && TryComp<GameRuleComponent>(ruleEnt, out var gameRule))
+            gameRule.Delay = null;
         var antag = Comp<AntagSelectionComponent>(ruleEnt);
         antag.AssignmentComplete = true; // don't do normal selection.
         GameTicker.StartGameRule(ruleEnt);

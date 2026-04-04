@@ -242,6 +242,11 @@ public abstract class SharedMeleeWeaponSystem : EntitySystem
         if (args.SenderSession.AttachedEntity is not {} user)
             return;
 
+        var beforeLight = new BeforeLightAttackEvent(user, msg.Coordinates);
+        RaiseLocalEvent(user, ref beforeLight);
+        if (beforeLight.Handled)
+            return;
+
         if (!TryGetWeapon(user, out var weaponUid, out var weapon) ||
             weaponUid != GetEntity(msg.Weapon))
         {
@@ -254,6 +259,11 @@ public abstract class SharedMeleeWeaponSystem : EntitySystem
     private void OnHeavyAttack(HeavyAttackEvent msg, EntitySessionEventArgs args)
     {
         if (args.SenderSession.AttachedEntity is not {} user)
+            return;
+
+        var beforeHeavy = new BeforeHeavyAttackEvent(user, msg.Coordinates, msg.Weapon);
+        RaiseLocalEvent(user, ref beforeHeavy);
+        if (beforeHeavy.Handled)
             return;
 
         if (!TryGetWeapon(user, out var weaponUid, out var weapon) ||

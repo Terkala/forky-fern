@@ -1,0 +1,511 @@
+# Blob antagonist actions
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobDeploy
+  name: action-name-blob-deploy
+  description: action-desc-blob-deploy
+  components:
+  - type: Action
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: TargetAction
+    checkCanAccess: false
+    range: -1
+  - type: WorldTargetAction
+    event: !type:BlobDeployActionEvent
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobChangeColor
+  name: action-name-blob-color
+  description: action-desc-blob-color
+  components:
+  - type: Action
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: InstantAction
+    event: !type:BlobChangeColorActionEvent
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobSpread
+  name: action-name-blob-spread
+  description: action-desc-blob-spread
+  components:
+  - type: Action
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: TargetAction
+    checkCanAccess: false
+    range: -1
+  - type: WorldTargetAction
+    event: !type:BlobSpreadActionEvent
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobRepair
+  name: action-name-blob-repair
+  description: action-desc-blob-repair
+  components:
+  - type: Action
+    useDelay: 2
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: TargetAction
+    checkCanAccess: false
+    range: -1
+  - type: WorldTargetAction
+    event: !type:BlobRepairActionEvent
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobConsume
+  name: action-name-blob-consume
+  description: action-desc-blob-consume
+  components:
+  - type: Action
+    useDelay: 2
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: TargetAction
+    checkCanAccess: false
+    range: -1
+  - type: WorldTargetAction
+    event: !type:BlobConsumeActionEvent
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobAbsorb
+  name: action-name-blob-absorb
+  description: action-desc-blob-absorb
+  components:
+  - type: Action
+    useDelay: 2
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: TargetAction
+    checkCanAccess: false
+    range: -1
+  - type: WorldTargetAction
+    event: !type:BlobAbsorbActionEvent
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobPromoteNucleus
+  name: action-name-blob-promote
+  description: action-desc-blob-promote
+  components:
+  - type: Action
+    useDelay: 120
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: TargetAction
+    checkCanAccess: false
+    range: -1
+  - type: WorldTargetAction
+    event: !type:BlobPromoteNucleusActionEvent
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobBuildRibosome
+  name: action-name-blob-ribosome
+  description: action-desc-blob-ribosome
+  components:
+  - type: Action
+    useDelay: 10
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: TargetAction
+    checkCanAccess: false
+    range: -1
+  - type: WorldTargetAction
+    event: !type:BlobBuildRibosomeActionEvent
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobBuildLipid
+  name: action-name-blob-lipid
+  description: action-desc-blob-lipid
+  components:
+  - type: Action
+    useDelay: 10
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: TargetAction
+    checkCanAccess: false
+    range: -1
+  - type: WorldTargetAction
+    event: !type:BlobBuildLipidActionEvent
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobBuildMitochondria
+  name: action-name-blob-mitochondria
+  description: action-desc-blob-mitochondria
+  components:
+  - type: Action
+    useDelay: 10
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: TargetAction
+    checkCanAccess: false
+    range: -1
+  - type: WorldTargetAction
+    event: !type:BlobBuildMitochondriaActionEvent
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobBuildMembrane
+  name: action-name-blob-membrane
+  description: action-desc-blob-membrane
+  components:
+  - type: Action
+    useDelay: 10
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: TargetAction
+    checkCanAccess: false
+    range: -1
+  - type: WorldTargetAction
+    event: !type:BlobBuildMembraneActionEvent
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobBuildFirewall
+  name: action-name-blob-firewall
+  description: action-desc-blob-firewall
+  components:
+  - type: Action
+    useDelay: 10
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: TargetAction
+    checkCanAccess: false
+    range: -1
+  - type: WorldTargetAction
+    event: !type:BlobBuildFirewallActionEvent
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobDevourItem
+  name: action-name-blob-devour
+  description: action-desc-blob-devour
+  components:
+  - type: Action
+    useDelay: 0.5
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: TargetAction
+    checkCanAccess: false
+    range: -1
+  - type: WorldTargetAction
+    event: !type:BlobDevourItemActionEvent
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobBuildBridge
+  name: action-name-blob-bridge
+  description: action-desc-blob-bridge
+  components:
+  - type: Action
+    useDelay: 5
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: TargetAction
+    checkCanAccess: false
+    range: -1
+  - type: WorldTargetAction
+    event: !type:BlobBuildBridgeActionEvent
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobBuildLauncher
+  name: action-name-blob-launcher
+  description: action-desc-blob-launcher
+  components:
+  - type: Action
+    useDelay: 10
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: TargetAction
+    checkCanAccess: false
+    range: -1
+  - type: WorldTargetAction
+    event: !type:BlobBuildLauncherActionEvent
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobBuildPlasmaphyll
+  name: action-name-blob-plasmaphyll
+  description: action-desc-blob-plasmaphyll
+  components:
+  - type: Action
+    useDelay: 10
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: TargetAction
+    checkCanAccess: false
+    range: -1
+  - type: WorldTargetAction
+    event: !type:BlobBuildPlasmaphyllActionEvent
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobBuildEctothermid
+  name: action-name-blob-ectothermid
+  description: action-desc-blob-ectothermid
+  components:
+  - type: Action
+    useDelay: 10
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: TargetAction
+    checkCanAccess: false
+    range: -1
+  - type: WorldTargetAction
+    event: !type:BlobBuildEctothermidActionEvent
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobBuildReflective
+  name: action-name-blob-reflective
+  description: action-desc-blob-reflective
+  components:
+  - type: Action
+    useDelay: 10
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: TargetAction
+    checkCanAccess: false
+    range: -1
+  - type: WorldTargetAction
+    event: !type:BlobBuildReflectiveActionEvent
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobEvoGenRate
+  name: action-name-blob-evo-gen
+  description: action-desc-blob-evo-gen
+  components:
+  - type: Action
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: InstantAction
+    event: !type:BlobEvoPurchaseActionEvent
+  - type: BlobEvoAction
+    kind: GenRate
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobEvoQuickSpread
+  name: action-name-blob-evo-quickspread
+  description: action-desc-blob-evo-quickspread
+  components:
+  - type: Action
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: InstantAction
+    event: !type:BlobEvoPurchaseActionEvent
+  - type: BlobEvoAction
+    kind: QuickSpread
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobEvoSpreadChance
+  name: action-name-blob-evo-spreadchance
+  description: action-desc-blob-evo-spreadchance
+  components:
+  - type: Action
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: InstantAction
+    event: !type:BlobEvoPurchaseActionEvent
+  - type: BlobEvoAction
+    kind: SpreadChance
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobEvoAttack
+  name: action-name-blob-evo-attack
+  description: action-desc-blob-evo-attack
+  components:
+  - type: Action
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: InstantAction
+    event: !type:BlobEvoPurchaseActionEvent
+  - type: BlobEvoAction
+    kind: Attack
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobEvoFireResist
+  name: action-name-blob-evo-fireresist
+  description: action-desc-blob-evo-fireresist
+  components:
+  - type: Action
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: InstantAction
+    event: !type:BlobEvoPurchaseActionEvent
+  - type: BlobEvoAction
+    kind: FireResist
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobEvoPoisonResist
+  name: action-name-blob-evo-poisonresist
+  description: action-desc-blob-evo-poisonresist
+  components:
+  - type: Action
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: InstantAction
+    event: !type:BlobEvoPurchaseActionEvent
+  - type: BlobEvoAction
+    kind: PoisonResist
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobEvoUnlockDevour
+  name: action-name-blob-evo-unlock-devour
+  description: action-desc-blob-evo-unlock-devour
+  components:
+  - type: Action
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: InstantAction
+    event: !type:BlobEvoPurchaseActionEvent
+  - type: BlobEvoAction
+    kind: UnlockDevour
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobEvoUnlockBridge
+  name: action-name-blob-evo-unlock-bridge
+  description: action-desc-blob-evo-unlock-bridge
+  components:
+  - type: Action
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: InstantAction
+    event: !type:BlobEvoPurchaseActionEvent
+  - type: BlobEvoAction
+    kind: UnlockBridge
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobEvoUnlockLauncher
+  name: action-name-blob-evo-unlock-launcher
+  description: action-desc-blob-evo-unlock-launcher
+  components:
+  - type: Action
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: InstantAction
+    event: !type:BlobEvoPurchaseActionEvent
+  - type: BlobEvoAction
+    kind: UnlockLauncher
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobEvoUnlockPlasmaphyll
+  name: action-name-blob-evo-unlock-plasma
+  description: action-desc-blob-evo-unlock-plasma
+  components:
+  - type: Action
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: InstantAction
+    event: !type:BlobEvoPurchaseActionEvent
+  - type: BlobEvoAction
+    kind: UnlockPlasmaphyll
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobEvoUnlockEctothermid
+  name: action-name-blob-evo-unlock-ecto
+  description: action-desc-blob-evo-unlock-ecto
+  components:
+  - type: Action
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: InstantAction
+    event: !type:BlobEvoPurchaseActionEvent
+  - type: BlobEvoAction
+    kind: UnlockEctothermid
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionBlobEvoUnlockReflective
+  name: action-name-blob-evo-unlock-reflect
+  description: action-desc-blob-evo-unlock-reflect
+  components:
+  - type: Action
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    itemIconStyle: NoItem
+  - type: InstantAction
+    event: !type:BlobEvoPurchaseActionEvent
+  - type: BlobEvoAction
+    kind: UnlockReflective

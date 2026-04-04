@@ -323,3 +323,17 @@
     - MeteorSwarmScheduler
     - SpaceTrafficControlEventScheduler
     - BasicRoundstartVariation
+
+- type: gamePreset
+  id: Blob
+  alias:
+  - blob
+  name: blob-preset-title
+  description: blob-preset-description
+  showInVote: false
+  rules:
+  - Blob
+  - BasicStationEventScheduler
+  - MeteorSwarmScheduler
+  - SpaceTrafficControlEventScheduler
+  - BasicRoundstartVariation
