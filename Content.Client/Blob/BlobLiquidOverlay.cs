@@ -1,25 +1,42 @@
 using System;
 using System.Numerics;
+using Content.Client.Graphics;
+using Content.Client.Parallax;
 using Content.Shared.Blob;
+using Robust.Client.GameObjects;
 using Robust.Client.Graphics;
 using Robust.Shared.Enums;
 using Robust.Shared.Maths;
-using Robust.Shared.GameObjects;
+using Robust.Shared.Prototypes;
+using Robust.Shared.Timing;
+using Robust.Shared.Utility;
 
 namespace Content.Client.Blob;
 
 /// <summary>
-/// Non-authoritative "liquid" visualization: soft circles per tile (feather) plus a smaller saturated core per cell.
+/// Non-authoritative blob visualization: renders a continuous world-stationary
+/// kudzu texture through a blob tile mask.
 /// </summary>
 public sealed class BlobLiquidOverlay : Overlay
 {
+    [Dependency] private readonly IClyde _clyde = default!;
+    private static readonly ProtoId<ShaderPrototype> StencilMask = "StencilMask";
+    private static readonly ProtoId<ShaderPrototype> StencilEqualDraw = "StencilEqualDraw";
+    private static readonly SpriteSpecifier BlobSprite = new SpriteSpecifier.Rsi(
+        new ResPath("/Textures/Objects/Misc/kudzu.rsi"),
+        "kudzu_11");
+
     [Dependency] private readonly IEntityManager _ent = default!;
+    [Dependency] private readonly IGameTiming _timing = default!;
+    [Dependency] private readonly IPrototypeManager _proto = default!;
     private SharedTransformSystem? _xform;
+    private SpriteSystem? _sprite;
+    private ParallaxSystem? _parallax;
 
     public override OverlaySpace Space => OverlaySpace.WorldSpaceBelowEntities;
 
-    private readonly List<(Vector2 Pos, Color Tint, NetEntity Hive)> _scratch = new();
-    private readonly Dictionary<NetEntity, int> _hiveTileTotals = new();
+    private readonly OverlayResourceCache<CachedResources> _resources = new();
+    private readonly List<Vector2> _scratch = new();
 
     public BlobLiquidOverlay()
     {
@@ -34,9 +51,12 @@ public sealed class BlobLiquidOverlay : Overlay
 
         if (_xform is null && !_ent.TrySystem(out _xform))
             return false;
+        if (_sprite is null && !_ent.TrySystem(out _sprite))
+            return false;
+        if (_parallax is null && !_ent.TrySystem(out _parallax))
+            return false;
 
         _scratch.Clear();
-        _hiveTileTotals.Clear();
         var query = _ent.EntityQueryEnumerator<BlobTileComponent, TransformComponent>();
         while (query.MoveNext(out _, out var tile, out var xform))
         {
@@ -49,20 +69,7 @@ public sealed class BlobLiquidOverlay : Overlay
             if (!args.WorldAABB.Contains(world))
                 continue;
 
-            var tint = Color.FromHex("#8FBA8F");
-            if (_ent.TryGetEntity(tile.Hive, out var hiveUid) &&
-                _ent.TryGetComponent<BlobHiveComponent>(hiveUid, out var hive))
-            {
-                tint = hive.Tint;
-                if (!_hiveTileTotals.ContainsKey(tile.Hive))
-                    _hiveTileTotals[tile.Hive] = Math.Max(1, hive.TileCount);
-            }
-            else if (!_hiveTileTotals.ContainsKey(tile.Hive))
-            {
-                _hiveTileTotals[tile.Hive] = 1;
-            }
-
-            _scratch.Add((world, tint, tile.Hive));
+            _scratch.Add(world);
         }
 
         return _scratch.Count > 0;
@@ -71,19 +78,84 @@ public sealed class BlobLiquidOverlay : Overlay
     protected override void Draw(in OverlayDrawArgs args)
     {
         var handle = args.WorldHandle;
-        const float baseFeather = 0.58f;
-        const float baseCore = 0.38f;
-        const float scaleDivisor = 22f;
-        const float maxScale = 2.35f;
+        var invMatrix = args.Viewport.GetWorldToLocalMatrix();
+        var res = _resources.GetForViewport(args.Viewport, static _ => new CachedResources());
 
-        foreach (var (pos, tint, hiveNet) in _scratch)
+        if (res.Mask?.Texture.Size != args.Viewport.Size)
         {
-            var n = _hiveTileTotals.GetValueOrDefault(hiveNet, 1);
-            var scale = MathF.Min(maxScale, 1f + MathF.Sqrt(n) / scaleDivisor);
-            var featherR = baseFeather * scale;
-            var coreR = baseCore * scale;
-            handle.DrawCircle(pos, featherR, tint.WithAlpha(0.20f));
-            handle.DrawCircle(pos, coreR, tint.WithAlpha(0.48f));
+            res.Mask?.Dispose();
+            res.Mask = _clyde.CreateRenderTarget(
+                args.Viewport.Size,
+                new RenderTargetFormatParameters(RenderTargetColorFormat.Rgba8Srgb),
+                name: "blob-liquid-mask");
+        }
+
+        var tileHalfExtentPixels = args.Viewport.RenderScale.X / (args.Viewport.Eye?.Zoom.X ?? 1f) * EyeManager.PixelsPerMeter * 0.5f;
+        var revealRadius = tileHalfExtentPixels * 1.30f;
+        var maxExtraRadius = tileHalfExtentPixels * 0.20f; // ~= +0.1 tile width at maximum
+        var wobbleOffsetMax = tileHalfExtentPixels * 0.08f;
+        var now = (float) _timing.RealTime.TotalSeconds;
+
+        handle.RenderInRenderTarget(res.Mask!, () =>
+        {
+            foreach (var world in _scratch)
+            {
+                var local = Vector2.Transform(world, invMatrix);
+
+                // Base fill so the interior stays solid.
+                handle.DrawCircle(local, revealRadius, Color.White);
+
+                // Irregular "breathing" edge: layered circles with unique per-tile phase.
+                var seed = world.X * 12.9898f + world.Y * 78.233f;
+                for (var i = 0; i < 5; i++)
+                {
+                    var lobePhase = seed + i * 1.618f;
+                    var angle = i * (MathF.Tau / 5f) + lobePhase * 0.1f;
+                    var pulse = 0.5f + 0.5f * MathF.Sin(now * (1.2f + i * 0.17f) + lobePhase);
+                    var pulse2 = 0.5f + 0.5f * MathF.Sin(now * (1.9f + i * 0.13f) - lobePhase * 0.7f);
+
+                    var offset = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (wobbleOffsetMax * pulse2);
+                    var lobeRadius = revealRadius + maxExtraRadius * pulse;
+                    handle.DrawCircle(local + offset, lobeRadius, Color.White);
+                }
+            }
+        }, Color.Transparent);
+
+        handle.SetTransform(Matrix3x2.Identity);
+        handle.UseShader(_proto.Index(StencilMask).Instance());
+        handle.DrawTextureRect(res.Mask!.Texture, args.WorldBounds);
+
+        var curTime = _timing.RealTime;
+        var sprite = _sprite!.GetFrame(BlobSprite, curTime);
+        var eyePos = args.Viewport.Eye?.Position.Position ?? Vector2.Zero;
+
+        handle.UseShader(_proto.Index(StencilEqualDraw).Instance());
+        _parallax!.DrawParallax(
+            handle,
+            args.WorldAABB,
+            sprite,
+            curTime,
+            eyePos,
+            Vector2.Zero,
+            modulate: Color.White.WithAlpha(0.85f));
+
+        handle.UseShader(null);
+        handle.SetTransform(Matrix3x2.Identity);
+    }
+
+    protected override void DisposeBehavior()
+    {
+        _resources.Dispose();
+        base.DisposeBehavior();
+    }
+
+    private sealed class CachedResources : IDisposable
+    {
+        public IRenderTexture? Mask;
+
+        public void Dispose()
+        {
+            Mask?.Dispose();
         }
     }
 }
