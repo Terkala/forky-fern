@@ -1,0 +1,141 @@
+# Mage-summoned Behonkers — ghost-role flyers with elemental rays (faction-bonded via spell).
+
+- type: entity
+  parent: [ SimpleSpaceMobBase, FlyingMobBase ]
+  id: MobHonkBehonkerBase
+  abstract: true
+  name: greater behonker
+  description: A hovering clown-adjacent horror in service of the Honkmother's chosen jester.
+  components:
+  - type: GhostRole
+    makeSentient: true
+    allowMovement: true
+    allowSpeech: true
+    name: ghost-role-information-honk-behonker-name
+    description: ghost-role-information-honk-behonker-description
+    rules: ghost-role-information-familiar-rules
+    mindRoles:
+    - MindRoleGhostRoleFamiliar
+    raffle:
+      settings: default
+  - type: GhostTakeoverAvailable
+  - type: MindContainer
+  - type: Speech
+    speechVerb: Cluwne
+  - type: CombatMode
+  - type: MovementSpeedModifier
+    baseWalkSpeed: 3
+    baseSprintSpeed: 5
+    baseWeightlessModifier: 1.5
+  - type: Sprite
+    sprite: _Funkystation/Mobs/behonker.rsi
+    scale: 0.6, 0.6
+    layers:
+    - map: ["enum.DamageStateVisualLayers.Base"]
+      state: alive
+  - type: DamageStateVisuals
+    states:
+      Alive:
+        Base: alive
+      Dead:
+        Base: dead
+  - type: Physics
+    bodyType: KinematicController
+  - type: Fixtures
+    fixtures:
+      fix1:
+        shape:
+          !type:PhysShapeCircle
+          radius: 0.35
+        density: 80
+        mask:
+        - FlyingMobMask
+        layer:
+        - FlyingMobLayer
+  - type: MobState
+  - type: MobThresholds
+    thresholds:
+      0: Alive
+      250: Dead
+  - type: Bloodstream
+    bloodReferenceSolution:
+      reagents:
+      - ReagentId: Laughter
+        Quantity: 300
+  - type: Butcherable
+    spawned:
+    - id: MaterialBananium1
+      amount: 2
+  - type: MeleeWeapon
+    soundHit:
+      path: /Audio/Weapons/Xeno/alien_claw_flesh3.ogg
+    angle: 0
+    animation: WeaponArcBite
+    damage:
+      types:
+        Piercing: 10
+        Slash: 10
+  - type: Input
+    context: human
+  - type: InputMover
+  - type: MobMover
+  - type: HTN
+    constantlyReplan: false
+    rootTask:
+      task: GoliathCompound
+  - type: NpcFactionMember
+    factions:
+    - PetsNT
+  - type: InteractionOutline
+
+- type: entity
+  parent: MobHonkBehonkerBase
+  id: MobHonkBehonkerFire
+  suffix: Fire
+  components:
+  - type: Sprite
+    layers:
+    - map: ["enum.DamageStateVisualLayers.Base"]
+      state: alive
+      color: "#FF8844"
+  - type: NPCUseActionOnTarget
+    actionId: ActionHonkBehonkerRayFire
+
+- type: entity
+  parent: MobHonkBehonkerBase
+  id: MobHonkBehonkerIce
+  suffix: Ice
+  components:
+  - type: Sprite
+    layers:
+    - map: ["enum.DamageStateVisualLayers.Base"]
+      state: alive
+      color: "#88DDFF"
+  - type: NPCUseActionOnTarget
+    actionId: ActionHonkBehonkerRayIce
+
+- type: entity
+  parent: MobHonkBehonkerBase
+  id: MobHonkBehonkerEarth
+  suffix: Earth
+  components:
+  - type: Sprite
+    layers:
+    - map: ["enum.DamageStateVisualLayers.Base"]
+      state: alive
+      color: "#AA8866"
+  - type: NPCUseActionOnTarget
+    actionId: ActionHonkBehonkerRayEarth
+
+- type: entity
+  parent: MobHonkBehonkerBase
+  id: MobHonkBehonkerElectric
+  suffix: Electric
+  components:
+  - type: Sprite
+    layers:
+    - map: ["enum.DamageStateVisualLayers.Base"]
+      state: alive
+      color: "#FFFF66"
+  - type: NPCUseActionOnTarget
+    actionId: ActionHonkBehonkerRayElectric

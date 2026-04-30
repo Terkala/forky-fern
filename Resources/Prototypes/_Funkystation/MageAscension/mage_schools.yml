@@ -36,6 +36,7 @@
   - tier: 4
     options:
     - MageSpellHonkT4A
+    - MageSpellHonkT4B
   - tier: 5
     options:
     - MageSpellHonkT5A

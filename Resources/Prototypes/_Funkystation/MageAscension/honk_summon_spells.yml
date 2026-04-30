@@ -1,0 +1,224 @@
+# Honkamancy summon spells (replace former tier stubs).
+
+- type: entity
+  id: CEActionSpellHonkBeeHonker
+  parent: CEActionSpellBase
+  name: funky-mage-spell-honk-bee-honker-name
+  description: funky-mage-spell-honk-bee-honker-desc
+  components:
+  - type: CEActionManaCost
+    manaCost: 20
+  - type: CEActionFreeHandsRequired
+  - type: Action
+    useDelay: 5
+    icon:
+      sprite: Mobs/Animals/bee.rsi
+      state: 0
+  - type: DoAfterArgs
+    delay: 1
+  - type: InstantAction
+    event: !type:CEInstantModularEffectEvent
+      effects:
+      - !type:CESpellSpawnBondedEntitiesAtUser
+        spawns:
+        - MobHonkBee
+
+- type: entity
+  id: CEActionSpellHonkBeeSwarm
+  parent: CEActionSpellBase
+  name: funky-mage-spell-honk-bee-swarm-name
+  description: funky-mage-spell-honk-bee-swarm-desc
+  components:
+  - type: CEActionManaCost
+    manaCost: 30
+  - type: CEActionFreeHandsRequired
+  - type: Action
+    useDelay: 5
+    icon:
+      sprite: Mobs/Animals/bee.rsi
+      state: 0
+  - type: DoAfterArgs
+    delay: 1
+  - type: InstantAction
+    event: !type:CEInstantModularEffectEvent
+      effects:
+      - !type:CESpellSpawnBondedEntitiesAtUser
+        spawns:
+        - MobHonkBee
+        - MobHonkBee
+        - MobHonkBee
+
+- type: entity
+  id: CEActionSpellHonkGreaterBehonker
+  parent: CEActionSpellBase
+  name: funky-mage-spell-honk-greater-behonker-name
+  description: funky-mage-spell-honk-greater-behonker-desc
+  components:
+  - type: CEActionManaCost
+    manaCost: 100
+  - type: CEActionFreeHandsRequired
+  - type: Action
+    useDelay: 90
+    icon:
+      sprite: _Funkystation/Mobs/behonker.rsi
+      state: alive
+  - type: DoAfterArgs
+    delay: 10
+  - type: InstantAction
+    event: !type:CEInstantModularEffectEvent
+      effects:
+      - !type:CESpellSpawnBondedEntitiesAtUser
+        pickRandomSingle: true
+        spawns:
+        - MobHonkBehonkerFire
+        - MobHonkBehonkerIce
+        - MobHonkBehonkerEarth
+        - MobHonkBehonkerElectric
+
+- type: entity
+  id: CEActionSpellHonkClownsurrection
+  parent: CEActionSpellBase
+  name: funky-mage-spell-honk-clownsurrection-name
+  description: funky-mage-spell-honk-clownsurrection-desc
+  components:
+  - type: CEActionManaCost
+    manaCost: 80
+  - type: CEActionFreeHandsRequired
+  - type: CEActionTargetMobStatusRequired
+    allowedStates:
+    - Dead
+  - type: Action
+    useDelay: 30
+    icon:
+      sprite: Clothing/Masks/cluwne.rsi
+      state: icon
+  - type: DoAfterArgs
+    delay: 2
+  - type: TargetAction
+    range: 7
+    interactOnMiss: false
+  - type: EntityTargetAction
+    whitelist:
+      components:
+      - MobState
+    event: !type:CEEntityTargetModularEffectEvent
+      effects:
+      - !type:CESpellClownsurrection
+
+- type: entity
+  id: CEActionSpellHonkSlipBomb
+  parent: CEActionSpellBase
+  name: funky-mage-spell-honk-slip-bomb-name
+  description: funky-mage-spell-honk-slip-bomb-desc
+  components:
+  - type: CEActionManaCost
+    manaCost: 25
+  - type: CEActionFreeHandsRequired
+  - type: Action
+    useDelay: 8
+    icon:
+      sprite: Objects/Specific/Janitorial/wet_floor_sign.rsi
+      state: icon
+  - type: DoAfterArgs
+    delay: 0.8
+  - type: TargetAction
+    range: 16
+    interactOnMiss: false
+  - type: WorldTargetAction
+    event: !type:CEWorldTargetModularEffectEvent
+      effects:
+      - !type:CESpellProjectile
+        prototype: CEProjectileHonkSlipBomb
+        projectileSpeed: 16
+
+- type: entity
+  id: CEProjectileHonkSlipBomb
+  parent: CELiquidDropWater
+  name: slip bomb
+  suffix: Honkamancy
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: SolutionContainerManager
+    solutions:
+      drop:
+        maxVol: 12
+        reagents:
+        - ReagentId: SpaceLube
+          Quantity: 12
+  - type: Sprite
+    layers:
+      - state: liq-1
+        map: ["enum.SolutionContainerLayers.Fill"]
+        color: "#77b58e"
+
+- type: entity
+  id: CEActionSpellHonkComicalBarrier
+  parent: CEActionSpellBase
+  name: funky-mage-spell-honk-comical-barrier-name
+  description: funky-mage-spell-honk-comical-barrier-desc
+  components:
+  - type: CEActionManaCost
+    manaCost: 30
+  - type: CEActionFreeHandsRequired
+  - type: Action
+    useDelay: 15
+    icon:
+      sprite: Clothing/Uniforms/Jumpsuit/clown.rsi
+      state: icon
+  - type: DoAfterArgs
+    delay: 1
+  - type: TargetAction
+    range: 8
+    interactOnMiss: false
+  - type: WorldTargetAction
+    event: !type:CEWorldTargetModularEffectEvent
+      effects:
+      - !type:CESpellSpawnEntityOnTarget
+        spawns:
+        - CEHonkComicalBarrierDummy
+
+- type: entity
+  id: CEHonkComicalBarrierDummy
+  parent: BaseStructure
+  name: comical barrier
+  description: A clown-shaped target dummy. It blocks movement and takes hits for the joke.
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Transform
+    anchored: true
+  - type: Sprite
+    sprite: Clothing/Uniforms/Jumpsuit/clown.rsi
+    state: icon
+  - type: Physics
+    bodyType: Static
+    canCollide: true
+  - type: Fixtures
+    fixtures:
+      fix1:
+        shape:
+          !type:PhysShapeAabb
+          bounds: "-0.35,-0.45,0.35,0.45"
+        density: 50
+        mask:
+        - FullTileMask
+        layer:
+        - WallLayer
+  - type: Damageable
+    damageContainer: Inorganic
+  - type: Destructible
+    thresholds:
+    - trigger:
+        !type:DamageTrigger
+        damage: 120
+      behaviors:
+      - !type:DoActsBehavior
+        acts: ["Destruction"]
+    - trigger:
+        !type:DamageTypeTrigger
+        damageType: Heat
+        damage: 200
+      behaviors:
+      - !type:DoActsBehavior
+        acts: ["Destruction"]
+  - type: TimedDespawn
+    lifetime: 180

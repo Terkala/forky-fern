@@ -254,13 +254,13 @@
 
 - type: skill
   id: MageSpellHonkT2A
-  name: funky-mage-spellpick-honk-stub-t2a
+  name: funky-mage-spellpick-bee-honker
   skillUiPosition: 6, 4
   learnCost: 1
   tree: MageHonkamancy
   icon:
-    sprite: Objects/Magic/magicactions.rsi
-    state: spell_default
+    sprite: Mobs/Animals/bee.rsi
+    state: 0
   restrictions:
   - !type:NeedMinimumSkillPointsSpentInTree
     tree: MageHonkamancy
@@ -268,7 +268,7 @@
     minimum: 3
   effects:
   - !type:AddAction
-    action: CEActionSpellHonkStubT2A
+    action: CEActionSpellHonkBeeHonker
 
 - type: skill
   id: MageSpellHonkT2B
@@ -309,13 +309,13 @@
 
 - type: skill
   id: MageSpellHonkT3B
-  name: funky-mage-spellpick-honk-stub-t3b
+  name: funky-mage-spellpick-slip-bomb
   skillUiPosition: 8, 6
   learnCost: 1
   tree: MageHonkamancy
   icon:
-    sprite: Objects/Magic/magicactions.rsi
-    state: spell_default
+    sprite: Objects/Specific/Janitorial/wet_floor_sign.rsi
+    state: icon
   restrictions:
   - !type:NeedMinimumSkillPointsSpentInTree
     tree: MageHonkamancy
@@ -323,17 +323,17 @@
     minimum: 4
   effects:
   - !type:AddAction
-    action: CEActionSpellHonkStubT3B
+    action: CEActionSpellHonkSlipBomb
 
 - type: skill
   id: MageSpellHonkT4A
-  name: funky-mage-spellpick-honk-stub-t4a
+  name: funky-mage-spellpick-bee-swarm
   skillUiPosition: 10, 4
   learnCost: 1
   tree: MageHonkamancy
   icon:
-    sprite: Objects/Magic/magicactions.rsi
-    state: spell_default
+    sprite: Mobs/Animals/bee.rsi
+    state: 0
   restrictions:
   - !type:NeedMinimumSkillPointsSpentInTree
     tree: MageHonkamancy
@@ -341,17 +341,35 @@
     minimum: 5
   effects:
   - !type:AddAction
-    action: CEActionSpellHonkStubT4A
+    action: CEActionSpellHonkBeeSwarm
+
+- type: skill
+  id: MageSpellHonkT4B
+  name: funky-mage-spellpick-comical-barrier
+  skillUiPosition: 10, 6
+  learnCost: 1
+  tree: MageHonkamancy
+  icon:
+    sprite: Clothing/Uniforms/Jumpsuit/clown.rsi
+    state: icon
+  restrictions:
+  - !type:NeedMinimumSkillPointsSpentInTree
+    tree: MageHonkamancy
+    skillPointType: MageGrimoire
+    minimum: 5
+  effects:
+  - !type:AddAction
+    action: CEActionSpellHonkComicalBarrier
 
 - type: skill
   id: MageSpellHonkT5A
-  name: funky-mage-spellpick-honk-stub-t5a
+  name: funky-mage-spellpick-greater-behonker
   skillUiPosition: 12, 4
   learnCost: 1
   tree: MageHonkamancy
   icon:
-    sprite: Objects/Magic/magicactions.rsi
-    state: spell_default
+    sprite: _Funkystation/Mobs/behonker.rsi
+    state: alive
   restrictions:
   - !type:NeedMinimumSkillPointsSpentInTree
     tree: MageHonkamancy
@@ -359,17 +377,17 @@
     minimum: 6
   effects:
   - !type:AddAction
-    action: CEActionSpellHonkStubT5A
+    action: CEActionSpellHonkGreaterBehonker
 
 - type: skill
   id: MageSpellHonkT5B
-  name: funky-mage-spellpick-honk-stub-t5b
+  name: funky-mage-spellpick-clownsurrection
   skillUiPosition: 12, 6
   learnCost: 1
   tree: MageHonkamancy
   icon:
-    sprite: Objects/Magic/magicactions.rsi
-    state: spell_default
+    sprite: Clothing/Masks/cluwne.rsi
+    state: icon
   restrictions:
   - !type:NeedMinimumSkillPointsSpentInTree
     tree: MageHonkamancy
@@ -377,4 +395,4 @@
     minimum: 6
   effects:
   - !type:AddAction
-    action: CEActionSpellHonkStubT5B
+    action: CEActionSpellHonkClownsurrection

@@ -1,0 +1,24 @@
+# Allied bee summons for Honkamancy (bonded via CESpellSpawnBondedEntitiesAtUser).
+
+- type: entity
+  parent: MobAngryBee
+  id: MobHonkBee
+  suffix: Honkamancy
+  description: A striped herald of the Honkmother. It knows who summoned it—and who to sting.
+  components:
+  # Replace bee grind container + add melee sting reservoir for Honk injection.
+  - type: SolutionContainerManager
+    solutions:
+      food:
+        reagents:
+        - ReagentId: GroundBee
+          Quantity: 1
+      melee:
+        maxVol: 20
+        reagents:
+        - ReagentId: Honk
+          Quantity: 20
+  - type: MeleeChemicalInjector
+    solution: melee
+    transferAmount: 2
+    pierceArmor: false

@@ -1,0 +1,101 @@
+# Ray attacks for mage-summoned Behonkers (BehonkerRaySystem).
+
+- type: entity
+  parent: BaseAction
+  id: ActionHonkBehonkerRayFire
+  name: funky-mage-behonker-ray-fire-name
+  description: funky-mage-behonker-ray-fire-desc
+  components:
+  - type: Action
+    raiseOnUser: true
+    useDelay: 6
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: fireball
+    sound:
+      path: /Audio/Weapons/Guns/Gunshots/laser.ogg
+      params:
+        volume: -6
+  - type: TargetAction
+    range: 12
+  - type: WorldTargetAction
+    event: !type:BehonkerRayActionEvent
+      range: 12
+      damage:
+        types:
+          Heat: 18
+
+- type: entity
+  parent: BaseAction
+  id: ActionHonkBehonkerRayIce
+  name: funky-mage-behonker-ray-ice-name
+  description: funky-mage-behonker-ray-ice-desc
+  components:
+  - type: Action
+    raiseOnUser: true
+    useDelay: 6
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: shield
+    sound:
+      path: /Audio/Weapons/Guns/Gunshots/laser.ogg
+      params:
+        volume: -6
+  - type: TargetAction
+    range: 12
+  - type: WorldTargetAction
+    event: !type:BehonkerRayActionEvent
+      range: 12
+      damage:
+        types:
+          Cold: 18
+
+- type: entity
+  parent: BaseAction
+  id: ActionHonkBehonkerRayEarth
+  name: funky-mage-behonker-ray-earth-name
+  description: funky-mage-behonker-ray-earth-desc
+  components:
+  - type: Action
+    raiseOnUser: true
+    useDelay: 6
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: spell_default
+    sound:
+      path: /Audio/Weapons/smash.ogg
+      params:
+        volume: -6
+  - type: TargetAction
+    range: 12
+  - type: WorldTargetAction
+    event: !type:BehonkerRayActionEvent
+      range: 12
+      damage:
+        types:
+          Blunt: 18
+
+- type: entity
+  parent: BaseAction
+  id: ActionHonkBehonkerRayElectric
+  name: funky-mage-behonker-ray-electric-name
+  description: funky-mage-behonker-ray-electric-desc
+  components:
+  - type: Action
+    raiseOnUser: true
+    useDelay: 6
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: magicmissile
+    sound:
+      path: /Audio/Weapons/Guns/Gunshots/taser2.ogg
+      params:
+        volume: -6
+  - type: TargetAction
+    range: 12
+  - type: WorldTargetAction
+    event: !type:BehonkerRayActionEvent
+      range: 12
+      damage:
+        types:
+          Shock: 18

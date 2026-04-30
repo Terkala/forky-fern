@@ -161,6 +161,9 @@ ghost-role-information-closet-skeleton-description = You are arguably one of the
 ghost-role-information-remilia-name = Remilia, the Chaplain's Familiar
 ghost-role-information-remilia-description = Follow and obey the chaplain. Eat fruit. Screech loudly into people's ears and write it off as echolocation.
 
+ghost-role-information-honk-behonker-name = Greater Behonker
+ghost-role-information-honk-behonker-description = You are a summoned Behonker from Honkamancy. Serve your summoner, haunt the halls, and deliver elemental punchlines.
+
 ghost-role-information-cerberus-name = Cerberus, Evil Familiar
 ghost-role-information-cerberus-description = Obey your master. Spread chaos.
 
