@@ -42,7 +42,9 @@ roles-antag-thief-name = Thief
 roles-antag-thief-objective = Add some NT property to your personal collection without using violence.
 
 roles-antag-mage-name = Mage of Ascension
-roles-antag-mage-objective = Open ley confluences and outpace rival mages before the crew stops you.
+roles-antag-mage-objective = Open ley confluences until you can escape through your dimensional rift—then deal with whatever follows you back.
+roles-antag-mage-rift-beast-name = Veil-Torn Horror
+roles-antag-mage-rift-beast-objective = Slaughter every living soul you can find on the station.
 
 roles-antag-dragon-name = Space Dragon
 roles-antag-dragon-objective = Create a carp army to take over this quadrant.

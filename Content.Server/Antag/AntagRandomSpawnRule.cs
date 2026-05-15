@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: MIT
 
 using Content.Server.Antag.Components;
+using Content.Server.Station.Systems;
 using Content.Shared.GameTicking.Components;
+using Content.Shared.Station.Components;
 using Content.Server.GameTicking.Rules;
 
 namespace Content.Server.Antag;
@@ -11,6 +13,7 @@ namespace Content.Server.Antag;
 public sealed class AntagRandomSpawnSystem : GameRuleSystem<AntagRandomSpawnComponent>
 {
     [Dependency] private readonly SharedTransformSystem _transform = default!;
+    [Dependency] private readonly StationSafeSpotSystem _safeSpot = default!;
 
     public override void Initialize()
     {
@@ -26,8 +29,23 @@ public sealed class AntagRandomSpawnSystem : GameRuleSystem<AntagRandomSpawnComp
         // we have to select this here because AntagSelectLocationEvent is raised twice because MakeAntag is called twice
         // once when a ghost role spawner is created and once when someone takes the ghost role
 
-        if (TryFindRandomTile(out _, out _, out _, out var coords))
-            comp.Coords = coords;
+        if (TryGetRandomStation(out var stationUid)
+            && stationUid != null
+            && TryComp(stationUid.Value, out StationDataComponent? stationData))
+        {
+            var spec = new StationSafeSpotLocateSpec
+            {
+                Station = (stationUid.Value, stationData),
+                FootprintWidth = 2,
+                FootprintHeight = 2,
+                LocalAnchor = null,
+                LocalHalfExtent = 5,
+                StationWideStrictAttempts = 40,
+            };
+
+            if (_safeSpot.TryLocateSafeSpotOnStation(spec, out _, out _, out var coords, out _))
+                comp.Coords = coords;
+        }
     }
 
     private void OnSelectLocation(Entity<AntagRandomSpawnComponent> ent, ref AntagSelectLocationEvent args)

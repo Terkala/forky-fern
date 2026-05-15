@@ -93,49 +93,7 @@ public abstract partial class GameRuleSystem<T> where T: IComponent
         out EntityUid targetGrid,
         out EntityCoordinates targetCoords)
     {
-        tile = default;
-        targetCoords = EntityCoordinates.Invalid;
-        targetGrid = EntityUid.Invalid;
-
-        // Weight grid choice by tilecount
-        var weights = new Dictionary<Entity<MapGridComponent>, float>();
-        foreach (var possibleTarget in station.Comp.Grids)
-        {
-            if (!TryComp<MapGridComponent>(possibleTarget, out var comp))
-                continue;
-
-            weights.Add((possibleTarget, comp), _map.GetAllTiles(possibleTarget, comp).Count());
-        }
-
-        if (weights.Count == 0)
-        {
-            targetGrid = EntityUid.Invalid;
-            return false;
-        }
-
-        (targetGrid, var gridComp) = RobustRandom.Pick(weights);
-
-        var found = false;
-        var aabb = gridComp.LocalAABB;
-
-        for (var i = 0; i < 10; i++)
-        {
-            var randomX = RobustRandom.Next((int) aabb.Left, (int) aabb.Right);
-            var randomY = RobustRandom.Next((int) aabb.Bottom, (int) aabb.Top);
-
-            tile = new Vector2i(randomX, randomY);
-            if (_atmosphere.IsTileSpace(targetGrid, Transform(targetGrid).MapUid, tile)
-                || _atmosphere.IsTileAirBlockedCached(targetGrid, tile))
-            {
-                continue;
-            }
-
-            found = true;
-            targetCoords = _map.GridTileToLocal(targetGrid, gridComp, tile);
-            break;
-        }
-
-        return found;
+        return _stationSafeSpot.TryFindRandomTileOnStationWeak(station, out tile, out targetGrid, out targetCoords);
     }
 
     protected void ForceEndSelf(EntityUid uid, GameRuleComponent? component = null)

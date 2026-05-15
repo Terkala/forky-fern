@@ -1,0 +1,6 @@
+- type: antag
+  id: MageRiftBeastHorror
+  name: roles-antag-mage-rift-beast-name
+  antagonist: true
+  setPreference: false
+  objective: roles-antag-mage-rift-beast-objective

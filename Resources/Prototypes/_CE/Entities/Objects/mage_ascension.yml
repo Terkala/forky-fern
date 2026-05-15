@@ -118,3 +118,41 @@
 - type: startingGear
   id: MageOfAscensionGearBase
   storage: {}
+
+- type: entity
+  name: dimensional rift
+  description: A wound in local reality. With enough leverage, you could peel it wide enough to slip home—and something else is already leaning on the other side.
+  parent: BaseItem
+  id: MageDimensionalRift
+  categories: [ ForkFiltered ]
+  components:
+  - type: Transform
+    anchored: true
+  - type: Sprite
+    sprite: /Textures/Effects/portal.rsi
+    layers:
+    - state: portal-red
+    shader: unshaded
+    noRot: true
+  - type: PointLight
+    color: OrangeRed
+    radius: 3.5
+    energy: 1.4
+    netsync: false
+  - type: InteractionOutline
+  - type: Fixtures
+    fixtures:
+      fix1:
+        shape:
+          !type:PhysShapeAabb
+          bounds: "-0.35,-0.45,0.35,0.45"
+        density: 50
+        mask:
+        - FullTileMask
+        layer:
+        - LowImpassable
+  - type: Physics
+    bodyType: Static
+  - type: MageDimensionalRift
+    pryDuration: 36
+  - type: MageStationDimensionalRift

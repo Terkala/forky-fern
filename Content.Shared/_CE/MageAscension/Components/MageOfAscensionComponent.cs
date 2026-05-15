@@ -24,4 +24,11 @@ public sealed partial class MageOfAscensionComponent : Component
 
     [DataField, AutoNetworkedField]
     public bool HasChosenSchool;
+
+    /// <summary>
+    /// Ley confluences that must be opened before the dimensional rift appears for this mage.
+    /// </summary>
+    [DataField, AutoNetworkedField]
+    public int LeylinesRequiredForDimensionalRift = 5;
 }
+

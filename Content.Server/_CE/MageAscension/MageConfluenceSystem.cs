@@ -4,6 +4,7 @@ using Content.Shared._CE.MageAscension;
 using Content.Shared._CE.MageAscension.Components;
 using Content.Shared.GameTicking.Components;
 using Content.Shared.Interaction;
+using Content.Shared.Mind;
 using Content.Shared.Popups;
 using Content.Shared.Power.Components;
 using Content.Shared.Power.EntitySystems;
@@ -19,6 +20,8 @@ public sealed class MageConfluenceSystem : EntitySystem
     [Dependency] private readonly GameTicker _ticker = default!;
     [Dependency] private readonly SharedPopupSystem _popup = default!;
     [Dependency] private readonly SharedBatterySystem _battery = default!;
+    [Dependency] private readonly SharedMindSystem _mind = default!;
+    [Dependency] private readonly MageDimensionalRiftSystem _dimensionalRift = default!;
 
     private static readonly TimeSpan RespawnDelay = TimeSpan.FromMinutes(2);
 
@@ -72,6 +75,15 @@ public sealed class MageConfluenceSystem : EntitySystem
 
             var ev = new MageConfluenceOpenedEvent();
             RaiseLocalEvent(mage, ref ev);
+
+            _dimensionalRift.TrySpawnDimensionalRiftIfEligible((mage, mageComp));
+
+            if (_mind.TryGetMind(mage, out var mindId, out _))
+            {
+                var tracker = EnsureComp<MageAscensionMindTrackerComponent>(mindId);
+                tracker.LeylinesOpenedCount = mageComp.ConfluencesOpened;
+                Dirty(mindId, tracker);
+            }
         }
 
         if (TryComp<BatteryComponent>(mage, out var battery))

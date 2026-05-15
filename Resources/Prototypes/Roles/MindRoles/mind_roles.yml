@@ -271,6 +271,16 @@
     subtype: role-subtype-mage
   - type: MageRole
 
+- type: entity
+  parent: BaseMindRoleAntag
+  id: MindRoleMageRiftBeast
+  name: Dimensional Rift Horror Role
+  components:
+  - type: MindRole
+    antagPrototype: MageRiftBeastHorror
+    subtype: role-subtype-mage-rift-beast
+  - type: MageRiftBeastRole
+
 # Traitors
 - type: entity
   parent: BaseMindRoleAntag

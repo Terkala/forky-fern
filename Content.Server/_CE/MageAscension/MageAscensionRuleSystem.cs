@@ -85,6 +85,8 @@ public sealed class MageAscensionRuleSystem : GameRuleSystem<MageAscensionRuleCo
         if (args.Session?.GetMind() is not { } mindId)
             return;
 
+        EnsureComp<MageAscensionMindTrackerComponent>(mindId);
+
         EnsureMindAction(mindId, ActionBlink, stealable: true);
         EnsureMindAction(mindId, ActionCreateGrimoire, stealable: false);
     }

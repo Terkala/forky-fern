@@ -10,6 +10,59 @@
     - MageRole
 
 - type: entity
+  abstract: true
+  parent: BaseObjective
+  id: BaseMageRiftBeastObjective
+  components:
+  - type: Objective
+    issuer: objective-issuer-mage-rift-beast
+  - type: RoleRequirement
+    roles:
+    - MageRiftBeastRole
+
+- type: entity
+  parent: [BaseMageObjective, BaseLivingObjective]
+  id: MageOpenLeylinesObjective
+  components:
+  - type: Objective
+    difficulty: 2
+    icon:
+      sprite: Structures/Specific/Anomaly/anomaly_flesh.rsi
+      state: anom
+  - type: NumberObjective
+    min: 4
+    max: 6
+    title: objective-mage-open-leylines-title
+    description: objective-mage-open-leylines-description
+  - type: MageOpenLeylinesCondition
+
+- type: entity
+  parent: [BaseMageObjective, BaseLivingObjective]
+  id: MageDimensionalRiftObjective
+  name: objective-mage-dimensional-rift-title
+  description: objective-mage-dimensional-rift-description
+  components:
+  - type: Objective
+    difficulty: 2.5
+    icon:
+      sprite: Structures/Machines/gateway.rsi
+      state: portal
+  - type: MageDimensionalRiftAscensionCondition
+
+- type: entity
+  parent: [BaseMageRiftBeastObjective, BaseLivingObjective]
+  id: MageRiftBeastMassacreObjective
+  name: Leave no survivors
+  description: Tear through every soul still breathing on this station.
+  components:
+  - type: Objective
+    difficulty: 3
+    icon:
+      sprite: Mobs/Aliens/Carps/sharkminnow.rsi
+      state: alive
+  - type: MageRiftBeastMassacreCondition
+
+- type: entity
   parent: [BaseMageObjective, BaseLivingObjective]
   id: EscapeMageShuttleObjective
   name: Escape to CentComm alive via the escape shuttle.

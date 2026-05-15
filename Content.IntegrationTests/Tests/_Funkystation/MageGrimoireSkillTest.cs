@@ -208,7 +208,7 @@ public sealed class MageGrimoireSkillTest
             AssertSpawn(ent, proto, coords, "ClothingUniformJumpsuitHonkBlessed");
             AssertSpawn(ent, proto, coords, "CEActionSpellHonkBeeHonker");
             AssertSpawn(ent, proto, coords, "CEActionSpellHonkBeeSwarm");
-            AssertSpawn(ent, proto, coords, "CEActionSpellHonkGreaterBehonker");
+            AssertSpawn(ent, proto, coords, "CEActionSpellHonkMarkOfCluwne");
             AssertSpawn(ent, proto, coords, "CEActionSpellHonkClownsurrection");
             AssertSpawn(ent, proto, coords, "CEActionSpellHonkSlipBomb");
             AssertSpawn(ent, proto, coords, "CEActionSpellHonkComicalBarrier");

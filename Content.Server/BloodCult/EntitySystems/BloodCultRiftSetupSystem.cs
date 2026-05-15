@@ -1,12 +1,13 @@
 using System.Collections.Generic;
 using System.Numerics;
-using Content.Server.Atmos.EntitySystems;
+using Content.Server.GameTicking.Rules.Components;
+using Content.Server.Station.Systems;
+using Content.Shared.Station;
+using Content.Shared.Station.Components;
 using Robust.Shared.Map;
 using Robust.Shared.Map.Components;
 using Robust.Shared.Physics.Components;
 using Robust.Shared.Random;
-using Content.Server.GameTicking.Rules.Components;
-using Content.Server.GameTicking.Rules;
 using Content.Shared.BloodCult.Components;
 using Content.Shared.BloodCult;
 using Content.Shared.Chemistry.EntitySystems;
@@ -32,16 +33,10 @@ public sealed class BloodCultRiftSetupSystem : EntitySystem
 	[Dependency] private readonly IRobustRandom _random = default!;
 	[Dependency] private readonly MapSystem _mapSystem = default!;
 	[Dependency] private readonly ITileDefinitionManager _tileDefManager = default!;
-	[Dependency] private readonly AtmosphereSystem _atmosphere = default!;
 	[Dependency] private readonly SharedTransformSystem _transformSystem = default!;
 	[Dependency] private readonly SharedSolutionContainerSystem _solutionContainer = default!;
-
-	//Arbitrary values for safe temperature and pressure ranges.
-	//If the location is outside these ranges, it'll fallback to a different site selection logic for the blood anomaly.
-	private const float MinPressureKpa = 50f;
-	private const float MaxPressureKpa = 300f;
-	private const float MinTemperatureK = 150f;
-	private const float MaxTemperatureK = 300f;
+	[Dependency] private readonly SharedStationSystem _station = default!;
+	[Dependency] private readonly StationSafeSpotSystem _safeSpot = default!;
 
 	/// <summary>
 	/// Attempts to set up the final summoning ritual site.
@@ -230,85 +225,41 @@ public sealed class BloodCultRiftSetupSystem : EntitySystem
 		return beacons;
 	}
 
-private bool TryFindValid3x3Space(EntityCoordinates center, out EntityCoordinates validCenter,
+	private bool TryFindValid3x3Space(EntityCoordinates center, out EntityCoordinates validCenter,
 	out EntityUid gridUid, out MapGridComponent grid)
 	{
 		validCenter = EntityCoordinates.Invalid;
 		gridUid = EntityUid.Invalid;
-	grid = default!;
+		grid = default!;
 
-	if (!TryResolveGrid(center, out gridUid, out grid))
-		return false;
-	var centerTile = _mapSystem.TileIndicesFor(gridUid, grid, center);
-
-	// Search in a 10x10 area around the beacon
-	for (var x = -5; x <= 5; x++)
-	{
-		for (var y = -5; y <= 5; y++)
-		{
-			var testTile = new Vector2i(centerTile.X + x, centerTile.Y + y);
-
-			if (IsValid3x3Space(gridUid, grid, testTile))
-			{
-				validCenter = _mapSystem.GridTileToLocal(gridUid, grid, testTile);
-				return true;
-			}
-		}
-	}
-
-		return false;
-	}
-
-	private bool IsValid3x3Space(EntityUid gridUid, MapGridComponent grid, Vector2i center)
-	{
-		// Check a 3x3 area centered on the candidate tile
-		for (var x = -1; x <= 1; x++)
-		{
-			for (var y = -1; y <= 1; y++)
-			{
-				var checkTile = new Vector2i(center.X + x, center.Y + y);
-
-				if (!IsTileValid(gridUid, grid, checkTile))
-					return false;
-			}
-		}
-
-		return true;
-	}
-
-	private bool IsTileValid(EntityUid gridUid, MapGridComponent grid, Vector2i tile)
-	{
-		// Check if tile exists and is not space
-	var tileRef = _mapSystem.GetTileRef(gridUid, grid, tile);
-	if (tileRef.Tile.IsEmpty)
-		return false;
-
-	var mapUid = Transform(gridUid).MapUid;
-	var mixture = _atmosphere.GetTileMixture(gridUid, mapUid, tile, excite: false);
-	if (mixture == null)
-		return false;
-
-	if (mixture.Pressure < MinPressureKpa || mixture.Pressure > MaxPressureKpa)
-		return false;
-	if (mixture.Temperature < MinTemperatureK || mixture.Temperature > MaxTemperatureK)
+		if (!TryResolveGrid(center, out var resolvedGrid, out var mapGrid))
 			return false;
 
-		// Check for blocking entities (walls, etc)
-		var anchored = _mapSystem.GetAnchoredEntities(gridUid, grid, tile);
-		foreach (var entity in anchored)
-		{
-			// Allow subfloor items (cables, pipes)
-			if (HasComp<SubFloorHideComponent>(entity))
-				continue;
+		var stationOwner = _station.GetOwningStation(resolvedGrid);
+		if (stationOwner == null || !TryComp<StationDataComponent>(stationOwner.Value, out var stationData))
+			return false;
 
-			// Block on walls or dense structures
-			if (TryComp<PhysicsComponent>(entity, out var physics))
-			{
-				var blockingLayers = CollisionGroup.Impassable | CollisionGroup.WallLayer | CollisionGroup.GlassLayer | CollisionGroup.FullTileLayer | CollisionGroup.AirlockLayer | CollisionGroup.GlassAirlockLayer;
-				if ((physics.CollisionLayer & (int)blockingLayers) != 0)
-					return false;
-			}
+		var spec = new StationSafeSpotLocateSpec
+		{
+			Station = (stationOwner.Value, stationData),
+			FootprintWidth = 3,
+			FootprintHeight = 3,
+			LocalAnchor = center,
+			LocalHalfExtent = 5,
+			StationWideStrictAttempts = 0,
+		};
+
+		if (!_safeSpot.TryLocateSafeSpotOnStation(spec, out gridUid, out _, out validCenter, out _))
+			return false;
+
+		if (!TryComp<MapGridComponent>(gridUid, out var gridComp))
+		{
+			validCenter = EntityCoordinates.Invalid;
+			gridUid = EntityUid.Invalid;
+			return false;
 		}
+
+		grid = gridComp;
 
 		return true;
 	}
@@ -330,7 +281,7 @@ private bool TryFindValid3x3Space(EntityCoordinates center, out EntityCoordinate
 					// Safety check, never delete a player.
 					if (TryComp<MindContainerComponent>(entity, out var mind) && mind.Mind != null)
 						continue;
-					
+
 					// Destroy walls and other blockers so it doesn't spawn inside a wall.
 					if (TryComp<PhysicsComponent>(entity, out var physics))
 					{

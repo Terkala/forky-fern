@@ -1,0 +1,235 @@
+# Mage dimensional rift horrors (school-specific ascension bodies), spells, and projectiles.
+
+- type: entity
+  id: CEProjectileRiftBigHonkPie
+  parent: BaseBullet
+  name: honked pie
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Sprite
+    sprite: Objects/Consumable/Food/Baked/pie.rsi
+    state: plain
+  - type: Projectile
+    damage:
+      types:
+        Blunt: 14
+        Stamina: 20
+  - type: TimedDespawn
+    lifetime: 4
+
+- type: entity
+  id: CEProjectileRiftElementalHorrorFire
+  parent: ProjectileFireball
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Explosive
+    maxIntensity: 28
+    intensitySlope: 5
+    totalIntensity: 120
+    maxTileBreak: 0
+  - type: TimedDespawn
+    lifetime: 5
+
+- type: entity
+  id: CEProjectileRiftElementalHorrorAir
+  parent: BaseBullet
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Sprite
+    sprite: Objects/Weapons/Guns/Projectiles/magic.rsi
+    layers:
+    - state: spell
+      color: '#ddeeff'
+      shader: unshaded
+  - type: Projectile
+    damage:
+      types:
+        Slash: 14
+        Bloodloss: 8
+  - type: TimedDespawn
+    lifetime: 5
+
+- type: entity
+  id: CEProjectileRiftElementalHorrorEarth
+  parent: BaseBulletTrigger
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Sprite
+    sprite: Objects/Weapons/Guns/Projectiles/magic.rsi
+    layers:
+    - state: spell
+      color: '#884422'
+      shader: unshaded
+  - type: Projectile
+    damage:
+      types:
+        Piercing: 18
+  - type: ExplodeOnTrigger
+  - type: Explosive
+    explosionType: FireBomb
+    totalIntensity: 24
+    intensitySlope: 2
+    maxIntensity: 10
+    maxTileBreak: 0
+    canCreateVacuum: false
+  - type: TimedDespawn
+    lifetime: 5
+
+- type: entity
+  id: CEProjectileRiftElementalHorrorWater
+  parent: BaseBullet
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Sprite
+    sprite: Objects/Weapons/Guns/Projectiles/magic.rsi
+    layers:
+    - state: spell
+      color: '#3399ff'
+      shader: unshaded
+  - type: Projectile
+    damage:
+      types:
+        Blunt: 16
+        Asphyxiation: 6
+  - type: TimedDespawn
+    lifetime: 5
+
+- type: entity
+  parent: CEActionSpellBase
+  id: CEActionSpellRiftBigHonkPie
+  name: rift-big-honk-pie-name
+  description: rift-big-honk-pie-desc
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: CEActionManaCost
+    manaCost: 0
+  - type: Action
+    useDelay: 1.5
+    icon:
+      sprite: Objects/Consumable/Food/Baked/pie.rsi
+      state: plain
+  - type: DoAfterArgs
+    delay: 0.25
+  - type: WorldTargetAction
+    range: 40
+    event: !type:CEWorldTargetModularEffectEvent
+      effects:
+      - !type:CESpellProjectile
+        prototype: CEProjectileRiftBigHonkPie
+        projectileSpeed: 14
+
+- type: entity
+  parent: CEActionSpellBase
+  id: CEActionSpellRiftElementalBolt
+  name: rift-elemental-bolt-name
+  description: rift-elemental-bolt-desc
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: CEActionManaCost
+    manaCost: 0
+  - type: Action
+    useDelay: 8
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: fireball
+  - type: DoAfterArgs
+    delay: 0.45
+  - type: WorldTargetAction
+    range: 40
+    event: !type:CEWorldTargetModularEffectEvent
+      effects:
+      - !type:CESpellRiftElementalBolt
+        projectileSpeed: 12
+
+- type: entity
+  parent: CEActionSpellBase
+  id: CEActionSpellRiftElementalPhase
+  name: rift-elemental-phase-name
+  description: rift-elemental-phase-desc
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: CEActionManaCost
+    manaCost: 0
+  - type: Action
+    useDelay: 30
+    icon:
+      sprite: Objects/Magic/magicactions.rsi
+      state: blink
+  - type: DoAfterArgs
+    delay: 0.2
+  - type: InstantAction
+    event: !type:CEInstantModularEffectEvent
+      effects:
+      - !type:CESpellRequestRiftElementalPhase
+        duration: 10
+
+- type: entity
+  name: big honk
+  description: rift-big-honk-desc
+  parent: BaseMobDragon
+  id: MobMageRiftBigHonk
+  categories: [ ForkFiltered ]
+  components:
+  - type: MageRiftBigHonk
+  - type: DamageStateVisuals
+    states:
+      Alive:
+        Base: alive
+        BaseUnshaded: alive-unshaded
+      Critical:
+        Base: crit
+      Dead:
+        Base: alive
+        BaseUnshaded: alive-unshaded
+  - type: Sprite
+    noRot: true
+    sprite: Mobs/Aliens/Carps/dragon.rsi
+    layers:
+    - map: [ "enum.DamageStateVisualLayers.Base" ]
+      state: alive
+    - map: [ "enum.DamageStateVisualLayers.BaseUnshaded" ]
+      state: alive-unshaded
+      shader: unshaded
+  - type: MeleeWeapon
+    altDisarm: false
+    soundHit:
+      path: /Audio/Weapons/Xeno/alien_claw_flesh3.ogg
+    damage:
+      types:
+        Blunt: 22
+        Structural: 35
+  - type: PassiveDamage
+    allowedStates:
+    - Alive
+    damage:
+      types:
+        Brute: -1
+    interval: 1
+  - type: ActionGrant
+    actions:
+    - CEActionSpellRiftBigHonkPie
+
+- type: entity
+  name: elemental horror
+  description: rift-elemental-creature-desc
+  parent: MobHuman
+  id: MobMageRiftElementalCreature
+  categories: [ ForkFiltered ]
+  components:
+  - type: RandomHumanoidAppearance
+  - type: MageRiftElementalVariant
+    rotationInterval: 12
+  - type: PassiveDamage
+    allowedStates:
+    - Alive
+    damage:
+      types:
+        Brute: -0.25
+    interval: 1
+  - type: NpcFactionMember
+    factions:
+    - SimpleHostile
+  - type: ActionGrant
+    actions:
+    - CEActionSpellRiftElementalBolt
+    - CEActionSpellRiftElementalPhase

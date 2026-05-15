@@ -49,31 +49,39 @@
         - MobHonkBee
 
 - type: entity
-  id: CEActionSpellHonkGreaterBehonker
+  id: CEActionSpellHonkMarkOfCluwne
   parent: CEActionSpellBase
-  name: funky-mage-spell-honk-greater-behonker-name
-  description: funky-mage-spell-honk-greater-behonker-desc
+  name: funky-mage-spell-mark-of-cluwne-name
+  description: funky-mage-spell-mark-of-cluwne-desc
   components:
   - type: CEActionManaCost
     manaCost: 100
   - type: CEActionFreeHandsRequired
+  - type: CEActionTargetMobStatusRequired
+    allowedStates:
+    - Alive
+    - Critical
   - type: Action
-    useDelay: 90
+    useDelay: 120
     icon:
-      sprite: _Funkystation/Mobs/behonker.rsi
-      state: alive
+      sprite: Clothing/Masks/cluwne.rsi
+      state: icon
   - type: DoAfterArgs
-    delay: 10
-  - type: InstantAction
-    event: !type:CEInstantModularEffectEvent
+    delay: 3
+  - type: TargetAction
+    range: 5
+    interactOnMiss: false
+  - type: EntityTargetAction
+    whitelist:
+      components:
+      - MobState
+      - Polymorphable
+    event: !type:CEEntityTargetModularEffectEvent
       effects:
-      - !type:CESpellSpawnBondedEntitiesAtUser
-        pickRandomSingle: true
-        spawns:
-        - MobHonkBehonkerFire
-        - MobHonkBehonkerIce
-        - MobHonkBehonkerEarth
-        - MobHonkBehonkerElectric
+      - !type:CESpellApplyEntityEffect
+        effects:
+        - !type:Polymorph
+          prototype: WizardForcedCluwne
 
 - type: entity
   id: CEActionSpellHonkClownsurrection

@@ -51,6 +51,11 @@ public sealed class PoolSettings : PairSettings
 
     public override bool CanFastRecycle(PairSettings nextSettings)
     {
+        // Incoming tests that set Dirty require a full recycle (RestartRound, FlushEntities, etc.),
+        // not only ApplySettings — subsystem statics keyed on RoundRestartCleanupEvent must reset.
+        if (nextSettings.Dirty)
+            return false;
+
         if (!base.CanFastRecycle(nextSettings))
             return false;
 

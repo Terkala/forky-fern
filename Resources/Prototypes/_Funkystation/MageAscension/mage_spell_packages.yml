@@ -363,13 +363,13 @@
 
 - type: skill
   id: MageSpellHonkT5A
-  name: funky-mage-spellpick-greater-behonker
+  name: funky-mage-spellpick-mark-of-cluwne
   skillUiPosition: 12, 4
   learnCost: 1
   tree: MageHonkamancy
   icon:
-    sprite: _Funkystation/Mobs/behonker.rsi
-    state: alive
+    sprite: Clothing/Masks/cluwne.rsi
+    state: icon
   restrictions:
   - !type:NeedMinimumSkillPointsSpentInTree
     tree: MageHonkamancy
@@ -377,7 +377,7 @@
     minimum: 6
   effects:
   - !type:AddAction
-    action: CEActionSpellHonkGreaterBehonker
+    action: CEActionSpellHonkMarkOfCluwne
 
 - type: skill
   id: MageSpellHonkT5B

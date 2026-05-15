@@ -1,0 +1,16 @@
+- type: entity
+  name: veil-torn horror
+  description: Whatever came through the rift is not from this plane of existence. It hungers.
+  parent: MobShark
+  id: MobMageRiftHorror
+  categories: [ ForkFiltered ]
+  components:
+  - type: MobThresholds
+    thresholds:
+      0: Alive
+      120: Dead
+  - type: MeleeWeapon
+    damage:
+      types:
+        Slash: 16
+        Bloodloss: 8
